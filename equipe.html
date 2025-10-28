@@ -5,143 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciamento de Equipe</title>
     <link rel="stylesheet" href="equipe.css">
-    <!-- Estilos adicionais para responsividade e correção dos botões de abas -->
+
+    <!-- Ajuste mínimo e restrito: apenas rules para as abas (não altera JS nem outros estilos) -->
     <style>
-      /* Reset simples para consistência */
-      * { box-sizing: border-box; }
-
-      body {
-        margin: 0;
-        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-        background: #f8fafc;
-        color: #0f172a;
-        -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      }
-
-      /* Container principal */
-      .container {
-        max-width: 1100px;
-        margin: 24px auto;
-        padding: 16px;
-      }
-
-      .header h1 {
-        margin: 0 0 6px 0;
-        font-size: 1.5rem;
-      }
-      .header p {
-        margin: 0 0 12px 0;
-        color: #6b7280;
-      }
-
-      .content {
-        background: #fff;
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 6px 20px rgba(2,6,23,0.06);
-      }
-
-      .actions {
-        display:flex;
-        gap:12px;
-        align-items:center;
-        justify-content:space-between;
-        margin-bottom: 12px;
-        flex-wrap:wrap;
-      }
-      .actions h2 { margin:0; font-size:1.05rem; }
-
-      /* Botões padrão */
-      .btn {
-        border: none;
-        border-radius: 10px;
-        padding: 8px 12px;
-        cursor: pointer;
-        font-weight: 600;
-      }
-      .btn-info { background:#4f46e5; color:#fff; }
-      .btn-secondary { background:#eef2ff; color:#1f2937; border:1px solid #e6e9ef; }
-      .btn-success { background:#10b981; color:#fff; }
-
-      /* Grid de profissionais (painel) */
-      .equipe-grid {
-        display:grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 12px;
-      }
-
-      .prof-card {
-        transition: transform .12s ease;
-      }
-      .prof-card:hover { transform: translateY(-4px); }
-
-      /* Modal (usado por #modal-add-profissional e #modal-perfil-profissional) */
-      .modal {
-        display: none; /* o JS usa style.display = 'block' / 'none' para controle */
-        position: fixed;
-        inset: 0;
-        z-index: 9998;
-        background: rgba(2,6,23,0.45);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 16px;
-      }
-      /* Ao abrir, o JS define display:block; aqui garantimos o centro e rolagem */
-      .modal[style*="display: block"], .modal[style*="display:block"] {
-        display: flex;
-      }
-      .modal-content {
-        width: 100%;
-        max-width: 920px; /* mais largo em desktop */
-        max-height: calc(100vh - 36px);
-        overflow: auto;
-        background: #fff;
-        border-radius: 12px;
-        padding: 18px;
-        box-shadow: 0 18px 50px rgba(2,6,23,0.18);
-      }
-
-      /* Cabeçalho do modal */
-      .modal-header h2 {
-        margin: 0 0 6px 0;
-        font-size: 1.15rem;
-        color: #111827;
-      }
-      .modal-header p {
-        margin: 0 0 12px 0;
-        color: #6b7280;
-      }
-
-      /* Form controls */
-      .form-group { margin-bottom: 12px; }
-      .form-control {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid #e6e9ef;
-        background: #fff;
-        font-size: 0.95rem;
-      }
-
-      .form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
-
-      /* Tabs: solução responsiva para evitar desaparecimento */
+      /* Tornar a barra de abas responsiva sem mexer no restante do layout */
       .tabs {
         display: flex;
         gap: 8px;
-        margin: 8px 0 12px 0;
-        /* permitir rolagem horizontal em telas pequenas em vez de quebrar/ocultar */
-        overflow-x: auto;
+        overflow-x: auto; /* permite rolar quando não couber */
         -webkit-overflow-scrolling: touch;
-        padding-bottom: 6px;
+        padding-bottom: 6px; /* evita que o conteúdo encoste no fim */
       }
       .tabs::-webkit-scrollbar { height: 8px; }
-      .tabs::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.08); border-radius: 8px; }
+      .tabs::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 8px; }
 
       .tab-btn {
-        flex: 0 0 auto; /* não crescer, não encolher */
-        white-space: nowrap;
+        flex: 0 0 auto; /* não encolhe nem cresce, permite rolar */
+        white-space: nowrap; /* evita quebra do texto do botão */
         padding: 8px 12px;
         border-radius: 10px;
         border: 1px solid transparent;
@@ -158,40 +38,15 @@
         border-color: rgba(99,102,241,0.9);
       }
 
-      /* Conteúdos das abas */
-      .tab-content { display: none; }
-      .tab-content.active { display: block; }
-
-      /* Grids internos */
-      .servicos-grid { display:flex; flex-direction:column; gap:8px; }
-      .horarios-grid { display:flex; flex-direction:column; gap:8px; }
-      .agenda-especial-area { display:block; }
-
-      /* Comissão lista */
-      #comissao-servicos-lista > div { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-      #comissao-servicos-lista input[type="number"] { width: 100px; padding:8px; border-radius:6px; border:1px solid #e6e9ef; }
-
-      /* Responsividade: adaptar para celular */
+      /* Ajustes apenas para telas pequenas: menor padding e fonte para evitar overflow */
       @media (max-width: 720px) {
-        .container { margin: 12px; padding: 8px; }
-        .modal-content { max-width: 96%; padding: 14px; border-radius: 10px; }
-        .tab-btn { padding: 8px 10px; font-size: 0.9rem; border-radius: 9px; }
-        .actions { gap:8px; }
-        .btn { padding: 8px 10px; font-size: 0.95rem; }
-        .equipe-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:10px; }
-        .form-actions { flex-direction: column-reverse; gap:8px; align-items: stretch; }
-        .form-actions .btn { width: 100%; }
-        /* garantir que os botões das abas fiquem visíveis e possam rolar horizontalmente */
+        .tab-btn {
+          padding: 6px 10px;
+          font-size: 0.88rem;
+          border-radius: 9px;
+        }
         .tabs { gap: 6px; }
       }
-
-      /* Pequenas melhorias estéticas adicionais */
-      h3 { margin-top: 0; color: #111827; }
-      small { color: #6b7280; }
-
-      /* Garante que inputs tipo file se comportem bem em mobile */
-      input[type="file"] { width: 100%; }
-
     </style>
 </head>
 <body>
@@ -206,14 +61,12 @@
         <div class="content">
             <div class="actions">
                 <h2>Minha Equipe</h2>
-                <div style="display:flex; gap:8px; align-items:center;">
-                  <button id="btn-convite" class="btn btn-info">
-                      🔗 Enviar Link de Convite
-                  </button>
-                  <button id="btn-cancelar-equipe" class="btn btn-secondary">
-                      ❌ Cancelar
-                  </button>
-                </div>
+                <button id="btn-convite" class="btn btn-info">
+                    🔗 Enviar Link de Convite
+                </button>
+                <button id="btn-cancelar-equipe" class="btn btn-secondary">
+                    ❌ Cancelar
+                </button>
             </div>
             <div id="lista-profissionais-painel" class="equipe-grid">
                 <!-- Profissionais renderizados pelo JS -->
@@ -222,7 +75,7 @@
     </div>
 
     <!-- Modal Adicionar/Editar Profissional -->
-    <div id="modal-add-profissional" class="modal" aria-hidden="true" role="dialog" aria-label="Adicionar ou editar profissional">
+    <div id="modal-add-profissional" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="titulo-modal-profissional">➕ Adicionar Novo Profissional</h2>
@@ -266,7 +119,7 @@
     </div>
 
     <!-- Modal Perfil do Profissional (com abas) -->
-    <div id="modal-perfil-profissional" class="modal" aria-hidden="true" role="dialog" aria-label="Perfil do profissional">
+    <div id="modal-perfil-profissional" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
@@ -275,21 +128,21 @@
             <div id="perfil-profissional-foto-container" style="text-align: center; margin-bottom: 20px;">
                 <!-- O componente de foto será renderizado aqui pelo JavaScript -->
             </div>
-            <div class="tabs" role="tablist" aria-label="Abas do perfil do profissional">
-                <button id="tab-servicos" class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-content-servicos">Serviços</button>
-                <button id="tab-horarios" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-content-horarios">Horários &amp; Intervalos</button>
-                <button id="tab-agenda-especial" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-content-agenda-especial">Agenda Especial</button>
+            <div class="tabs">
+                <button id="tab-servicos" class="tab-btn active">Serviços</button>
+                <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
+                <button id="tab-agenda-especial" class="tab-btn">Agenda Especial</button>
                 <!-- NOVA ABA -->
-                <button id="tab-comissao" class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-content-comissao">Comissão</button>
+                <button id="tab-comissao" class="tab-btn">Comissão</button>
             </div>
 
-            <div id="tab-content-servicos" class="tab-content active" role="tabpanel" aria-labelledby="tab-servicos">
+            <div id="tab-content-servicos" class="tab-content active">
                 <h3>🛠️ Serviços Disponíveis</h3>
                 <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
                 <div id="servicos-lista" class="servicos-grid"></div>
             </div>
 
-            <div id="tab-content-horarios" class="tab-content" role="tabpanel" aria-labelledby="tab-horarios">
+            <div id="tab-content-horarios" class="tab-content">
                 <h3>🕐 Horários de Atendimento</h3>
                 <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos de trabalho para cada dia da semana:</p>
                 <div class="form-group">
@@ -318,7 +171,7 @@
                 </div>
             </div>
 
-            <div id="tab-content-agenda-especial" class="tab-content" role="tabpanel" aria-labelledby="tab-agenda-especial">
+            <div id="tab-content-agenda-especial" class="tab-content">
                 <h3>📅 Agenda Especial</h3>
                 <p style="color: #7f8c8d; margin-bottom: 10px;">
                     Libere a agenda do profissional em um mês ou intervalo específico.
@@ -349,7 +202,7 @@
             </div>
 
             <!-- ABA COMISSÃO COM LISTAGEM DE SERVIÇOS -->
-            <div id="tab-content-comissao" class="tab-content" role="tabpanel" aria-labelledby="tab-comissao">
+            <div id="tab-content-comissao" class="tab-content">
                 <h3>💰 Configuração de Comissão</h3>
                 <p style="color: #7f8c8d; margin-bottom: 10px;">
                     Defina as comissões padrão e específicas por serviço para este profissional.
@@ -380,7 +233,7 @@
                 </div>
             </div>
 
-            <div class="form-actions" style="margin-top:16px;">
+            <div class="form-actions">
                 <button type="button" id="btn-cancelar-perfil" class="btn btn-secondary">
                     ❌ Cancelar
                 </button>
