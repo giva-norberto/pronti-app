@@ -275,23 +275,34 @@ body {
     background: rgba(0,0,0,0.06);
     border-radius: 8px;
 }
+
+/* Botões das abas destacados em azul */
+/* Botão padrão: tom suave de azul claro com texto azul escuro */
 .tab-btn {
-    background: #f2f3f6;
-    color: #764ba2;
+    background: linear-gradient(135deg, #e6f7ff 0%, #dbeffd 100%);
+    color: #064e7a; /* azul escuro para o texto */
     border: none;
     border-radius: 15px 15px 0 0;
     padding: 8px 14px; /* reduzido para evitar estouro em telas pequenas */
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.15s, color 0.15s, transform 0.12s;
     flex: 0 0 auto; /* não encolher, permite rolagem horizontal */
     white-space: nowrap; /* evita quebra de texto dentro do botão */
+    box-shadow: 0 1px 0 rgba(3, 105, 161, 0.06) inset;
 }
+.tab-btn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #d1efff 0%, #c6e8ff 100%);
+}
+
+/* Botão ativo: fundo azul forte e texto branco para destaque */
 .tab-btn.active {
-    background: #fff;
-    color: #2c3e50;
-    border-bottom: 2px solid #4facfe;
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    color: #ffffff;
+    border-bottom: 2px solid rgba(0,0,0,0.08);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
 }
 .tab-content {
     display: none;
