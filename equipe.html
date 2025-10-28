@@ -201,7 +201,7 @@
         </div>
     </div>
 
-    <!-- Modal Customizado para Alertas e Confirmações -->
+    <!-- Modal Customizado para Alertas e Confirmações (necessário para vitrini-utils.js) -->
     <div id="custom-confirm-modal" class="modal-overlay" style="display:none;">
       <div class="modal-card">
         <h2 id="modal-titulo"></h2>
@@ -211,6 +211,7 @@
     </div>
 
     <script>
+        // Carregar menu lateral dinâmico
         document.addEventListener("DOMContentLoaded", function() {
             fetch('menu-lateral.html')
                 .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
@@ -251,39 +252,6 @@
       transition: background 0.2s;
     }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
-
-    /* ====== AJUSTE RESPONSIVO PARA AS ABAS DO MODAL ====== */
-    @media (max-width: 768px) {
-      .tabs {
-        display: flex;
-        overflow-x: auto;
-        white-space: nowrap;
-        scrollbar-width: thin;
-        scrollbar-color: #c7d2fe transparent;
-        -webkit-overflow-scrolling: touch;
-        gap: 8px;
-        padding-bottom: 6px;
-        border-bottom: 1px solid #e5e7eb;
-      }
-      .tabs::-webkit-scrollbar {
-        height: 6px;
-      }
-      .tabs::-webkit-scrollbar-thumb {
-        background-color: #c7d2fe;
-        border-radius: 6px;
-      }
-      .tab-btn {
-        flex: 0 0 auto;
-        padding: 10px 14px;
-        font-size: 0.9rem;
-        border-radius: 8px;
-      }
-      .modal-content {
-        width: 95%;
-        max-height: 90vh;
-        overflow-y: auto;
-      }
-    }
     </style>
 
     <script>
