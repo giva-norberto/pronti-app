@@ -1,7 +1,7 @@
 // ======================================================================
-// service-worker.js (HOTFIX v2)
-// CORRIGIDO: A lógica de 'fetch' (cache) foi simplificada 
-// para NÃO interferir com as chamadas de API (Firestore/Agenda).
+// service-worker.js (HOTFIX v3)
+// CORRIGIDO: Restaurada a lógica de 'fetch' (cache) original do PWA,
+// que já tratava o 'firebase' e funcionava.
 // ======================================================================
 
 // === PARTE 1: LÓGICA DO FIREBASE PUSH ===
@@ -21,9 +21,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// (Lógica de 'onBackgroundMessage' intacta)
 messaging.onBackgroundMessage(function (payload) {
   console.log('[service-worker.js] Mensagem em segundo plano recebida:', payload);
-  // (Lógica de 'onBackgroundMessage' intacta)
   const notificationTitle = payload.notification?.title || payload.data?.title || 'Novo Agendamento';
   const notificationOptions = {
     body: payload.notification?.body || payload.data?.body || 'Você tem um novo agendamento!',
@@ -41,9 +41,9 @@ messaging.onBackgroundMessage(function (payload) {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+// (Lógica de 'notificationclick' intacta)
 self.addEventListener('notificationclick', function (event) {
   console.log('[service-worker.js] Notificação clicada. Ação:', event.action);
-  // (Lógica de 'notificationclick' intacta)
   event.notification.close();
   if (event.action === 'view') {
     event.waitUntil(clients.openWindow('https://prontiapp.com.br/agendamentos'));
@@ -55,8 +55,10 @@ self.addEventListener('notificationclick', function (event) {
 });
 
 
-// === PARTE 2: LÓGICA DO PWA CACHE ===
-// (Esta parte foi CORRIGIDA para ser mais segura)
+// ==================================================================
+// === PARTE 2: LÓGICA DO PWA CACHE (RESTAURADA AO ORIGINAL) ===
+// (Este é o seu código de cache original, que funcionava)
+// ==================================================================
 
 const CACHE_NAME = "pronti-painel-v1";
 const FILES_TO_CACHE = [
@@ -70,50 +72,49 @@ const FILES_TO_CACHE = [
   "/perfil.html"
 ];
 
-// === Evento de Instalação (Intacto) ===
+// === Evento de Instalação (Seu código original) ===
 self.addEventListener("install", event => {
-  console.log("[service-worker.js] Install (Cache + Push)");
+  console.log("[ServiceWorker] Install (Cache + Push)");
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log("[service-worker.js] Caching app shell");
+      console.log("[ServiceWorker] Caching app shell");
       return cache.addAll(FILES_TO_CACHE);
     })
   );
   self.skipWaiting();
 });
 
-// ==================================================================
-//  ✅ HOTFIX: Lógica de 'fetch' corrigida
-// ==================================================================
+// === Evento Fetch (Seu código original, restaurado) ===
 self.addEventListener("fetch", event => {
-  // Ignora requisições que não são GET (como POST, PUT, etc)
-  if (event.request.method !== 'GET') {
+  const url = event.request.url;
+
+  // A sua proteção original para o Firestore
+  if (url.includes("firebase") || url.includes("googleapis") || url.includes("firestore")) {
     return; // Deixa o navegador lidar
   }
 
-  const requestUrl = new URL(event.request.url);
-
-  // Verifica se a requisição é para um dos arquivos da "casca" (app shell)
-  // Usamos requestUrl.pathname para ignorar ?query=params
-  const isAppShellFile = FILES_TO_CACHE.some(file => requestUrl.pathname.endsWith(file));
-
-  if (isAppShellFile) {
-    // Se for um arquivo da "casca", usa a estratégia Cache First.
-    console.log(`[SW Cache] Servindo do cache: ${requestUrl.pathname}`);
-    event.respondWith(
-      caches.match(event.request).then(response => {
-        return response || fetch(event.request); // Se falhar, busca na rede
-      })
-    );
-  } else {
-    // Para TODAS as outras requisições (APIs, Firestore, imagens, etc.),
-    // o service worker NÃO INTERFERE. Deixa ir para a rede.
-    // (Fazemos isso simplesmente não chamando event.respondWith())
-    return;
-  }
+  // A sua lógica original de Cache-fallback-Network
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request)
+        .then(fetchResponse => {
+          // Só cacheia GETs do mesmo domínio
+          if (event.request.method === "GET" && fetchResponse.type === "basic") {
+            const responseClone = fetchResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          }
+          return fetchResponse;
+        });
+    }).catch(() => {
+      // fallback opcional, ex: retornar página offline
+      if (event.request.destination === "document") {
+        return caches.match("/index.html");
+      }
+    })
+  );
 });
 
-// === Evento de Ativação (Intacto) ===
+// === Evento de Ativação (Seu código original) ===
 self.addEventListener("activate", event => {
   console.log("[service-worker.js] Activate (Cache + Push)");
   event.waitUntil(
@@ -125,3 +126,5 @@ self.addEventListener("activate", event => {
   );
   self.clients.claim();
 });
+
+
