@@ -1,65 +1,3 @@
-// ======================================================================
-// service-worker.js (HOTFIX v3)
-// CORRIGIDO: Restaurada a lógica de 'fetch' (cache) original do PWA,
-// que já tratava o 'firebase' e funcionava.
-// ======================================================================
-
-// === PARTE 1: LÓGICA DO FIREBASE PUSH ===
-// (Esta parte está 100% intacta)
-
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js' );
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js' );
-
-firebase.initializeApp({
-  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
-  authDomain: "pronti-app-37c6e.firebaseapp.com",
-  projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app",  
-  messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
-});
-
-const messaging = firebase.messaging();
-
-// (Lógica de 'onBackgroundMessage' intacta)
-messaging.onBackgroundMessage(function (payload) {
-  console.log('[service-worker.js] Mensagem em segundo plano recebida:', payload);
-  const notificationTitle = payload.notification?.title || payload.data?.title || 'Novo Agendamento';
-  const notificationOptions = {
-    body: payload.notification?.body || payload.data?.body || 'Você tem um novo agendamento!',
-    icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
-    image: payload.notification?.image || payload.data?.image,
-    badge: '/badge.png',
-    tag: `agendamento-${payload.data?.bilheteId || Date.now()}`, 
-    requireInteraction: true, 
-    actions: [
-      { action: 'view', title: 'Ver Agendamento' },
-      { action: 'dismiss', title: 'Dispensar' }
-    ],
-    data: payload.data 
-  };
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-// (Lógica de 'notificationclick' intacta)
-self.addEventListener('notificationclick', function (event) {
-  console.log('[service-worker.js] Notificação clicada. Ação:', event.action);
-  event.notification.close();
-  if (event.action === 'view') {
-    event.waitUntil(clients.openWindow('https://prontiapp.com.br/agendamentos'));
-  } else if (event.action === 'dismiss') {
-    return;
-  } else {
-    event.waitUntil(clients.openWindow('https://prontiapp.com.br/'));
-  }
-});
-
-
-// ==================================================================
-// === PARTE 2: LÓGICA DO PWA CACHE (RESTAURADA AO ORIGINAL) ===
-// (Este é o seu código de cache original, que funcionava)
-// ==================================================================
-
 const CACHE_NAME = "pronti-painel-v1";
 const FILES_TO_CACHE = [
   "/",
@@ -72,9 +10,8 @@ const FILES_TO_CACHE = [
   "/perfil.html"
 ];
 
-// === Evento de Instalação (Seu código original) ===
 self.addEventListener("install", event => {
-  console.log("[ServiceWorker] Install (Cache + Push)");
+  console.log("[ServiceWorker] Install");
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log("[ServiceWorker] Caching app shell");
@@ -84,16 +21,14 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
-// === Evento Fetch (Seu código original, restaurado) ===
 self.addEventListener("fetch", event => {
   const url = event.request.url;
 
-  // A sua proteção original para o Firestore
+  // Evita interferir nas chamadas do Firebase, Google APIs ou Firestore
   if (url.includes("firebase") || url.includes("googleapis") || url.includes("firestore")) {
-    return; // Deixa o navegador lidar
+    return;
   }
 
-  // A sua lógica original de Cache-fallback-Network
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request)
@@ -114,9 +49,8 @@ self.addEventListener("fetch", event => {
   );
 });
 
-// === Evento de Ativação (Seu código original) ===
 self.addEventListener("activate", event => {
-  console.log("[service-worker.js] Activate (Cache + Push)");
+  console.log("[ServiceWorker] Activate");
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
@@ -126,5 +60,3 @@ self.addEventListener("activate", event => {
   );
   self.clients.claim();
 });
-
-
