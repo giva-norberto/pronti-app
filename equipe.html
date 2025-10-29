@@ -263,16 +263,33 @@
         .tabs { display: none; }
         .tabs-select { display: block; }
     }
+
+    /* 🔧 Correção de rolagem no celular */
+    @media (max-width: 768px) {
+        html, body {
+            height: auto !important;
+            overflow-y: auto !important;
+        }
+
+        main, .content, .modal-content, .tab-content {
+            height: auto !important;
+            overflow: visible !important;
+        }
+
+        form {
+            padding-bottom: 120px;
+        }
+    }
     </style>
 
     <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // recarregar após salvar profissional
+        // Recarregar após salvar profissional
         window.addEventListener("profissionalSalvo", function() {
             window.location.reload();
         });
 
-        // trocar abas pelo select no mobile
+        // Trocar abas pelo select no mobile
         const select = document.getElementById("tabs-mobile-select");
         const tabButtons = document.querySelectorAll(".tab-btn");
         const tabContents = document.querySelectorAll(".tab-content");
