@@ -523,7 +523,7 @@ window.addEventListener("DOMContentLoaded", () => {
   popularFiltroProfissionais();
 
   // ligar handlers de abas (garantir que as abas existam no DOM)
-s   // ==================
+  // ==================
   // LINHA CORRIGIDA
   // ==================
   const abasBtns = document.querySelectorAll(".aba");
