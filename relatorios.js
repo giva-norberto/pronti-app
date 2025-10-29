@@ -375,7 +375,7 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
               totalFuncionario: Number(d.totalFuncionario || 0),
               totalLiquido: Number(d.totalLiquido || 0),
               avgCommissionPct: typeof d.avgCommissionPct !== 'undefined' ? Number(d.avgCommissionPct) : (d.totalFaturado ? (Number(d.totalFuncionario) / Number(d.totalFaturado) * 100) : 0)
-    _         });
+            });
           }
 
           try {
@@ -391,7 +391,7 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
                   profissionalNome: sd.profissionalNome || sd.nome || subDoc.id,
                   totalFaturado: Number(sd.totalFaturado || 0),
                   totalFuncionario: Number(sd.totalFuncionario || 0),
-          _         totalLiquido: Number(sd.totalLiquido || 0),
+                  totalLiquido: Number(sd.totalLiquido || 0),
                   avgCommissionPct: typeof sd.avgCommissionPct !== 'undefined' ? Number(sd.avgCommissionPct) : (sd.totalFaturado ? (Number(sd.totalFuncionario) / Number(sd.totalFaturado) * 100) : 0)
                 });
               }
@@ -405,9 +405,6 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
           const d = docSnap.data();
           if (d.empresaId && d.empresaId !== empresaId) return;
           if (profissionalFilter !== 'todos' && d.profissionalId && d.profissionalId !== profissionalFilter) return;
-          // ==================
-          // AQUI ESTÁ A LINHA CORRIGIDA
-          // ==================
           if (typeof d.totalFaturado !== 'undefined') {
             results.push({
               profissionalId: d.profissionalId || docSnap.id,
@@ -482,15 +479,21 @@ async function calculateCommissionAggregatesLocal(empresaId, from, to, profissio
       avgCommissionPct: Number(avgCommissionPct.toFixed(2))
     };
   }).sort((a,b) => b.totalFaturado - a.totalFaturado);
-  return aggregates;
+return aggregates;
 }
 
 async function carregarRelatorioComissao() {
   const container = document.getElementById("comissao");
   container.innerHTML = "<p>Carregando relatório de comissões...</p>";
   try {
+    // ==================
+    // LINHAS CORRIGIDAS
+    // ==================
     const from = document.getElementById("filtro-data-inicio").value;
-  im, to, profissionalFilter);
+    const to = document.getElementById("filtro-data-fim").value;
+    const profissionalFilter = document.getElementById("filtro-profissional").value || "todos";
+
+    let aggregates = await fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter);
     if (!aggregates) {
       aggregates = await calculateCommissionAggregatesLocal(empresaId, from, to, profissionalFilter);
     }
@@ -520,7 +523,9 @@ window.addEventListener("DOMContentLoaded", () => {
   popularFiltroProfissionais();
 
   // ligar handlers de abas (garantir que as abas existam no DOM)
-section.
+s   // ==================
+  // LINHA CORRIGIDA
+  // ==================
   const abasBtns = document.querySelectorAll(".aba");
   const conteudos = document.querySelectorAll(".aba-conteudo");
   abasBtns.forEach(btn => {
