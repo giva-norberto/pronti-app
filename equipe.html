@@ -66,7 +66,7 @@
                     </button>
                     <button type="submit" class="btn btn-success btn-submit">
                         💾 Salvar Profissional
-                    </button>
+        _         </button>
                 </div>
             </form>
         </div>
@@ -101,7 +101,7 @@
                     <input 
                         type="number" 
                         id="intervalo-atendimento" 
-            _           name="intervalo-atendimento"
+                        name="intervalo-atendimento"
                         class="form-control"
                         min="5" 
                         max="180" 
@@ -134,18 +134,18 @@
                             <option value="mes">Mês</option>
                             <option value="intervalo">Intervalo de datas</option>
                         </select>
-                        <div id="agenda-mes-area" style="display:block;">
+            _           <div id="agenda-mes-area" style="display:block;">
                             <label for="agenda-mes">Mês:</label>
                             <input type="month" id="agenda-mes" class="form-control">
                         </div>
                         <div id="agenda-intervalo-area" style="display:none;">
                             <label for="agenda-inicio">De:</label>
                             <input type="date" id="agenda-inicio" class="form-control">
-                        _   <label for="agenda-fim">Até:</label>
+                            <label for="agenda-fim">Até:</label>
                             <input type="date" id="agenda-fim" class="form-control">
                         </div>
                         <button type="button" id="btn-agenda-especial" class="btn btn-success" style="margin-top:12px;">
-        _                 💾 Liberar Agenda
+                            💾 Liberar Agenda
                         </button>
                     </form>
                     <div id="agenda-especial-lista" style="margin-top:18px;"></div>
@@ -177,9 +177,9 @@
                 <div class="form-group" style="margin-top: 15px;">
                     <label>Comissão por Serviço (%)</label>
                     <div id="comissao-servicos-lista"></div>
-                _   <small style="color: #7f8c8d; margin-top: 4px; display: block;">
+                    <small style="color: #7f8c8d; margin-top: 4px; display: block;">
                         Preencha a comissão de cada serviço. Se deixar vazio, será usada a comissão padrão.
-                    </small>
+nbsp;               </small>
                 </div>
             </div>
 
@@ -188,7 +188,7 @@
                     ❌ Cancelar
                 </button>
                 <button type="button" id="btn-salvar-perfil" class="btn btn-success">
-a                 💾 Salvar Configurações
+                    💾 Salvar Configurações
                 </button>
             </div>
         </div>
@@ -205,11 +205,11 @@ a                 💾 Salvar Configurações
     <script>
         // Carregar menu lateral dinâmico
         document.addEventListener("DOMContentLoaded", function() {
-            fetch('menu-lateral.html')
+          _ fetch('menu-lateral.html')
                 .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
                 .then(html => {
                     document.getElementById('sidebar-placeholder').innerHTML = html;
-nbsp;               })
+                })
                 .catch(error => {
                     console.error('Erro ao carregar o menu lateral:', error);
                 });
@@ -222,7 +222,7 @@ nbsp;               })
     .modal-overlay {
       display: none;
       position: fixed; z-index: 9999;
-      top: 0; left: 0; right: 0; bottom: 0;
+nbsp;   top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.45);
       align-items: center; justify-content: center;
     }
@@ -242,35 +242,42 @@ nbsp;               })
       padding: 8px 22px; border-radius: 6px; border: none; cursor: pointer;
       background: #4f46e5; color: #fff; font-weight: 600; font-size: 1rem;
       transition: background 0.2s;
-  }
+    }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
 
     /* --- INÍCIO DA CORREÇÃO DE ABAS RESPONSIVAS --- */
     
-    /* * Isso faz o container das abas ter rolagem horizontal
-     * caso o conteúdo (os botões) não caiba na tela.
-     */
-    .tabs {
-        display: flex;
-        overflow-x: auto; /* A MÁGICA: Adiciona rolagem horizontal */
-        white-space: nowrap; /* Impede que os botões quebrem para linha de baixo */
-        -webkit-overflow-scrolling: touch; /* Melhora a experiência de rolagem no iOS */
+    /* Este código SÓ será aplicado em telas menores que 600px (celulares) */
+    @media (max-width: 600px) {
         
-        /* Opcional: esconde a barra de rolagem visualmente mas mantém a funcionalidade */
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    }
-    
-    /* Esconde a barra de rolagem no Chrome, Safari e Opera */
-    .tabs::-webkit-scrollbar {
-        display: none; 
-    }
+        /*
+         * Isso faz o container das abas ter rolagem horizontal
+         * caso o conteúdo (os botões) não caiba na tela.
+         * No computador (maior que 600px), esta regra é ignorada.
+         */
+        .tabs {
+            display: flex; /* Garante o layout flex */
+            overflow-x: auto; /* A MÁGICA: Adiciona rolagem horizontal */
+            white-space: nowrap; /* Impede que os botões quebrem para linha de baixo */
+            -webkit-overflow-scrolling: touch; /* Melhora a rolagem no iOS */
+            
+            /* Opcional: esconde a barra de rolagem visualmente */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE */
+        }
+        
+        /* Esconde a barra de rolagem no Chrome, Safari e Opera */
+        .tabs::-webkit-scrollbar {
+            display: none; 
+        }
 
-    /* * Isso impede que os botões das abas "encolham"
-     * para tentar caber, forçando a barra de rolagem a aparecer.
-     */
-    .tab-btn {
-        flex-shrink: 0; /* Impede que o botão encolha */
+        /*
+         * Isso impede que os botões das abas "encolham"
+         * para tentar caber, forçando a barra de rolagem a aparecer.
+         */
+        .tab-btn {
+            flex-shrink: 0; /* Impede que o botão encolha */
+        }
     }
     /* --- FIM DA CORREÇÃO --- */
 
@@ -279,7 +286,7 @@ nbsp;               })
     <script>
     document.addEventListener("DOMContentLoaded", function() {
         window.addEventListener("profissionalSalvo", function() {
-nbsp;         window.location.reload();
+            window.location.reload();
         });
     });
     </script>
