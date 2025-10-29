@@ -260,7 +260,7 @@ async function carregarRelatorioFaturamento() {
 }
 
 // ==================================================================
-// INÍCIO DA FUNÇÃO OTIMIZADA
+// INÍCIO DA FUNÇÃO OTIMIZADA (Versão do usuário é a original)
 // ==================================================================
 async function carregarRelatorioClientes() {
   const container = document.getElementById("clientes");
@@ -375,7 +375,7 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
               totalFuncionario: Number(d.totalFuncionario || 0),
               totalLiquido: Number(d.totalLiquido || 0),
               avgCommissionPct: typeof d.avgCommissionPct !== 'undefined' ? Number(d.avgCommissionPct) : (d.totalFaturado ? (Number(d.totalFuncionario) / Number(d.totalFaturado) * 100) : 0)
-            });
+    _         });
           }
 
           try {
@@ -391,7 +391,7 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
                   profissionalNome: sd.profissionalNome || sd.nome || subDoc.id,
                   totalFaturado: Number(sd.totalFaturado || 0),
                   totalFuncionario: Number(sd.totalFuncionario || 0),
-                  totalLiquido: Number(sd.totalLiquido || 0),
+          _         totalLiquido: Number(sd.totalLiquido || 0),
                   avgCommissionPct: typeof sd.avgCommissionPct !== 'undefined' ? Number(sd.avgCommissionPct) : (sd.totalFaturado ? (Number(sd.totalFuncionario) / Number(sd.totalFaturado) * 100) : 0)
                 });
               }
@@ -405,7 +405,10 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
           const d = docSnap.data();
           if (d.empresaId && d.empresaId !== empresaId) return;
           if (profissionalFilter !== 'todos' && d.profissionalId && d.profissionalId !== profissionalFilter) return;
-        _ if (typeof d.totalFaturado !== 'undefined') {
+          // ==================
+          // AQUI ESTÁ A LINHA CORRIGIDA
+          // ==================
+          if (typeof d.totalFaturado !== 'undefined') {
             results.push({
               profissionalId: d.profissionalId || docSnap.id,
               profissionalNome: d.profissionalNome || d.nome || docSnap.id,
@@ -487,10 +490,7 @@ async function carregarRelatorioComissao() {
   container.innerHTML = "<p>Carregando relatório de comissões...</p>";
   try {
     const from = document.getElementById("filtro-data-inicio").value;
-    const to = document.getElementById("filtro-data-fim").value;
-    const profissionalFilter = document.getElementById("filtro-profissional").value || "todos";
-
-    let aggregates = await fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter);
+  im, to, profissionalFilter);
     if (!aggregates) {
       aggregates = await calculateCommissionAggregatesLocal(empresaId, from, to, profissionalFilter);
     }
@@ -520,6 +520,7 @@ window.addEventListener("DOMContentLoaded", () => {
   popularFiltroProfissionais();
 
   // ligar handlers de abas (garantir que as abas existam no DOM)
+section.
   const abasBtns = document.querySelectorAll(".aba");
   const conteudos = document.querySelectorAll(".aba-conteudo");
   abasBtns.forEach(btn => {
