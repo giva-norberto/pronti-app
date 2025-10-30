@@ -1,553 +1,477 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    overflow: hidden;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
 }
 
 .header {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    padding: 30px;
-    text-align: center;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
 }
 
 .header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-  	font-weight: 300;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    font-weight: 300;
 }
 
 .header p {
-    opacity: 0.9;
-    font-size: 1.1rem;
+    opacity: 0.9;
+    font-size: 1.1rem;
 }
 
 .content {
-    padding: 40px;
+    padding: 40px;
 }
 
 .actions {
-    display: flex;
-    justify-content: space-between;
-  	align-items: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 7px 14px;
-    border-radius: 15px;
-    cursor: pointer;
-    font-size: 0.93rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-  	align-items: center;
-    gap: 5px;
-    min-width: unset;
-    height: 32px;
-    box-shadow: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.93rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: unset;
+    height: 32px;
+    box-shadow: none;
 }
 
 .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
 }
 
 .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-    color: #fff;
-    font-weight: 500;
-    display: inline-flex !important;
-    align-items: center;
-    visibility: visible !important;
-    opacity: 1 !important;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: #fff;
+    font-weight: 500;
+    display: inline-flex !important;
+    align-items: center;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .btn-danger .icon-trash {
-    font-size: 1.1rem;
-    margin-right: 4px;
+    font-size: 1.1rem;
+    margin-right: 4px;
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #a8a8a8 0%, #7f8c8d 100%);
+    background: linear-gradient(135deg, #a8a8a8 0%, #7f8c8d 100%);
 }
 
 .btn-profile {
-    background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
-    color: #fff;
-  	font-weight: 500;
+    background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
+    color: #fff;
+    font-weight: 500;
 }
 
 .btn-edit {
-    background: linear-gradient(135deg, #FFD54F 0%, #FFA726 100%);
-    color: #333;
-    font-weight: 500;
+    background: linear-gradient(135deg, #FFD54F 0%, #FFA726 100%);
+    color: #333;
+    font-weight: 500;
 }
 
 .equipe-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-  	margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
 }
 
 .profissional-card {
-    background: white;
-    border: 1px solid #e1e8ed;
-    border-radius: 15px;
-    padding: 20px;
-  	display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-    position: relative;
-    min-width: 0;
+    background: white;
+    border: 1px solid #e1e8ed;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    position: relative;
+    min-width: 0;
 }
 
 .profissional-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
 }
 
 .profissional-foto {
-  	width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 3px solid #4facfe;
-    align-self: flex-start;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 3px solid #4facfe;
+    align-self: flex-start;
 }
 
 .profissional-foto img {
-  	width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .profissional-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  	align-items: flex-start;
-    gap: 2px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
 }
 
 .profissional-nome {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: #2c3e50;
-    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    margin-bottom: 5px;
 }
 
 .profissional-status {
-    display: inline-block;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  	color: white;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    display: inline-block;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .profissional-actions {
-    display: flex;
-    justify-content: flex-end;
-  	gap: 8px;
-    margin-top: 10px;
-  	flex-wrap: wrap;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 /* MODAL CENTRALIZADO */
 .modal {
-    position: fixed;
-    left: 0; top: 0;
-    width: 100vw; height: 100vh;
-    display: none;
-  	justify-content: center;
-    align-items: center;
-    background: rgba(0,0,0,0.55);
-    z-index: 9999;
-    backdrop-filter: blur(2px);
-    /* --- CORREÇÃO --- */
-    /* Adicionado padding para o modal não colar nas bordas no celular */
-    padding: 20px 0;
+    position: fixed;
+    left: 0; top: 0;
+    width: 100vw; height: 100vh;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.55);
+    z-index: 9999;
+    backdrop-filter: blur(2px);
 }
 .modal.show {
-    display: flex !important;
+    display: flex !important;
 }
-
-/* --- CORREÇÃO --- */
-/* Esta é a principal mudança. */
-/* Transformamos o modal-content em um container flex vertical */
-/* A rolagem (overflow-y) foi MOVIDA daqui para o .modal-scroll-content */
 .modal-content {
-    background: white;
-    border-radius: 18px;
-  	padding: 32px;
-    width: 95%;
-    max-width: 540px;
-    max-height: 95vh;
-    /* overflow-y: auto; */ /* <-- REMOVIDO DAQUI */
-    box-shadow: 0 14px 48px rgba(0,0,0,0.25);
-    position: relative;
-  	animation: modalShow 0.2s ease;
-  	
-    /* --- ADICIONADO --- */
-    display: flex;
-  	flex-direction: column;
-  	overflow: hidden; /* Garante que o card em si não role */
+    background: white;
+    border-radius: 18px;
+    padding: 32px;
+    width: 95%;
+    max-width: 540px;
+    max-height: 95vh;
+    overflow-y: auto;
+    box-shadow: 0 14px 48px rgba(0,0,0,0.25);
+    position: relative;
+    animation: modalShow 0.2s ease;
 }
-
 @keyframes modalShow {
-    from { transform: scale(0.96);}
-  	to { transform: scale(1);}
+    from { transform: scale(0.96);}
+    to { transform: scale(1);}
 }
 .modal-header {
-    text-align: center;
-    margin-bottom: 20px;
-    /* --- CORREÇÃO --- */
-    flex-shrink: 0; /* Impede que o header encolha */
+    text-align: center;
+    margin-bottom: 20px;
+}
+.modal-header h2 {
+    color: #2c3e50;
+    font-size: 1.3rem;
+    margin-bottom: 6px;
 }
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 20px;
 }
 .form-group label {
-    margin-bottom: 5px;
-  	font-weight: 600;
-  	color: #2c3e50;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #2c3e50;
 }
 .form-control {
-  	width: 100%;
-    padding: 10px 12px;
-    border: 1.5px solid #e1e8ed;
-  	border-radius: 7px;
-  	font-size: 1rem;
-    transition: all 0.3s;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e1e8ed;
+    border-radius: 7px;
+    font-size: 1rem;
+    transition: all 0.3s;
 }
 .form-control:focus {
-  	outline: none;
-    border-color: #4facfe;
+    outline: none;
+    border-color: #4facfe;
 }
-
-/* --- CORREÇÃO --- */
-/* O rodapé com o botão Salvar agora é fixo */
 .form-actions {
-  	display: flex;
-  	gap: 12px;
-  	justify-content: flex-end;
-    /* margin-top: 20px; */ /* Trocado por padding-top e borda */
-  	
-  	/* --- ADICIONADO --- */
-  	flex-shrink: 0; /* Impede que os botões encolham */
-  	border-top: 1px solid #e1e8ed; /* Linha separadora */
-  	padding-top: 20px; /* Espaçamento */
-  	margin-top: 0; /* Zera a margem antiga */
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
 }
 
 /* TABS NO PERFIL DO PROFISSIONAL */
 .tabs {
-  	display: flex;
-  	gap: 5px;
-  	margin-bottom: 0; /* --- CORREÇÃO --- Removida margem inferior, pois o scroll-content terá padding */
-  	justify-content: flex-start;
-  	overflow-x: auto; /* permite rolar quando não couber */
-  	-webkit-overflow-scrolling: touch;
-  	padding-bottom: 6px;
-  	/* --- CORREÇÃO --- */
-  	flex-shrink: 0; /* Impede que as abas encolham */
+    display: flex;
+    gap: 5px;
+    margin-bottom: 18px;
+    justify-content: flex-start;
+    overflow-x: auto; /* permite rolar quando não couber */
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
 }
 .tabs::-webkit-scrollbar {
-  	height: 8px;
+    height: 8px;
 }
 .tabs::-webkit-scrollbar-thumb {
-  	background: rgba(0,0,0,0.06);
-  	border-radius: 8px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 8px;
 }
 
 /* Botões das abas destacados em azul */
 /* Botão padrão: tom suave de azul claro com texto azul escuro */
 .tab-btn {
-  	background: linear-gradient(135deg, #e6f7ff 0%, #dbeffd 100%);
-  	color: #064e7a; /* azul escuro para o texto */
-  	border: none;
-  	border-radius: 15px 15px 0 0;
-  	padding: 8px 14px; /* reduzido para evitar estouro em telas pequenas */
-  	cursor: pointer;
-  	font-size: 1rem;
-  	font-weight: 600;
-  	transition: background 0.15s, color 0.15s, transform 0.12s;
-  	flex: 0 0 auto; /* não encolher, permite rolagem horizontal */
-  	white-space: nowrap; /* evita quebra de texto dentro do botão */
-  	box-shadow: 0 1px 0 rgba(3, 105, 161, 0.06) inset;
+    background: linear-gradient(135deg, #e6f7ff 0%, #dbeffd 100%);
+    color: #064e7a; /* azul escuro para o texto */
+    border: none;
+    border-radius: 15px 15px 0 0;
+    padding: 8px 14px; /* reduzido para evitar estouro em telas pequenas */
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s, transform 0.12s;
+    flex: 0 0 auto; /* não encolher, permite rolagem horizontal */
+    white-space: nowrap; /* evita quebra de texto dentro do botão */
+    box-shadow: 0 1px 0 rgba(3, 105, 161, 0.06) inset;
 }
 .tab-btn:hover {
-  	transform: translateY(-2px);
-  	background: linear-gradient(135deg, #d1efff 0%, #c6e8ff 100%);
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #d1efff 0%, #c6e8ff 100%);
 }
 
 /* Botão ativo: fundo azul forte e texto branco para destaque */
 .tab-btn.active {
-  	background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  	color: #ffffff;
-  	border-bottom: 2px solid rgba(0,0,0,0.08);
-  	box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    color: #ffffff;
+    border-bottom: 2px solid rgba(0,0,0,0.08);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
 }
 .tab-content {
-  	display: none;
+    display: none;
 }
 .tab-content.active {
-  	display: block;
+    display: block;
 }
-
-
-/* --- CORREÇÃO --- */
-/* Este é o novo container que "abraça" o conteúdo das abas */
-/* É ELE que vai rolar, e não o modal inteiro */
-.modal-scroll-content {
-  	flex: 1; /* Faz esta div ocupar todo o espaço vertical disponível */
-  	overflow-y: auto; /* A ROLAGEM ACONTECE AQUI */
-  	-webkit-overflow-scrolling: touch; /* Rolagem suave em iOS */
-  	padding-top: 20px; /* Espaço entre as abas e o conteúdo */
-  	padding-bottom: 10px; /* Espaço antes do rodapé de botões */
-}
-
 
 /* Serviços grid */
 .servicos-grid {
-  	display: grid;
-  	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  	gap: 15px;
-  	margin-bottom: 20px;
-  	max-height: 220px;
-  	overflow-y: auto;
-  	border: 1px solid #e1e8ed;
-  	border-radius: 10px;
-  	padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #e1e8ed;
+    border-radius: 10px;
+    padding: 10px;
 }
 
 .servico-item {
-  	background: #e9ecef;
-  	border: 2px solid #e1e8ed;
-  	border-radius: 10px;
-  	padding: 11px;
-  	cursor: pointer;
-  	transition: all 0.3s ease;
-  	margin-bottom: 2px;
-  	color: #333;
+    background: #e9ecef;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    padding: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 2px;
+    color: #333;
 }
 .servico-item.selected {
-  	border-color: #2196f3;
-  	background: #e3f2fd;
-  	color: #1565c0;
+    border-color: #2196f3;
+    background: #e3f2fd;
+    color: #1565c0;
 }
 .servico-nome {
-  	font-weight: 600;
-  	color: inherit;
+    font-weight: 600;
+    color: inherit;
 }
 .servico-preco {
-  	color: #28a745;
-  	font-weight: 500;
+    color: #28a745;
+    font-weight: 500;
 }
 
 .horarios-grid {
-  	display: flex;
-  	flex-direction: column;
-  	gap: 18px;
-  	margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 12px;
 }
 .dia-horario {
-  	background: #f8f9fa;
-  	border-radius: 10px;
-  	padding: 13px 13px 13px 13px;
-  	margin-bottom: 2px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 13px 13px 13px 13px;
+    margin-bottom: 2px;
 }
 .dia-nome {
-  	font-weight: 600;
-  	color: #2c3e50;
-  	margin-bottom: 7px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 7px;
 }
 .horario-intervalos {
-  	display: flex;
-  	flex-direction: column;
-  	gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 .horario-inputs {
-  	display: flex;
-  	gap: 10px;
-  	align-items: center;
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 .horario-inputs input[type="time"] {
-  	flex: 1;
-  	padding: 8px;
-  	border: 1px solid #e1e8ed;
-  	border-radius: 5px;
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #e1e8ed;
+    border-radius: 5px;
 }
 .horario-inputs .btn-remover-intervalo {
-  	background: #ff6b6b;
-  	color: white;
-  	border: none;
-  	border-radius: 7px;
-  	padding: 2px 10px;
-  	font-size: 0.9rem;
-  	cursor: pointer;
-  	margin-left: 5px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 2px 10px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-left: 5px;
 }
 .btn-incluir-intervalo {
-  	background: #4facfe;
-  	color: white;
-  	border: none;
-  	border-radius: 10px;
-  	padding: 4px 15px;
-  	font-size: 0.95rem;
-  	font-weight: 500;
-  	margin-top: 5px;
-  	cursor: pointer;
-  	transition: background 0.2s;
+    background: #4facfe;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 4px 15px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-top: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 .btn-incluir-intervalo:hover {
-  	background: #00f2fe;
+    background: #00f2fe;
 }
 
 /* Agenda Especial */
 .agenda-especial-area {
-  	padding: 10px 0;
+    padding: 10px 0;
 }
 #agenda-especial-lista {
-  	font-size: 0.97rem;
+    font-size: 0.97rem;
 }
 .agenda-especial-item {
-  	background: #f3f6fa;
-  	border: 1px solid #e1e8ed;
-  	border-radius: 8px;
-  	padding: 8px;
-  	margin-bottom: 6px;
-  	color: #333;
-  	display: flex;
-  	align-items: center;
-  	justify-content: space-between;
+    background: #f3f6fa;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 6px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 .agenda-especial-item .btn-danger {
-  	padding: 2px 9px;
-  	font-size: 0.87rem;
+    padding: 2px 9px;
+    font-size: 0.87rem;
 }
-
-/* --- ADICIONEI SEU CSS QUE ESTAVA NO HTML ANTIGO AQUI --- */
-.modal-overlay {
-    	display: none;
-    	position: fixed; z-index: 9999;
-    	top: 0; left: 0; right: 0; bottom: 0;
-    	background: rgba(0,0,0,0.45);
-    	align-items: center; justify-content: center;
-}
-.modal-overlay.ativo {
-    	display: flex;
-}
-.modal-card {
-    	background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 400px; width: 100%;
-    	box-shadow: 0 6px 24px rgba(0,0,0,0.13);
-    	text-align: center;
-}
-.modal-botoes {
-    	margin-top: 28px;
-    	display: flex; gap: 12px; justify-content: center;
-}
-.modal-botoes button {
-    	padding: 8px 22px; border-radius: 6px; border: none; cursor: pointer;
-    	background: #4f46e5; color: #fff; font-weight: 600; font-size: 1rem;
-    	transition: background 0.2s;
-}
-.modal-botoes button#modal-btn-cancelar { background: #aaa; }
-/* --- FIM DO CSS MOVIDO --- */
-
 
 @media (max-width: 768px) {
-  	.container {
-    	  	margin: 10px;
-      	  	border-radius: 10px;
-  	}
-  	.content {
-      	  padding: 20px;
-  	}
-  	.header {
-  	    	padding: 20px;
-  	}
-  	.header h1 {
-    	  	font-size: 2rem;
-  	}
-  	.equipe-grid {
-    	  	grid-template-columns: 1fr;
-  	}
-  	
-  	/* --- CORREÇÃO --- */
-  	/* Ajusta o padding do modal no celular */
-  	.modal-content {
-  	    	padding: 20px 15px; /* Padding vertical um pouco maior, horizontal menor */
-    	  	margin: 0; /* O padding já está no .modal (overlay) */
-    	  	max-width: 100%;
-    	  	width: 100%;
-  	}
-  	
-  	.form-actions {
-    	  	flex-direction: column;
-      	  gap: 8px;
-  	}
-  	.servicos-grid {
-      	  grid-template-columns: 1fr;
-  	}
-  	.horarios-grid {
-      	  flex-direction: column;
-  	}
-  	.profissional-actions .btn {
-    	  	font-size: 0.92rem;
-      	  padding: 7px 10px;
-    	  	height: 32px;
-  	}
+    .container {
+        margin: 10px;
+        border-radius: 10px;
+    }
+    .content {
+        padding: 20px;
+    }
+    .header {
+        padding: 20px;
+    }
+    .header h1 {
+        font-size: 2rem;
+    }
+    .equipe-grid {
+        grid-template-columns: 1fr;
+    }
+    .modal-content {
+        padding: 18px 7px;
+        margin: 12px;
+        max-width: 98vw;
+    }
+    .form-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .servicos-grid {
+        grid-template-columns: 1fr;
+    }
+    .horarios-grid {
+        flex-direction: column;
+    }
+    .profissional-actions .btn {
+        font-size: 0.92rem;
+        padding: 7px 10px;
+        height: 32px;
+    }
 
-  	/* Ajustes específicos para as abas em telas menores (reduz padding e tamanho, mantém rolagem) */
-  	.tab-btn {
-      	  padding: 6px 10px;
-      	  font-size: 0.9rem;
-    	  	border-radius: 12px 12px 0 0;
-  	}
-  	
-  	/* --- CORREÇÃO --- */
-  	/* Ajusta o padding da área de rolagem no celular */
-  	.modal-scroll-content {
-    	    padding-left: 5px;
-    	    padding-right: 5px;
-  	}
+    /* Ajustes específicos para as abas em telas menores (reduz padding e tamanho, mantém rolagem) */
+    .tab-btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        border-radius: 12px 12px 0 0;
+    }
 }
