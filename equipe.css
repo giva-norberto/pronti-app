@@ -474,4 +474,56 @@ body {
         font-size: 0.9rem;
         border-radius: 12px 12px 0 0;
     }
+
+    /* === Ajuste mobile: permitir que apenas o conteúdo da aba role internamente
+       e manter o bloco de botões (Salvar/Cancelar) visível === */
+
+    /* Escopo somente para o modal de perfil do profissional para não impactar outros modais */
+    #modal-perfil-profissional .modal-content {
+        display: flex;
+        flex-direction: column;
+        /* ocupar a altura da viewport para permitir rolagem interna controlada */
+        height: 100vh;
+        max-height: 100vh;
+        margin: 0;
+        border-radius: 8px 8px 0 0;
+        overflow: hidden; /* evita que o modal externo role; o conteúdo interno rola */
+        width: 100%;
+        max-width: 100%;
+        padding: 14px 12px; /* mantém espaçamento confortável em mobile */
+    }
+
+    /* Header e abas não devem rolar, ficam fixos no topo do modal */
+    #modal-perfil-profissional .modal-header,
+    #modal-perfil-profissional .tabs {
+        flex: 0 0 auto;
+    }
+
+    /* Área de conteúdo das abas ocupa o espaço restante e é a que rola internamente */
+    #modal-perfil-profissional .tab-content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* rolagem suave no iOS/Android */
+        padding-right: 12px; /* evitar que conteúdo fique colado no scroll */
+        padding-left: 12px;
+        padding-bottom: 20px; /* espaço para não ficar encoberto pelo bloco de ações */
+    }
+
+    /* Se quiser ajustar especificamente a aba 'Horários', limitar altura para melhorar UX */
+    #modal-perfil-profissional #tab-content-horarios {
+        max-height: calc(100vh - 170px); /* ajuste fino: header + abas + botões ≈ 170px */
+        overflow-y: auto;
+    }
+
+    /* Garantir que o bloco de botões fique sempre visível no final do modal */
+    #modal-perfil-profissional .form-actions {
+        flex: 0 0 auto;
+        position: sticky;
+        bottom: 0;
+        background: linear-gradient(transparent, rgba(255,255,255,0.98)); /* leve fade para separar do conteúdo */
+        padding: 12px 16px;
+        z-index: 12;
+        justify-content: flex-end;
+        gap: 10px;
+    }
 }
