@@ -2,7 +2,7 @@
 // PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO + MANIFEST DINÂMICO PWA)
 // =====================================================================
 
-// ✅ ALTERAÇÃO 1: Adicionado 'Timestamp' para criar a data final do trial
+// ✅ ALTERAÇÃO 1: Adicionado 'Timestamp' (baseado no seu snippet)
 import {
     getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -128,7 +128,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ✅ ALTERAÇÃO 2: Função 'handleFormSubmit' atualizada
     async function handleFormSubmit(event) {
         event.preventDefault();
         elements.btnSalvar.disabled = true;
@@ -195,24 +194,24 @@ window.addEventListener('DOMContentLoaded', () => {
                         isPremium: false
                     });
                 }
-                
-                // ==================================================
-                // ✅ INCLUSÃO DOS CAMPOS DE TRIAL (COMO PEDIDO)
-                // ==================================================
-                const TRIAL_DAYS = 15;
-                // Se 'trialEndDate' (a data final) não existir, nós a criamos.
-                if (!dadosEmpresa.trialEndDate) { 
-                    const agora = new Date();
-                    const fimTrial = new Date(agora);
-                    fimTrial.setDate(agora.getDate() + TRIAL_DAYS); // Pega hoje + 15 dias
 
-                    dadosEmpresa.freeEmDias = TRIAL_DAYS;
-                    dadosEmpresa.trialEndDate = Timestamp.fromDate(fimTrial); 
-                    dadosEmpresa.trialDisponivel = true; // Garante que é true
-                }
                 // ==================================================
+                // ✅ ALTERAÇÃO 2: Bloco de trial do snippet aplicado aqui
+                // ==================================================
+                const agora = new Date();
+                const fimTrial = new Date(agora);
+                fimTrial.setDate(agora.getDate() + 15);
 
+                dadosEmpresa.trialDisponivel = true; // Garante que é true
+                dadosEmpresa.freeEmDias = 15;
+                dadosEmpresa.trialEndDate = Timestamp.fromDate(fimTrial);
+                // dadosEmpresa.plano = "free"; // Já estava no objeto 'dadosEmpresa'
+                // dadosEmpresa.status = "ativo"; // Já estava no objeto 'dadosEmpresa'
                 dadosEmpresa.createdAt = serverTimestamp();
+                // dadosEmpresa.updatedAt = serverTimestamp(); // Já estava no objeto 'dadosEmpresa'
+                // ==================================================
+
+
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 const novoEmpresaId = novaEmpresaRef.id;
                 const mapaRef = doc(db, "mapaUsuarios", uid);
@@ -236,12 +235,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ==================================================
-                // ✅ CORREÇÃO DO BUG DE LOGOUT
+                // ✅ Correção do Bug de Logout (Mantida)
                 // ==================================================
-                // Em vez de deslogar, recarregamos a lista de empresas
+                // Em vez de fazer logout, recarrega os dados do usuário
                 await carregarEmpresasDoUsuario(uid);
 
-                // Esconde a mensagem de sucesso após 4 segundos
+                // Apenas esconde a mensagem de sucesso após 4 segundos
                 setTimeout(() => {
                     if (elements.msgCadastroSucesso) {
                         elements.msgCadastroSucesso.style.display = "none";
@@ -282,7 +281,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.nomeNegocioInput && elements.slugInput) {
             elements.nomeNegocioInput.addEventListener('input', () => {
                 if (elements.slugInput.value.trim() === '') {
-                    elements.slugInput.value = criarSlug(elements.nomeNegocioInput.value);
+                    elements.slugInput.value = criarSlug(elements.nomeNegcioInput.value);
                 }
             });
         }
