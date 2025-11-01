@@ -3,7 +3,7 @@
 // =====================================================================
 
 import {
-    getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, where, getDocs
+    getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import {
     getStorage, ref, uploadBytes, getDownloadURL
@@ -193,6 +193,24 @@ window.addEventListener('DOMContentLoaded', () => {
                         isPremium: false
                     });
                 }
+
+                // -----------------------------
+                // ADIÇÃO: campos de trial automáticos
+                // Não altera outros campos/funções — apenas inclui novos campos ao criar empresa.
+                // Define trial de 15 dias se não houver já campos de trial definidos.
+                // -----------------------------
+                const TRIAL_DAYS = 15;
+                if (!dadosEmpresa?.trialEndDate && dadosEmpresa?.trialDisponivel !== true && !dadosEmpresa?.freeEmDias) {
+                    const agora = new Date();
+                    const fimTrial = new Date(agora);
+                    fimTrial.setDate(agora.getDate() + TRIAL_DAYS);
+
+                    dadosEmpresa.trialDisponivel = true;
+                    dadosEmpresa.trialEndDate = Timestamp.fromDate(fimTrial);
+                    dadosEmpresa.freeEmDias = TRIAL_DAYS;
+                }
+                // -----------------------------
+
                 dadosEmpresa.createdAt = serverTimestamp();
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 const novoEmpresaId = novaEmpresaRef.id;
