@@ -2,6 +2,7 @@
 // PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO + MANIFEST DINÂMICO PWA)
 // =====================================================================
 
+// ✅ ALTERAÇÃO 1: Adicionado 'Timestamp' para criar a data final do trial
 import {
     getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -127,6 +128,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ✅ ALTERAÇÃO 2: Função 'handleFormSubmit' atualizada
     async function handleFormSubmit(event) {
         event.preventDefault();
         elements.btnSalvar.disabled = true;
@@ -193,23 +195,22 @@ window.addEventListener('DOMContentLoaded', () => {
                         isPremium: false
                     });
                 }
-
-                // -----------------------------
-                // ADIÇÃO: campos de trial automáticos
-                // Não altera outros campos/funções — apenas inclui novos campos ao criar empresa.
-                // Define trial de 15 dias se não houver já campos de trial definidos.
-                // -----------------------------
+                
+                // ==================================================
+                // ✅ INCLUSÃO DOS CAMPOS DE TRIAL (COMO PEDIDO)
+                // ==================================================
                 const TRIAL_DAYS = 15;
-                if (!dadosEmpresa?.trialEndDate && dadosEmpresa?.trialDisponivel !== true && !dadosEmpresa?.freeEmDias) {
+                // Se 'trialEndDate' (a data final) não existir, nós a criamos.
+                if (!dadosEmpresa.trialEndDate) { 
                     const agora = new Date();
                     const fimTrial = new Date(agora);
-                    fimTrial.setDate(agora.getDate() + TRIAL_DAYS);
+                    fimTrial.setDate(agora.getDate() + TRIAL_DAYS); // Pega hoje + 15 dias
 
-                    dadosEmpresa.trialDisponivel = true;
-                    dadosEmpresa.trialEndDate = Timestamp.fromDate(fimTrial);
                     dadosEmpresa.freeEmDias = TRIAL_DAYS;
+                    dadosEmpresa.trialEndDate = Timestamp.fromDate(fimTrial); 
+                    dadosEmpresa.trialDisponivel = true; // Garante que é true
                 }
-                // -----------------------------
+                // ==================================================
 
                 dadosEmpresa.createdAt = serverTimestamp();
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
@@ -233,11 +234,21 @@ window.addEventListener('DOMContentLoaded', () => {
                     elements.msgCadastroSucesso.innerHTML = `Perfil criado com sucesso!`;
                     elements.msgCadastroSucesso.style.display = "block";
                 }
-                setTimeout(async () => {
-                    await signOut(auth);
-                    window.location.href = 'login.html';
+
+                // ==================================================
+                // ✅ CORREÇÃO DO BUG DE LOGOUT
+                // ==================================================
+                // Em vez de deslogar, recarregamos a lista de empresas
+                await carregarEmpresasDoUsuario(uid);
+
+                // Esconde a mensagem de sucesso após 4 segundos
+                setTimeout(() => {
+                    if (elements.msgCadastroSucesso) {
+                        elements.msgCadastroSucesso.style.display = "none";
+                    }
                 }, 4000);
-                return;
+                // 'return' removido
+                // ==================================================
 
             } else {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
@@ -324,7 +335,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!empresaId) return;
 
         const slug = dadosEmpresa.slug;
-        const urlCompleta = slug 
+        const urlCompleta = slug
             ? `${window.location.origin}/r.html?c=${slug}`
             : `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
 
@@ -338,8 +349,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const manifest = {
             name: dadosEmpresa.nomeFantasia || "Pronti Negócio",
             short_name: dadosEmpresa.nomeFantasia?.substring(0, 12) || "Negócio",
-            start_url: "/",       // URL relativa válida
-            scope: "/",           // URL relativa válida
+            start_url: "/",    // URL relativa válida
+            scope: "/",        // URL relativa válida
             display: "standalone",
             background_color: "#4f46e5",
             theme_color: "#4f46e5",
