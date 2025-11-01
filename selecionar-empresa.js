@@ -3,6 +3,13 @@
  * @description Script autônomo para a página de seleção de empresa.
  *              Gerencia a exibição de empresas e o redirecionamento.
  *              Não chama o 'verificarAcesso' para evitar loops.
+ *
+ * Alterações principais:
+ * - Adicionada função checkUserStatus(userId, empresaData) tolerante a campos ausentes.
+ *   Ela considera múltiplos campos de aprovação/pagamento e vários fallbacks para trial,
+ *   evitando marcar empresas recém-criadas como "expirado".
+ * - Integração: carregarEmpresas() anexa statusAssinatura a cada empresa (não modifica o banco).
+ * - A UI exibe "Assinatura ativa", "Término do trial" ou "Expirado" de forma robusta.
  */
 
 // Importações diretas, tornando o script independente.
@@ -15,6 +22,9 @@ const grid = document.getElementById('empresas-grid');
 const loader = document.getElementById('loader');
 const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
 const btnLogout = document.getElementById('btn-logout');
+
+// DEBUG: se precisar de logs no browser, ative true
+const DEBUG_LOGS = false;
 
 // --- Eventos ---
 if (btnLogout) {
@@ -64,8 +74,11 @@ function hojeSemHoras() {
 
 // --- Validação completa de status da empresa ---
 // Retorna: { isPaid: boolean, isTrialActive: boolean, trialEndDate: Date|null }
+// A função é tolerante e considera vários campos (incl. campos que aprovação manual pode gravar).
 async function checkUserStatus(userId, empresaData) {
     try {
+        if (DEBUG_LOGS) console.log('checkUserStatus chamado', { userId, empresaData });
+
         // segurança mínima: se não há empresaData, consideramos expirado
         if (!empresaData) return { isPaid: false, isTrialActive: false, trialEndDate: null };
 
@@ -83,18 +96,39 @@ async function checkUserStatus(userId, empresaData) {
 
         // Se a empresa não está ativa, considerar inacessível (independente de trial/pago)
         if (empresaData.status && String(empresaData.status).toLowerCase() !== 'ativo') {
+            if (DEBUG_LOGS) console.log('Empresa não ativa:', empresaData.status);
             return { isPaid: false, isTrialActive: false, trialEndDate: null };
         }
 
         const now = new Date();
 
-        // 1) PRIORIDADE: verificar se é assinante/pago (campos que o processo de aprovação grava)
-        const assinaturaValidaAte = tsToDate(empresaData.assinaturaValidaAte || empresaData.proximoPagamento || empresaData.paidUntil);
-        const planoPago = (empresaData.plano === 'pago' || empresaData.planStatus === 'active');
-        const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
-        const usuarioPremium = userData?.isPremium === true;
+        // --- Detectores de pagamento / aprovação manual ---
+        // Coletar possíveis campos usados por aprovação/manual/payment systems
+        const assinaturaValidaAte = tsToDate(
+            empresaData.assinaturaValidaAte ||
+            empresaData.proximoPagamento ||
+            empresaData.paidUntil ||
+            empresaData.assinatura_valida_ate
+        );
 
-        if (planoPago || assinaturaAtivaFlag || usuarioPremium) {
+        const planoPago = (
+            empresaData.plano === 'pago' ||
+            empresaData.plano === 'premium' ||
+            empresaData.planStatus === 'active' ||
+            empresaData.plan === 'paid'
+        );
+
+        const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true || empresaData.assinatura_ativa === true;
+        const paymentStatusPaid = empresaData.paymentStatus === 'paid' || empresaData.pago === true || empresaData.payment_state === 'paid';
+        const isApprovedManual = empresaData.aprovado === true || empresaData.aprovadoPor || empresaData.approved === true || empresaData.approval === 'approved';
+        const usuarioPremium = userData?.isPremium === true || userData?.premium === true;
+
+        // Definir regra de "é pago" considerando todos os indicadores possíveis
+        const pagoIndicadores = planoPago || assinaturaAtivaFlag || usuarioPremium || paymentStatusPaid;
+        const aprovadoComoPago = isApprovedManual && (planoPago || assinaturaAtivaFlag || assinaturaValidaAte || paymentStatusPaid);
+
+        if (pagoIndicadores || aprovadoComoPago) {
+            if (DEBUG_LOGS) console.log('Detectado pagamento/aprovação:', { planoPago, assinaturaAtivaFlag, usuarioPremium, paymentStatusPaid, isApprovedManual });
             // Se houver uma data de validade e ainda for futura, considera pago
             if (assinaturaValidaAte && assinaturaValidaAte > now) {
                 return { isPaid: true, isTrialActive: false, trialEndDate: assinaturaValidaAte };
@@ -103,17 +137,18 @@ async function checkUserStatus(userId, empresaData) {
             return { isPaid: true, isTrialActive: false, trialEndDate: assinaturaValidaAte || null };
         }
 
-        // 2) Se não for pago, validar trial (vários caminhos)
-        // Preferência: trialEndDate salvo no documento da empresa
+        // --- Não é pago: validar trial (vários caminhos) ---
+        // 1) trialEndDate explícito no documento da empresa
         if (empresaData.trialEndDate) {
             const end = tsToDate(empresaData.trialEndDate);
             if (end) {
                 const ativo = end >= hojeSemHoras();
+                if (DEBUG_LOGS) console.log('Usando trialEndDate:', end, 'ativo:', ativo);
                 return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
             }
         }
 
-        // Se freeEmDias > 0, tentar calcular a partir do usuario.trialStart
+        // 2) Se freeEmDias > 0, tentar calcular a partir do usuario.trialStart
         const freeEmDias = Number(empresaData?.freeEmDias ?? 0);
         if (freeEmDias > 0 && userData?.trialStart) {
             const start = tsToDate(userData.trialStart);
@@ -121,36 +156,41 @@ async function checkUserStatus(userId, empresaData) {
                 const end = new Date(start);
                 end.setDate(end.getDate() + freeEmDias);
                 const ativo = end >= hojeSemHoras();
+                if (DEBUG_LOGS) console.log('Usando freeEmDias + user.trialStart:', start, end, ativo);
                 return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
             }
         }
 
-        // Se freeEmDias > 0 mas sem trialStart do usuário, usar createdAt da empresa como base
+        // 3) Se freeEmDias > 0 mas sem trialStart do usuário, usar createdAt da empresa como base
         if (freeEmDias > 0 && empresaData.createdAt) {
             const created = tsToDate(empresaData.createdAt);
             if (created) {
                 const end = new Date(created);
-                end.setDate(created.getDate() + freeEmDias);
+                end.setDate(end.getDate() + freeEmDias);
                 const ativo = end >= hojeSemHoras();
+                if (DEBUG_LOGS) console.log('Usando freeEmDias + createdAt:', created, end, ativo);
                 return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
             }
         }
 
-        // Fallback: se trialDisponivel true, usar createdAt + fallback curto (3 dias) como temporário
+        // 4) Fallback: se trialDisponivel true, usar createdAt + fallback curto (3 dias) como temporário
         if (empresaData.trialDisponivel === true && empresaData.createdAt) {
             const created = tsToDate(empresaData.createdAt);
             if (created) {
                 const fallbackDays = 3;
                 const end = new Date(created);
-                end.setDate(created.getDate() + fallbackDays);
+                end.setDate(end.getDate() + fallbackDays);
                 const ativo = end >= hojeSemHoras();
+                if (DEBUG_LOGS) console.log('Usando trialDisponivel + createdAt fallback:', created, end, ativo);
                 return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
             }
             // se não tivermos createdAt, mas trialDisponivel true, consideramos trial ativo sem data
+            if (DEBUG_LOGS) console.log('trialDisponivel true mas sem createdAt -> considera trial ativo temporariamente');
             return { isPaid: false, isTrialActive: true, trialEndDate: null };
         }
 
         // Sem evidência de trial ou pagamento -> expirado
+        if (DEBUG_LOGS) console.log('Sem evidência de trial ou pagamento -> expirado');
         return { isPaid: false, isTrialActive: false, trialEndDate: null };
     } catch (error) {
         console.error("Erro em checkUserStatus:", error);
@@ -233,7 +273,7 @@ function criarEmpresaCard(empresa) {
     const status = empresa.statusAssinatura || { isPaid: false, isTrialActive: false, trialEndDate: null };
     const isPaid = !!status.isPaid;
     const isTrialActive = !!status.isTrialActive;
-    const trialEndDate = status.trialEndDate ? new Date(status.trialEndDate) : null;
+    const trialEndDate = status.trialEndDate ? (status.trialEndDate instanceof Date ? status.trialEndDate : tsToDate(status.trialEndDate)) : null;
 
     card.addEventListener('click', (e) => {
         e.preventDefault();
