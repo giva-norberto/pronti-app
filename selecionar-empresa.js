@@ -4,9 +4,8 @@
  *              Gerencia a exibição de empresas e o redirecionamento.
  *              Não chama o 'verificarAcesso' para evitar loops.
  *
- * Alteração principal: agora, mesmo quando houver apenas 1 empresa, validamos
- * os campos (trial/premium) antes de redirecionar. Se a empresa estiver
- * expirada, mostramos a opção e impedimos o redirecionamento automático.
+ * Alteração principal: TRIAL agora considera SOMENTE company.trialEndDate.
+ * As validações de pagamento/aprovação manual foram mantidas.
  */
 
 // Importações diretas, tornando o script independente.
@@ -69,17 +68,19 @@ function hojeSemHoras() {
     return d;
 }
 
-// --- Validação completa de status da empresa ---
+// --- Validação de status da empresa (simplificada para TRIAL) ---
 // Retorna: { isPaid: boolean, isTrialActive: boolean, trialEndDate: Date|null }
-// A função é tolerante e considera vários campos (incl. campos que aprovação manual pode gravar).
+// Regras:
+// - Mantém todas as checagens de pagamento/aprovação manual.
+// - Para TRIAL, considera APENAS empresa.trialEndDate (se existir).
+// - Não calcula trial a partir de freeEmDias, createdAt ou usuario.trialStart.
 async function checkUserStatus(userId, empresaData) {
     try {
         if (DEBUG_LOGS) console.log('checkUserStatus chamado', { userId, empresaData });
 
-        // segurança mínima: se não há empresaData, consideramos expirado
         if (!empresaData) return { isPaid: false, isTrialActive: false, trialEndDate: null };
 
-        // pega dados do usuário (para checar isPremium / trialStart se necessário)
+        // busca dados do usuário apenas para validações de premium (não para trial)
         let userData = null;
         if (userId) {
             try {
@@ -99,8 +100,7 @@ async function checkUserStatus(userId, empresaData) {
 
         const now = new Date();
 
-        // --- Detectores de pagamento / aprovação manual ---
-        // Coletar possíveis campos usados por aprovação/manual/payment systems
+        // --- Detectores de pagamento / aprovação manual (mantidos) ---
         const assinaturaValidaAte = tsToDate(
             empresaData.assinaturaValidaAte ||
             empresaData.proximoPagamento ||
@@ -120,7 +120,6 @@ async function checkUserStatus(userId, empresaData) {
         const isApprovedManual = empresaData.aprovado === true || empresaData.aprovadoPor || empresaData.approved === true || empresaData.approval === 'approved';
         const usuarioPremium = userData?.isPremium === true || userData?.premium === true;
 
-        // Definir regra de "é pago" considerando todos os indicadores possíveis
         const pagoIndicadores = planoPago || assinaturaAtivaFlag || usuarioPremium || paymentStatusPaid;
         const aprovadoComoPago = isApprovedManual && (planoPago || assinaturaAtivaFlag || assinaturaValidaAte || paymentStatusPaid);
 
@@ -130,12 +129,11 @@ async function checkUserStatus(userId, empresaData) {
             if (assinaturaValidaAte && assinaturaValidaAte > now) {
                 return { isPaid: true, isTrialActive: false, trialEndDate: assinaturaValidaAte };
             }
-            // Se plano indica 'pago' ou flag assinaturaAtiva existe, considerar pago mesmo sem data (conservador)
+            // Se plano indica 'pago' ou flag assinaturaAtiva existe, considerar pago mesmo sem data
             return { isPaid: true, isTrialActive: false, trialEndDate: assinaturaValidaAte || null };
         }
 
-        // --- Não é pago: validar trial (vários caminhos) ---
-        // 1) trialEndDate explícito no documento da empresa
+        // --- TRIAL: considerar somente trialEndDate explícito no documento da empresa ---
         if (empresaData.trialEndDate) {
             const end = tsToDate(empresaData.trialEndDate);
             if (end) {
@@ -145,50 +143,10 @@ async function checkUserStatus(userId, empresaData) {
             }
         }
 
-        // 2) Se freeEmDias > 0, tentar calcular a partir do usuario.trialStart
-        const freeEmDias = Number(empresaData?.freeEmDias ?? 0);
-        if (freeEmDias > 0 && userData?.trialStart) {
-            const start = tsToDate(userData.trialStart);
-            if (start) {
-                const end = new Date(start);
-                end.setDate(end.getDate() + freeEmDias);
-                const ativo = end >= hojeSemHoras();
-                if (DEBUG_LOGS) console.log('Usando freeEmDias + user.trialStart:', start, end, ativo);
-                return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
-            }
-        }
-
-        // 3) Se freeEmDias > 0 mas sem trialStart do usuário, usar createdAt da empresa como base
-        if (freeEmDias > 0 && empresaData.createdAt) {
-            const created = tsToDate(empresaData.createdAt);
-            if (created) {
-                const end = new Date(created);
-                end.setDate(end.getDate() + freeEmDias);
-                const ativo = end >= hojeSemHoras();
-                if (DEBUG_LOGS) console.log('Usando freeEmDias + createdAt:', created, end, ativo);
-                return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
-            }
-        }
-
-        // 4) Fallback: se trialDisponivel true, usar createdAt + fallback curto (3 dias) como temporário
-        if (empresaData.trialDisponivel === true && empresaData.createdAt) {
-            const created = tsToDate(empresaData.createdAt);
-            if (created) {
-                const fallbackDays = 3;
-                const end = new Date(created);
-                end.setDate(end.getDate() + fallbackDays);
-                const ativo = end >= hojeSemHoras();
-                if (DEBUG_LOGS) console.log('Usando trialDisponivel + createdAt fallback:', created, end, ativo);
-                return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
-            }
-            // se não tivermos createdAt, mas trialDisponivel true, consideramos trial ativo sem data
-            if (DEBUG_LOGS) console.log('trialDisponivel true mas sem createdAt -> considera trial ativo temporariamente');
-            return { isPaid: false, isTrialActive: true, trialEndDate: null };
-        }
-
-        // Sem evidência de trial ou pagamento -> expirado
-        if (DEBUG_LOGS) console.log('Sem evidência de trial ou pagamento -> expirado');
+        // Sem prova de pagamento e sem trialEndDate válida -> expirado
+        if (DEBUG_LOGS) console.log('Sem prova de pagamento e sem trialEndDate -> expirado');
         return { isPaid: false, isTrialActive: false, trialEndDate: null };
+
     } catch (error) {
         console.error("Erro em checkUserStatus:", error);
         return { isPaid: false, isTrialActive: false, trialEndDate: null };
