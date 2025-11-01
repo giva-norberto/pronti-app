@@ -2,6 +2,7 @@
  * @file selecionar-empresa.js
  * @description Script autônomo para a página de seleção de empresa.
  * VALIDA o status da empresa (pago ou trial) antes de redirecionar.
+ * Inclui fallbacks para o trial caso 'trialEndDate' falhe na criação.
  */
 
 // Importações diretas
@@ -56,122 +57,114 @@ function hojeSemHoras() {
 }
 
 // ==========================================================
-// ✅ FUNÇÃO DE VALIDAÇÃO (INSERIDA AQUI)
+// ✅ FUNÇÃO DE VALIDAÇÃO (CORRIGIDA COM FALLBACKS)
 // ==========================================================
-/**
- * Valida o status da EMPRESA.
- * Retorna: { isPaid: boolean, isTrialActive: boolean, trialEndDate: Date|null }
- */
 function checkEmpresaStatus(empresaData) {
     try {
         if (!empresaData) {
-            return { isPaid: false, isTrialActive: false, trialEndDate: null };
+            return { isPaid: false, isTrialActive: false };
         }
 
-        // Se a empresa não está ativa, considerar inacessível
         if (empresaData.status && String(empresaData.status).toLowerCase() !== 'ativo') {
-            return { isPaid: false, isTrialActive: false, trialEndDate: null };
+            return { isPaid: false, isTrialActive: false };
         }
 
         const now = new Date();
+        const hoje = hojeSemHoras();
 
         // --- 1. Checagem de PAGAMENTO (Validações da EMPRESA) ---
-        const assinaturaValidaAte = tsToDate(
-            empresaData.assinaturaValidaAte ||
-            empresaData.proximoPagamento ||
-            empresaData.paidUntil ||
-            empresaData.assinatura_valida_ate
-        );
-
-        const planoPago = (
-            empresaData.plano === 'pago' ||
-            empresaData.plano === 'premium' ||
-            empresaData.planStatus === 'active'
-        );
-        
+        // (Isso valida suas "empresas antigas com varios campos")
+        const assinaturaValidaAte = tsToDate(empresaData.assinaturaValidaAte || empresaData.paidUntil);
+        const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
         const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
-        const paymentStatusPaid = empresaData.paymentStatus === 'paid';
         const isApprovedManual = empresaData.aprovado === true || empresaData.approved === true;
 
-        if (planoPago || assinaturaAtivaFlag || paymentStatusPaid || isApprovedManual) {
-            // Se houver uma data de validade futura, é pago
-            if (assinaturaValidaAte && assinaturaValidaAte > now) {
-                return { isPaid: true, isTrialActive: false, trialEndDate: assinaturaValidaAte };
+        if (planoPago || assinaturaAtivaFlag || isApprovedManual) {
+            if (assinaturaValidaAte) {
+                if (assinaturaValidaAte > now) {
+                    return { isPaid: true, isTrialActive: false }; // Pago e válido
+                } else {
+                    return { isPaid: false, isTrialActive: false }; // Assinatura paga expirou
+                }
             }
-            // Se não tiver data, mas tiver flag de pago, é pago
-            if (!assinaturaValidaAte) {
-                 return { isPaid: true, isTrialActive: false, trialEndDate: null };
-            }
+            return { isPaid: true, isTrialActive: false }; // Pago (sem data)
         }
         
-        // Se a data de assinatura expirou
+        // Se a data de assinatura paga expirou (mas não era plano "free")
         if (assinaturaValidaAte && assinaturaValidaAte <= now) {
-             return { isPaid: false, isTrialActive: false, trialEndDate: assinaturaValidaAte };
+             return { isPaid: false, isTrialActive: false };
         }
 
-        // --- 2. Checagem de TRIAL (Somente trialEndDate) ---
-        // (Só executa se não for pago)
+        // --- 2. Checagem de TRIAL (com fallbacks) ---
+        // (Valida a "empresa nova")
+
+        // **Prioridade 1: O campo trialEndDate (o correto)**
         if (empresaData.trialEndDate) {
             const end = tsToDate(empresaData.trialEndDate);
             if (end) {
-                const ativo = end >= hojeSemHoras(); // Válido até o *fim* do dia
-                return { isPaid: false, isTrialActive: ativo, trialEndDate: end };
+                const ativo = end >= hoje; // Válido até o *fim* do dia
+                return { isPaid: false, isTrialActive: ativo };
+            }
+        }
+
+        // **Prioridade 2: Fallback (Plano B) se o trialEndDate falhar**
+        // (Isso salva a "empresa nova" do erro de cache)
+        const freeEmDias = Number(empresaData?.freeEmDias ?? 0);
+        if (freeEmDias > 0 && empresaData.createdAt) {
+            const created = tsToDate(empresaData.createdAt);
+            if (created) {
+                const end = new Date(created);
+                end.setDate(created.getDate() + freeEmDias);
+                const ativo = end >= hoje;
+                return { isPaid: false, isTrialActive: ativo };
             }
         }
 
         // --- 3. Expirado ---
-        // Se não for pago e não tiver trialEndDate válida
-        return { isPaid: false, isTrialActive: false, trialEndDate: null };
+        return { isPaid: false, isTrialActive: false };
 
     } catch (error) {
         console.error("Erro em checkEmpresaStatus:", error);
-        return { isPaid: false, isTrialActive: false, trialEndDate: null };
+        return { isPaid: false, isTrialActive: false };
     }
 }
 
 
-// --- Funções Principais (MODIFICADAS) ---
+// --- Funções Principais (com a lógica de redirecionamento) ---
 async function carregarEmpresas(userId) {
     try {
         const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
         const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
 
         if (!mapaUsuarioSnap.exists() || !Array.isArray(mapaUsuarioSnap.data().empresas) || mapaUsuarioSnap.data().empresas.length === 0) {
-            renderizarOpcoes([]); // Renderiza o card "Criar nova"
+            renderizarOpcoes([]); 
             return;
         }
 
         const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
 
-        // ==========================================================
-        // ✅ CORREÇÃO 1: Validar se for empresa única
-        // ==========================================================
+        // --- Validação para 1 Empresa ---
         if (idsDasEmpresas.length === 1) {
             const empresaId = idsDasEmpresas[0];
-            localStorage.setItem('empresaAtivaId', empresaId); // Salva o ID
+            localStorage.setItem('empresaAtivaId', empresaId); 
             
             const empresaRef = doc(db, "empresarios", empresaId);
             const empresaSnap = await getDoc(empresaRef);
             const empresaData = empresaSnap.exists() ? empresaSnap.data() : null;
 
-            // Roda a validação
             const status = checkEmpresaStatus(empresaData);
 
             if (status.isPaid || status.isTrialActive) {
-                // Ativo! Vai para o app
-                window.location.href = 'index.html';
+                window.location.href = 'index.html'; // OK
             } else {
-                // Expirado! Vai para planos
-                window.location.href = 'planos.html'; 
+                window.location.href = 'planos.html'; // Expirado
             }
             return;
         }
 
-        // ==========================================================
-        // ✅ CORREÇÃO 2: Validar se forem múltiplas empresas
-        // ==========================================================
+        // --- Validação para Múltiplas Empresas ---
         
-        // Busca empresas (dividido em chunks de 10 para evitar limite do 'in')
+        // Busca empresas (dividido em chunks de 10)
         const empresas = [];
         const CHUNK_SIZE = 10; 
         for (let i = 0; i < idsDasEmpresas.length; i += CHUNK_SIZE) {
@@ -184,13 +177,13 @@ async function carregarEmpresas(userId) {
             });
         }
         
-        // Adiciona o status a cada empresa antes de renderizar
+        // Adiciona o status a cada empresa
         const empresasComStatus = empresas.map(empresa => {
             const status = checkEmpresaStatus(empresa);
             return { ...empresa, statusAssinatura: status };
         });
 
-        renderizarOpcoes(empresasComStatus); // Renderiza os cards
+        renderizarOpcoes(empresasComStatus); 
 
     } catch (error) {
         console.error("Erro ao carregar empresas: ", error);
@@ -215,29 +208,25 @@ function renderizarOpcoes(empresas) {
     grid.appendChild(criarNovoCard());
 }
 
-// ==========================================================
-// ✅ CORREÇÃO 3: Card agora valida o status no clique
-// ==========================================================
+// --- Card com lógica de clique ---
 function criarEmpresaCard(empresa) {
     const card = document.createElement('a');
     card.className = 'empresa-card';
     card.href = '#';
 
-    // Pega o status que foi calculado em carregarEmpresas
-    const status = empresa.statusAssinatura || { isPaid: false, isTrialActive: false, trialEndDate: null };
+    // Pega o status que foi calculado
+    const status = empresa.statusAssinatura || { isPaid: false, isTrialActive: false };
     const isPaid = status.isPaid;
     const isTrialActive = status.isTrialActive;
 
     card.addEventListener('click', (e) => {
         e.preventDefault();
-        localStorage.setItem('empresaAtivaId', empresa.id); // Salva o ID
+        localStorage.setItem('empresaAtivaId', empresa.id); 
         
         if (isPaid || isTrialActive) {
-            // Ativo! Vai para o app
-            window.location.href = 'index.html';
+            window.location.href = 'index.html'; // OK
         } else {
-            // Expirado! Vai para planos
-            window.location.href = 'planos.html';
+            window.location.href = 'planos.html'; // Expirado
         }
     });
 
@@ -251,7 +240,6 @@ function criarEmpresaCard(empresa) {
     } else if (isTrialActive) {
         infoHtml = `<span class="status-trial">Em Teste</span>`;
     } else {
-        // Mostra badge de expirado
         infoHtml = `<span class="status-expirado">Expirado</span>`;
     }
 
