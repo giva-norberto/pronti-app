@@ -4,18 +4,15 @@
  *              Gerencia a exibição de empresas e o redirecionamento.
  *              Não chama o 'verificarAcesso' para evitar loops.
  *
- * Alterações principais:
- * - Adicionada função checkUserStatus(userId, empresaData) tolerante a campos ausentes.
- *   Ela considera múltiplos campos de aprovação/pagamento e vários fallbacks para trial,
- *   evitando marcar empresas recém-criadas como "expirado".
- * - Integração: carregarEmpresas() anexa statusAssinatura a cada empresa (não modifica o banco).
- * - A UI exibe "Assinatura ativa", "Término do trial" ou "Expirado" de forma robusta.
+ * Alteração principal: agora, mesmo quando houver apenas 1 empresa, validamos
+ * os campos (trial/premium) antes de redirecionar. Se a empresa estiver
+ * expirada, mostramos a opção e impedimos o redirecionamento automático.
  */
 
 // Importações diretas, tornando o script independente.
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, query, where, documentId, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Elementos do DOM ---
 const grid = document.getElementById('empresas-grid');
@@ -211,16 +208,46 @@ async function carregarEmpresas(userId, nomeUsuario) {
 
         const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
 
-        // Se houver apenas uma empresa, redireciona direto (mantendo comportamento anterior)
+        // Se houver apenas uma empresa, validar antes de redirecionar.
         if (idsDasEmpresas.length === 1) {
             const empresaId = idsDasEmpresas[0];
-            localStorage.setItem('empresaAtivaId', empresaId);
-            // O nome do usuário já foi salvo acima!
-            window.location.href = 'index.html';
-            return;
+            try {
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaRef);
+                const empresa = empresaSnap.exists() ? empresaSnap.data() : null;
+
+                const donoId = empresa?.donoId || userId;
+                const status = await checkUserStatus(donoId, empresa);
+
+                if (DEBUG_LOGS) console.log('Status único empresa:', empresaId, status);
+
+                if (status.isPaid || status.isTrialActive) {
+                    // Permite redirecionar normalmente
+                    localStorage.setItem('empresaAtivaId', empresaId);
+                    window.location.href = 'index.html';
+                    return;
+                } else {
+                    // Não redireciona automaticamente — mostra o card e aviso
+                    renderizarOpcoes([{ id: empresaId, ...empresa }]);
+                    if (grid) {
+                        const aviso = document.createElement('div');
+                        aviso.style.color = '#b91c1c';
+                        aviso.style.margin = '12px 0';
+                        aviso.style.fontWeight = '600';
+                        aviso.textContent = 'A conta desta empresa está expirada. Entre em contato ou renove para continuar.';
+                        grid.prepend(aviso);
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.error('Erro ao validar empresa única:', err);
+                // Em caso de erro ao validar, optar por mostrar a lista (não redirecionar) para evitar acesso indevido.
+                renderizarOpcoes([]);
+                return;
+            }
         }
 
-        // Busca empresas do usuário (observação: limitações do 'in' do Firestore se ids > 10 são responsabilidade externa)
+        // Para múltiplas empresas, busca documentos normalmente
         const empresasRef = collection(db, "empresarios");
         const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
         const snapshotsDasEmpresas = await getDocs(q);
@@ -277,9 +304,13 @@ function criarEmpresaCard(empresa) {
 
     card.addEventListener('click', (e) => {
         e.preventDefault();
-        // Salva empresa selecionada
+        // Bloqueia entrada se não pago e trial expirado
+        if (!isPaid && !isTrialActive) {
+            alert('A conta desta empresa está expirada. Por favor renove ou contate suporte.');
+            return;
+        }
+        // Salva empresa selecionada e redireciona
         localStorage.setItem('empresaAtivaId', empresa.id);
-        // Mantemos comportamento anterior: redireciona para index (não alteramos lógica de redirect automático)
         window.location.href = 'index.html';
     });
 
