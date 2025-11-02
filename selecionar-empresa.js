@@ -57,7 +57,7 @@ function hojeSemHoras() {
 }
 
 // ==========================================================
-// ✅ FUNÇÃO DE VALIDAÇÃO (CORRIGIDA COM FALLBACKS)
+// ✅ FUNÇÃO DE VALIDAÇÃO (COM FALLBACKS)
 // ==========================================================
 function checkEmpresaStatus(empresaData) {
     try {
@@ -72,8 +72,7 @@ function checkEmpresaStatus(empresaData) {
         const now = new Date();
         const hoje = hojeSemHoras();
 
-        // --- 1. Checagem de PAGAMENTO (Validações da EMPRESA) ---
-        // (Isso valida suas "empresas antigas com varios campos")
+        // --- 1. Checagem de PAGAMENTO (Valida empresas antigas pagas) ---
         const assinaturaValidaAte = tsToDate(empresaData.assinaturaValidaAte || empresaData.paidUntil);
         const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
         const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
@@ -90,13 +89,11 @@ function checkEmpresaStatus(empresaData) {
             return { isPaid: true, isTrialActive: false }; // Pago (sem data)
         }
         
-        // Se a data de assinatura paga expirou (mas não era plano "free")
         if (assinaturaValidaAte && assinaturaValidaAte <= now) {
              return { isPaid: false, isTrialActive: false };
         }
 
-        // --- 2. Checagem de TRIAL (com fallbacks) ---
-        // (Valida a "empresa nova")
+        // --- 2. Checagem de TRIAL (Valida empresas novas) ---
 
         // **Prioridade 1: O campo trialEndDate (o correto)**
         if (empresaData.trialEndDate) {
@@ -108,7 +105,7 @@ function checkEmpresaStatus(empresaData) {
         }
 
         // **Prioridade 2: Fallback (Plano B) se o trialEndDate falhar**
-        // (Isso salva a "empresa nova" do erro de cache)
+        // (Solução cirúrgica para a empresa nova com cache)
         const freeEmDias = Number(empresaData?.freeEmDias ?? 0);
         if (freeEmDias > 0 && empresaData.createdAt) {
             const created = tsToDate(empresaData.createdAt);
@@ -164,7 +161,6 @@ async function carregarEmpresas(userId) {
 
         // --- Validação para Múltiplas Empresas ---
         
-        // Busca empresas (dividido em chunks de 10)
         const empresas = [];
         const CHUNK_SIZE = 10; 
         for (let i = 0; i < idsDasEmpresas.length; i += CHUNK_SIZE) {
@@ -177,7 +173,6 @@ async function carregarEmpresas(userId) {
             });
         }
         
-        // Adiciona o status a cada empresa
         const empresasComStatus = empresas.map(empresa => {
             const status = checkEmpresaStatus(empresa);
             return { ...empresa, statusAssinatura: status };
@@ -214,7 +209,6 @@ function criarEmpresaCard(empresa) {
     card.className = 'empresa-card';
     card.href = '#';
 
-    // Pega o status que foi calculado
     const status = empresa.statusAssinatura || { isPaid: false, isTrialActive: false };
     const isPaid = status.isPaid;
     const isTrialActive = status.isTrialActive;
