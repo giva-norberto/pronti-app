@@ -1,8 +1,7 @@
 /**
  * @file selecionar-empresa.js
  * @description Script autônomo para a página de seleção de empresa.
- * VALIDA o status da empresa (pago ou trial) antes de redirecionar.
- * Inclui fallbacks para o trial caso 'trialEndDate' falhe na criação.
+ * LÓGICA SIMPLES: Valida (Pago) ou (trialEndDate). Redireciona para planos se expirado.
  */
 
 // Importações diretas
@@ -36,7 +35,7 @@ onAuthStateChanged(auth, (user) => {
         if (tituloBoasVindas) {
             tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
         }
-        carregarEmpresas(user.uid); // Passa só o UID
+        carregarEmpresas(user.uid); 
     } else {
         window.location.href = 'login.html';
     }
@@ -57,7 +56,7 @@ function hojeSemHoras() {
 }
 
 // ==========================================================
-// ✅ FUNÇÃO DE VALIDAÇÃO (COM FALLBACKS)
+// ✅ FUNÇÃO DE VALIDAÇÃO SIMPLIFICADA (COMO PEDIDO)
 // ==========================================================
 function checkEmpresaStatus(empresaData) {
     try {
@@ -72,7 +71,7 @@ function checkEmpresaStatus(empresaData) {
         const now = new Date();
         const hoje = hojeSemHoras();
 
-        // --- 1. Checagem de PAGAMENTO (Valida empresas antigas pagas) ---
+        // --- 1. Checagem de PAGAMENTO (Valida empresas antigas) ---
         const assinaturaValidaAte = tsToDate(empresaData.assinaturaValidaAte || empresaData.paidUntil);
         const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
         const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
@@ -88,36 +87,19 @@ function checkEmpresaStatus(empresaData) {
             }
             return { isPaid: true, isTrialActive: false }; // Pago (sem data)
         }
-        
-        if (assinaturaValidaAte && assinaturaValidaAte <= now) {
-             return { isPaid: false, isTrialActive: false };
-        }
 
-        // --- 2. Checagem de TRIAL (Valida empresas novas) ---
-
-        // **Prioridade 1: O campo trialEndDate (o correto)**
+        // --- 2. Checagem de TRIAL (Somente data final) ---
+        // (Só executa se não for pago)
         if (empresaData.trialEndDate) {
             const end = tsToDate(empresaData.trialEndDate);
-            if (end) {
-                const ativo = end >= hoje; // Válido até o *fim* do dia
-                return { isPaid: false, isTrialActive: ativo };
-            }
-        }
-
-        // **Prioridade 2: Fallback (Plano B) se o trialEndDate falhar**
-        // (Solução cirúrgica para a empresa nova com cache)
-        const freeEmDias = Number(empresaData?.freeEmDias ?? 0);
-        if (freeEmDias > 0 && empresaData.createdAt) {
-            const created = tsToDate(empresaData.createdAt);
-            if (created) {
-                const end = new Date(created);
-                end.setDate(created.getDate() + freeEmDias);
-                const ativo = end >= hoje;
-                return { isPaid: false, isTrialActive: ativo };
+            if (end && end >= hoje) {
+                // Trial está ativo
+                return { isPaid: false, isTrialActive: true };
             }
         }
 
         // --- 3. Expirado ---
+        // Se não for pago E o trial falhou (ou não existe ou está no passado)
         return { isPaid: false, isTrialActive: false };
 
     } catch (error) {
@@ -239,7 +221,7 @@ function criarEmpresaCard(empresa) {
 
     card.innerHTML = `
         <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
-        <span class="empresa-nome">${nomeFantasia}</span>
+        <span classsemNome">${nomeFantasia}</span>
         ${infoHtml} 
     `;
     return card;
