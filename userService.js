@@ -52,94 +52,82 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
-// --- Função: Checa status de plano/trial corretamente ---
-// ALTERAÇÃO CIRÚRGICA: agora também considera campos do documento da empresa
+// ======================================================================
+// ✅ INÍCIO DA CORREÇÃO CIRÚRGICA
+// Esta função foi substituída pela lógica "cirúrgica" que valida
+// corretamente as empresas pagas e (para trial) usa APENAS trialEndDate.
+// ======================================================================
 async function checkUserStatus(user, empresaData) {
+    console.log("[DEBUG] Iniciando checkUserStatus CIRÚRGICO.");
     try {
-        if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        if (!empresaData) {
+            console.log("[DEBUG] checkUserStatus: Sem dados da empresa.");
+            return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+        }
 
-        // 1) Verificação direta no documento do usuário (mantida)
-        const userRef = doc(db, "usuarios", user.uid);
-        const userSnap = await getDoc(userRef);
-        console.log("[DEBUG] Usuário para checkUserStatus:", userSnap.exists() ? userSnap.data() : "não existe");
-        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
-        const userData = userSnap.data();
-        if (!userData) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
-        if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
+        if (empresaData.status && String(empresaData.status).toLowerCase() !== 'ativo') {
+            console.log("[DEBUG] checkUserStatus: Empresa não está ativa.");
+            return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+        }
 
-        // 2) Verificações adicionais usando dados da empresa (ADICIONADAS)
-        // Suporta Firestore Timestamp (has toDate()), objeto { seconds }, Date ou ISO string.
-        const toMillis = (value) => {
-            if (!value) return NaN;
-            try {
-                if (typeof value.toDate === 'function') return value.toDate().getTime();
-                if (value && typeof value.seconds === 'number') return value.seconds * 1000;
-                const d = new Date(value);
-                return isNaN(d.getTime()) ? NaN : d.getTime();
-            } catch (e) {
-                return NaN;
-            }
+        const now = new Date();
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        // --- Helper para converter Timestamps ---
+        const toDate = (ts) => {
+            if (!ts) return null;
+            if (typeof ts.toDate === 'function') return ts.toDate();
+            const d = new Date(ts);
+            return isNaN(d) ? null : d;
         };
 
-        const now = Date.now();
+        // --- 1. Checagem de PAGAMENTO (Valida empresas antigas) ---
+        const assinaturaValidaAte = toDate(empresaData.assinaturaValidaAte || empresaData.proximoPagamento || empresaData.paidUntil);
+        const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
+        const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
+        const isApprovedManual = empresaData.aprovado === true || empresaData.approved === true;
 
-        try {
-            // 2a) assinaturaValidaAte / assinatura_valida_ate + assinaturaAtiva
-            const assinaturaValidaAte = empresaData?.assinaturaValidaAte || empresaData?.assinatura_valida_ate || null;
-            if (empresaData?.assinaturaAtiva === true && assinaturaValidaAte) {
-                const tv = toMillis(assinaturaValidaAte);
-                if (!isNaN(tv) && tv > now) {
-                    console.log("[DEBUG] Empresa com assinaturaAtiva e assinaturaValidaAte no futuro -> considera ativo.");
+        if (planoPago || assinaturaAtivaFlag || isApprovedManual) {
+            if (assinaturaValidaAte) {
+                if (assinaturaValidaAte > now) {
+                    console.log("[DEBUG] checkUserStatus: Empresa PAGA (com data).");
                     return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
+                } else {
+                    console.log("[DEBUG] checkUserStatus: Empresa PAGA (assinatura expirada).");
+                    return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
                 }
             }
-
-            // 2b) proximoPagamento / proximo_pagamento (se futuro -> considerar ativo)
-            const proximoPag = empresaData?.proximoPagamento || empresaData?.proximo_pagamento || null;
-            if (proximoPag) {
-                const tp = toMillis(proximoPag);
-                if (!isNaN(tp) && tp > now) {
-                    console.log("[DEBUG] Empresa com proximoPagamento no futuro -> considera ativo.");
-                    return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
-                }
-            }
-
-            // 2c) opcional: se campo plano === 'pago' mas sem datas, NÃO considerar automaticamente ativo
-            // (evita falsos positivos). Se quiser forçar, descomente a linha abaixo.
-            // if (String(empresaData?.plano || '').toLowerCase() === 'pago') return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
-        } catch (e) {
-            console.warn("[DEBUG] Erro durante checagens por empresa em checkUserStatus:", e);
-            // não interrompe a verificação do trial abaixo
+            console.log("[DEBUG] checkUserStatus: Empresa PAGA (sem data, ex: manual).");
+            return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 }; // Pago (sem data)
         }
 
-        // 3) Checagem de trial do usuário (mantida)
-        let trialDurationDays = empresaData?.freeEmDias ?? 15;
-        let trialDaysRemaining = 0;
-        let isTrialActive = false;
-
-        if (userData.trialStart?.seconds) {
-            const startDate = new Date(userData.trialStart.seconds * 1000);
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + trialDurationDays);
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            if (endDate >= hoje) {
-                isTrialActive = true;
-                trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
+        // --- 2. Checagem de TRIAL (Somente data final) ---
+        // (Só executa se não for pago)
+        if (empresaData.trialEndDate) {
+            const end = toDate(empresaData.trialEndDate);
+            if (end && end >= hoje) {
+                // Trial está ativo
+                const trialDaysRemaining = Math.ceil((end.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+                console.log(`[DEBUG] checkUserStatus: Empresa em TRIAL (trialEndDate). Dias restantes: ${trialDaysRemaining}`);
+                return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: trialDaysRemaining };
             }
-            console.log(`[DEBUG] Trial: start ${startDate}, end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
-        } else {
-            isTrialActive = true;
-            trialDaysRemaining = trialDurationDays;
-            console.log(`[DEBUG] Trial: trialStart ausente, usando padrão: diasRestantes ${trialDaysRemaining}`);
         }
 
-        return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
+        // --- 3. Expirado ---
+        // Se não for pago E o trial falhou (ou não existe ou está no passado)
+        console.log("[DEBUG] checkUserStatus: Expirado (Nem pago, nem trial válido).");
+        return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
-        return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 }; // Seguro em caso de erro
     }
 }
+// ======================================================================
+// ✅ FIM DA CORREÇÃO CIRÚRGICA
+// ======================================================================
+
 
 // --- Função robusta: busca empresas ATIVAS do usuário ---
 export async function getEmpresasDoUsuario(user) {
@@ -190,6 +178,7 @@ export async function getEmpresasDoUsuario(user) {
 // FUNÇÃO GUARDA PRINCIPAL: Valida sessão, empresa ativa, plano, permissões
 // ======================================================================
 export async function verificarAcesso() {
+    // Nenhuma alteração daqui para baixo
     if (cachedSessionProfile) {
         console.log("[DEBUG] cachedSessionProfile retornado:", cachedSessionProfile);
         return cachedSessionProfile;
@@ -410,9 +399,9 @@ export async function verificarAcesso() {
                 // verificarAcesso() novamente.
                 // Exemplo de como usar em outro arquivo:
                 // window.addEventListener('sessionProfileReady', (event) => {
-                //   const profile = event.detail;
-                //   console.log('Sessão pronta, atualizando UI!', profile);
-                //   document.getElementById('userName').textContent = profile.perfil.nome;
+                //  const profile = event.detail;
+                //  console.log('Sessão pronta, atualizando UI!', profile);
+                //  document.getElementById('userName').textContent = profile.perfil.nome;
                 // });
                 window.dispatchEvent(new CustomEvent('sessionProfileReady', { detail: sessionProfile }));
 
