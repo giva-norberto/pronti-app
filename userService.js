@@ -1,8 +1,8 @@
 // ======================================================================
 //  userService.js (REVISÃO FINAL)
 // ✅ CORRIGIDA A FUNÇÃO 'checkUserStatus' PARA USAR A LÓGICA CIRÚRGICA
-// ✅ REMOVIDO O PATCH ANTI-LOOP (sessionStorage) E SUBSTITUÍDO POR LÓGICA DIRETA
-// =====================================================================
+// ✅ GRAVAÇÃO DE empresaAtivaId MOVIDA PARA APÓS VALIDAÇÃO (quando houver 1 empresa)
+// ======================================================================
 
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
@@ -246,10 +246,38 @@ export async function verificarAcesso() {
                         isProcessing = false;
                         return reject(new Error("Nenhuma empresa associada."));
                     } else if (empresas.length === 1) {
-                        empresaAtivaId = empresas[0].id;
-                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                        empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                        console.log("[DEBUG] Empresa única ativada:", empresaAtivaId, empresaDocSnap.data());
+                        // ------------------- ALTERAÇÃO: validar antes de gravar empresaAtivaId -------------------
+                        const empresaId = empresas[0].id;
+                        const tempSnap = await getDoc(doc(db, "empresarios", empresaId));
+                        const tempData = tempSnap.exists() ? tempSnap.data() : null;
+                        console.log("[DEBUG] Empresa única encontrada (pré-validação):", empresaId, tempData);
+
+                        // validar assinatura/trial antes de persistir no localStorage
+                        const preStatus = await checkUserStatus(user, tempData);
+                        console.log("[DEBUG] Pre-checkUserStatus (empresa única):", preStatus);
+
+                        if (preStatus.hasActivePlan || preStatus.isTrialActive) {
+                            // só agora gravamos e carregamos o doc oficial
+                            empresaAtivaId = empresaId;
+                            localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                            empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
+                            console.log("[DEBUG] Empresa única ativada (após validação):", empresaAtivaId, empresaDocSnap.data());
+                        } else {
+                            // empresa expirada e usuário NÃO é admin -> redirecionar para assinatura
+                            if (!isAdmin) {
+                                console.log("[DEBUG] Empresa única expirada. Redirecionando para assinatura.");
+                                isProcessing = false;
+                                window.location.replace('assinatura.html');
+                                return reject(new Error("Assinatura expirada."));
+                            } else {
+                                // se for admin, permitir visualizar a empresa mesmo com trial expirado
+                                empresaAtivaId = empresaId;
+                                localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                                empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
+                                console.log("[DEBUG] Admin acessando empresa expirada:", empresaAtivaId, empresaDocSnap.data());
+                            }
+                        }
+                        // ----------------- FIM DA ALTERAÇÃO ---------------------
                     } else if (empresas.length > 1) {
                         console.log("[DEBUG] Usuário tem múltiplas empresas, precisa selecionar.", empresas.map(e => e.id));
                         cachedSessionProfile = {
@@ -331,29 +359,21 @@ export async function verificarAcesso() {
 
                 // ==================================================
                 // ✅ INÍCIO DA CORREÇÃO 2: LÓGICA DE REDIRECIONAMENTO DIRETA
-                // O "PATCH ANTI-LOOP" que usava sessionStorage foi REMOVIDO.
                 // ==================================================
                 
                 // Páginas onde o usuário expirado PODE ficar
                 const paginasPermitidasParaExpirados = [
-                    'planos.html',     // (Página de planos)
-                    'assinatura.html', // (Página de checkout - nome original do seu código)
-                    'perfil.html',     // (Pode ter o dropdown para trocar de empresa)
-                    'selecionar-empresa.html', // (Página de seleção de empresa)
-                    'meuperfil.html'   // (Página de criação de empresa)
+                    'planos.html',
+                    'assinatura.html',
+                    'perfil.html',
+                    'selecionar-empresa.html',
+                    'meuperfil.html'
                 ];
 
-                // Se a assinatura está inativa (e não é admin)
                 if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive) {
-                    
-                    // E se a página atual NÃO É uma das permitidas
                     if (!paginasPermitidasParaExpirados.includes(currentPage)) {
-                        
                         console.log(`[DEBUG] Assinatura expirada. Redirecionando de '${currentPage}' para 'assinatura.html'.`);
-                        
-                        // Redireciona para a página de assinatura (como no seu código original)
                         window.location.replace('assinatura.html'); 
-                        
                         cachedSessionProfile = sessionProfile;
                         isProcessing = false;
                         return reject(new Error("Assinatura expirada."));
@@ -365,10 +385,8 @@ export async function verificarAcesso() {
                 // ✅ FIM DA CORREÇÃO 2
                 // ==================================================
 
-
                 if ((sessionProfile.isOwner || sessionProfile.isAdmin) && paginasDeVitrine.includes(currentPage)) {
                     console.log(`[DEBUG] Dono/Admin na página de vitrine. Redirecionando para o painel...`);
-                    // ✅ CORREÇÃO: Redireciona para index.html (página principal)
                     window.location.replace('index.html'); 
                 }
 
@@ -389,13 +407,11 @@ export async function verificarAcesso() {
 }
 
 export function clearCache() {
-    // Nenhuma alteração nesta função
     cachedSessionProfile = null;
     isProcessing = false;
 }
 
 export async function getTodasEmpresas() {
-    // Nenhuma alteração nesta função
     const empresasCol = collection(db, "empresarios");
     const snap = await getDocs(empresasCol);
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
