@@ -1,7 +1,5 @@
 // ======================================================================
 //  userService.js (REVISÃO FINAL)
-// ✅ REMOVIDA A CHAMADA PARA A FUNÇÃO DE OUVINTE ANTIGA E DESNECESSÁRIA
-// ✨ ADICIONADO EVENTO PARA ATUALIZAÇÃO DE TELA E PROTEÇÃO DE ROTA
 // ✅ CORRIGIDA A FUNÇÃO 'checkUserStatus' PARA USAR A LÓGICA CIRÚRGICA
 // ✅ REMOVIDO O PATCH ANTI-LOOP (sessionStorage) E SUBSTITUÍDO POR LÓGICA DIRETA
 // =====================================================================
@@ -54,8 +52,6 @@ export async function ensureUserAndTrialDoc() {
 
 // ======================================================================
 // ✅ INÍCIO DA CORREÇÃO 1: FUNÇÃO checkUserStatus CIRÚRGICA
-// Esta função agora valida corretamente empresas pagas e (para trial)
-// usa APENAS o campo trialEndDate.
 // ======================================================================
 async function checkUserStatus(user, empresaData) {
     console.log("[DEBUG] Iniciando checkUserStatus CIRÚRGICO.");
@@ -109,7 +105,6 @@ async function checkUserStatus(user, empresaData) {
         }
 
         // --- 2. Checagem de TRIAL (Somente data final) ---
-        // (Só executa se não for pago)
         if (empresaData.trialEndDate) {
             const end = toDate(empresaData.trialEndDate);
             if (end && end >= hoje) {
@@ -121,7 +116,6 @@ async function checkUserStatus(user, empresaData) {
         }
 
         // --- 3. Expirado ---
-        // Se não for pago E o trial falhou (ou não existe ou está no passado)
         console.log("[DEBUG] checkUserStatus: Expirado (Nem pago, nem trial válido).");
         return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
 
@@ -245,8 +239,9 @@ export async function verificarAcesso() {
                             papel: 'novo',
                             empresas: []
                         };
-                        if (currentPage !== 'meuperfil.html') {
-                            window.location.replace('meuperfil.html');
+                        // ✅ CORREÇÃO: Redireciona para perfil.html se não tem empresa
+                        if (currentPage !== 'perfil.html') {
+                            window.location.replace('perfil.html');
                         }
                         isProcessing = false;
                         return reject(new Error("Nenhuma empresa associada."));
@@ -336,7 +331,7 @@ export async function verificarAcesso() {
 
                 // ==================================================
                 // ✅ INÍCIO DA CORREÇÃO 2: LÓGICA DE REDIRECIONAMENTO DIRETA
-                // O "PATCH ANTI-LOOP" que usava sessionStorage foi removido.
+                // O "PATCH ANTI-LOOP" que usava sessionStorage foi REMOVIDO.
                 // ==================================================
                 
                 // Páginas onde o usuário expirado PODE ficar
@@ -344,7 +339,8 @@ export async function verificarAcesso() {
                     'planos.html',     // (Página de planos)
                     'assinatura.html', // (Página de checkout - nome original do seu código)
                     'perfil.html',     // (Pode ter o dropdown para trocar de empresa)
-                    'selecionar-empresa.html' // (Página de seleção de empresa)
+                    'selecionar-empresa.html', // (Página de seleção de empresa)
+                    'meuperfil.html'   // (Página de criação de empresa)
                 ];
 
                 // Se a assinatura está inativa (e não é admin)
@@ -372,7 +368,8 @@ export async function verificarAcesso() {
 
                 if ((sessionProfile.isOwner || sessionProfile.isAdmin) && paginasDeVitrine.includes(currentPage)) {
                     console.log(`[DEBUG] Dono/Admin na página de vitrine. Redirecionando para o painel...`);
-                    window.location.replace('painel.html'); 
+                    // ✅ CORREÇÃO: Redireciona para index.html (página principal)
+                    window.location.replace('index.html'); 
                 }
 
                 cachedSessionProfile = sessionProfile;
