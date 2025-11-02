@@ -56,7 +56,6 @@ export async function ensureUserAndTrialDoc() {
 // ALTERAÇÃO CIRÚRGICA: agora também considera campos do documento da empresa
 async function checkUserStatus(user, empresaData) {
     try {
-        console.log("[DEBUG] Iniciando checkUserStatus CIRÚRGICO.");
         if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
 
         // 1) Verificação direta no documento do usuário (mantida)
@@ -66,12 +65,10 @@ async function checkUserStatus(user, empresaData) {
         if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
         const userData = userSnap.data();
         if (!userData) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
-        if (userData.isPremium === true) {
-            console.log("[DEBUG] checkUserStatus: Usuário isPremium -> considera pago.");
-            return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
-        }
+        if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
 
-        // Utilitários locais
+        // 2) Verificações adicionais usando dados da empresa (ADICIONADAS)
+        // Suporta Firestore Timestamp (has toDate()), objeto { seconds }, Date ou ISO string.
         const toMillis = (value) => {
             if (!value) return NaN;
             try {
@@ -83,7 +80,7 @@ async function checkUserStatus(user, empresaData) {
                 return NaN;
             }
         };
-        const hojeSemHorasMillis = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+
         const now = Date.now();
 
         try {
@@ -107,47 +104,52 @@ async function checkUserStatus(user, empresaData) {
                 }
             }
 
-            // 2c) validação de outros indicadores de pagamento (mantidos)
-            // Ex.: paymentStatus, pago, plan flags já são verificados em outros pontos do app.
+            // 2c) opcional: se campo plano === 'pago' mas sem datas, NÃO considerar automaticamente ativo
+            // (evita falsos positivos). Se quiser forçar, descomente a linha abaixo.
+            // if (String(empresaData?.plano || '').toLowerCase() === 'pago') return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
         } catch (e) {
             console.warn("[DEBUG] Erro durante checagens por empresa em checkUserStatus:", e);
             // não interrompe a verificação do trial abaixo
         }
 
-        // --- NOVO: Validação dos campos recém-criados no documento da empresa ---
-        // 2d) Se a empresa tiver trialEndDate definido (campo novo), usar somente ele para decidir trial
+        // --- VALIDAÇÃO ADICIONAL: usar empresa.trialEndDate se presente (novo campo) ---
+        // Esta validação é adicionada, mas NÃO altera o fluxo de quando verificarAcesso é chamado.
         if (empresaData?.trialEndDate) {
             const trialEndMs = toMillis(empresaData.trialEndDate);
             if (!isNaN(trialEndMs)) {
-                const ativo = trialEndMs >= hojeSemHorasMillis;
-                const diasRestantes = ativo ? Math.ceil((trialEndMs - hojeSemHorasMillis) / (1000 * 60 * 60 * 24)) : 0;
-                console.log("[DEBUG] checkUserStatus: Usando empresa.trialEndDate ->", new Date(trialEndMs), "ativo:", ativo, "diasRestantes:", diasRestantes);
+                const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+                const endDate = new Date(trialEndMs);
+                // garantir que consideramos o dia inteiro
+                endDate.setHours(23,59,59,999);
+                const ativo = endDate.getTime() >= startOfToday.getTime();
+                const diasRestantes = ativo ? Math.ceil((endDate.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                console.log("[DEBUG] checkUserStatus: Usando empresa.trialEndDate ->", endDate, "ativo:", ativo, "diasRestantes:", diasRestantes);
                 return { hasActivePlan: false, isTrialActive: ativo, trialDaysRemaining: diasRestantes };
             } else {
                 console.warn("[DEBUG] checkUserStatus: empresa.trialEndDate presente mas inválido:", empresaData.trialEndDate);
             }
         }
 
-        // 2e) Se existir flag trialDisponivel (novo campo) e for true, podemos usar fallback curto
-        // (mantemos esse comportamento apenas como fallback, sem remover as checagens existentes)
+        // Opcional: fallback curto se houver flag trialDisponivel (mantido como compatibilidade)
         if (empresaData?.trialDisponivel === true) {
-            // se empresa tem createdAt, podemos considerar createdAt + fallback curto (ex.: 3 dias)
             const createdAtMs = toMillis(empresaData?.createdAt);
             if (!isNaN(createdAtMs)) {
                 const fallbackDays = 3;
                 const endMs = createdAtMs + (fallbackDays * 24 * 60 * 60 * 1000);
-                const ativo = endMs >= hojeSemHorasMillis;
-                const diasRestantes = ativo ? Math.ceil((endMs - hojeSemHorasMillis)/(1000*60*60*24)) : 0;
-                console.log("[DEBUG] checkUserStatus: trialDisponivel true -> fallback createdAt + 3 dias:", new Date(endMs), "ativo:", ativo);
+                const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+                const endDate = new Date(endMs);
+                endDate.setHours(23,59,59,999);
+                const ativo = endDate.getTime() >= startOfToday.getTime();
+                const diasRestantes = ativo ? Math.ceil((endDate.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                console.log("[DEBUG] checkUserStatus: trialDisponivel true -> fallback createdAt + 3 dias:", endDate, "ativo:", ativo);
                 return { hasActivePlan: false, isTrialActive: ativo, trialDaysRemaining: diasRestantes };
             } else {
-                // se não tivermos createdAt, consideramos trial ativo temporariamente (sem data), para compatibilidade
                 console.log("[DEBUG] checkUserStatus: trialDisponivel true e sem createdAt -> considera trial ativo temporariamente");
                 return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
             }
         }
 
-        // 3) Checagem de trial do usuário (mantida: fallback para freeEmDias + usuario.trialStart / empresa.createdAt)
+        // 3) Checagem de trial do usuário (mantida)
         let trialDurationDays = empresaData?.freeEmDias ?? 15;
         let trialDaysRemaining = 0;
         let isTrialActive = false;
@@ -162,34 +164,16 @@ async function checkUserStatus(user, empresaData) {
                 isTrialActive = true;
                 trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
             }
-            console.log(`[DEBUG] Trial (user.trialStart): start ${startDate}, end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
+            console.log(`[DEBUG] Trial: start ${startDate}, end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
         } else {
-            // Se usuario não tem trialStart, tentar usar empresa.createdAt + freeEmDias como fallback
-            const createdAtVal = empresaData?.createdAt;
-            const createdAtMs = toMillis(createdAtVal);
-            if (!isNaN(createdAtMs) && trialDurationDays > 0) {
-                const startDate = new Date(createdAtMs);
-                const endDate = new Date(createdAtMs);
-                endDate.setDate(startDate.getDate() + trialDurationDays);
-                const hoje = new Date();
-                hoje.setHours(0, 0, 0, 0);
-                if (endDate >= hoje) {
-                    isTrialActive = true;
-                    trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
-                }
-                console.log(`[DEBUG] Trial (empresa.createdAt fallback): start ${startDate}, end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
-            } else {
-                // sem data de início, considerar trial ativo por padrão (com dias igual ao trialDurationDays)
-                isTrialActive = true;
-                trialDaysRemaining = trialDurationDays;
-                console.log(`[DEBUG] Trial: sem user.trialStart e sem createdAt -> considera trial ativo por padrão: ${trialDaysRemaining} dias`);
-            }
+            isTrialActive = true;
+            trialDaysRemaining = trialDurationDays;
+            console.log(`[DEBUG] Trial: trialStart ausente, usando padrão: diasRestantes ${trialDaysRemaining}`);
         }
 
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
-        // Em caso de erro, manter comportamento conservador (considerar trial ativo para não bloquear usuários indevidamente)
         return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
     }
 }
