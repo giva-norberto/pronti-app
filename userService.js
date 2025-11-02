@@ -78,7 +78,7 @@ async function checkUserStatus(user, empresaData) {
             return isNaN(d) ? null : d;
         };
 
-        // --- 1. Checagem de PAGAMENTO (Valida "DUAS EMPRESAS") ---
+        // --- 1. Checagem de PAGAMENTO (Valida empresas antigas) ---
         const assinaturaValidaAte = toDate(empresaData.assinaturaValidaAte || empresaData.proximoPagamento || empresaData.paidUntil);
         const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
         const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
@@ -104,7 +104,7 @@ async function checkUserStatus(user, empresaData) {
              return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         }
 
-        // --- 2. Checagem de TRIAL (Valida "SANTA CLARA") ---
+        // --- 2. Checagem de TRIAL (Somente data final) ---
         if (empresaData.trialEndDate) {
             const end = toDate(empresaData.trialEndDate);
             if (end && end >= hoje) {
