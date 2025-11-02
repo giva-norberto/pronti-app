@@ -2,8 +2,8 @@
 //  userService.js (REVISÃO FINAL)
 // ✅ REMOVIDA A CHAMADA PARA A FUNÇÃO DE OUVINTE ANTIGA E DESNECESSÁRIA
 // ✨ ADICIONADO EVENTO PARA ATUALIZAÇÃO DE TELA E PROTEÇÃO DE ROTA
-// ✨ PATCH CIRÚRGICO: prevenção de loop index <-> assinatura com flags de sessão
-// ✨ ATUALIZAÇÃO CIRÚRGICA: checkUserStatus agora considera campos da empresa
+// ✅ CORRIGIDA A FUNÇÃO 'checkUserStatus' PARA USAR A LÓGICA CIRÚRGICA
+// ✅ REMOVIDO O PATCH ANTI-LOOP (sessionStorage) E SUBSTITUÍDO POR LÓGICA DIRETA
 // =====================================================================
 
 import {
@@ -53,9 +53,9 @@ export async function ensureUserAndTrialDoc() {
 }
 
 // ======================================================================
-// ✅ INÍCIO DA CORREÇÃO CIRÚRGICA
-// Esta função foi substituída pela lógica "cirúrgica" que valida
-// corretamente as empresas pagas e (para trial) usa APENAS trialEndDate.
+// ✅ INÍCIO DA CORREÇÃO 1: FUNÇÃO checkUserStatus CIRÚRGICA
+// Esta função agora valida corretamente empresas pagas e (para trial)
+// usa APENAS o campo trialEndDate.
 // ======================================================================
 async function checkUserStatus(user, empresaData) {
     console.log("[DEBUG] Iniciando checkUserStatus CIRÚRGICO.");
@@ -101,6 +101,12 @@ async function checkUserStatus(user, empresaData) {
             console.log("[DEBUG] checkUserStatus: Empresa PAGA (sem data, ex: manual).");
             return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 }; // Pago (sem data)
         }
+        
+        // Checagem extra caso um plano pago tenha expirado
+        if (assinaturaValidaAte && assinaturaValidaAte <= now) {
+             console.log("[DEBUG] checkUserStatus: Assinatura paga (não-free) expirou.");
+             return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+        }
 
         // --- 2. Checagem de TRIAL (Somente data final) ---
         // (Só executa se não for pago)
@@ -125,7 +131,7 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 // ======================================================================
-// ✅ FIM DA CORREÇÃO CIRÚRGICA
+// ✅ FIM DA CORREÇÃO 1
 // ======================================================================
 
 
@@ -178,7 +184,7 @@ export async function getEmpresasDoUsuario(user) {
 // FUNÇÃO GUARDA PRINCIPAL: Valida sessão, empresa ativa, plano, permissões
 // ======================================================================
 export async function verificarAcesso() {
-    // Nenhuma alteração daqui para baixo
+    // Nenhuma alteração até a linha 300+
     if (cachedSessionProfile) {
         console.log("[DEBUG] cachedSessionProfile retornado:", cachedSessionProfile);
         return cachedSessionProfile;
@@ -192,13 +198,10 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
-                // ✨ NOVO: Adicionada a página 'vitrine.html' à lista de páginas públicas
-                // para que a lógica de redirecionamento funcione corretamente.
                 const paginasDeVitrine = ['vitrine.html'];
 
                 if (!user) {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
-                    // ✨ LÓGICA MANTIDA: Se a página não for pública (nem de vitrine), redireciona para login.
                     if (!paginasPublicas.includes(currentPage) && !paginasDeVitrine.includes(currentPage)) {
                         window.location.replace('login.html');
                     }
@@ -331,78 +334,49 @@ export async function verificarAcesso() {
                 };
                 console.log("[DEBUG] SessionProfile FINAL:", sessionProfile);
 
-                // --- INÍCIO: PATCH CIRÚRGICO ANTI-LOOP ---
-                // lê flags de sessão que previnem loops entre index <-> assinatura
-                let assinaturaVerifiedTs = 0;
-                let assinaturaRedirectTs = 0;
-                try {
-                    assinaturaVerifiedTs = Number(sessionStorage.getItem('assinatura_verified_ts') || 0);
-                    assinaturaRedirectTs = Number(sessionStorage.getItem('assinatura_redirect_ts') || 0);
-                } catch (e) {
-                    assinaturaVerifiedTs = 0;
-                    assinaturaRedirectTs = 0;
-                }
-                const now = Date.now();
-                const ASSINATURA_SKIP_WINDOW_MS = 15000; // 15s tolerância
+                // ==================================================
+                // ✅ INÍCIO DA CORREÇÃO 2: LÓGICA DE REDIRECIONAMENTO DIRETA
+                // O "PATCH ANTI-LOOP" que usava sessionStorage foi removido.
+                // ==================================================
+                
+                // Páginas onde o usuário expirado PODE ficar
+                const paginasPermitidasParaExpirados = [
+                    'planos.html',     // (Página de planos)
+                    'assinatura.html', // (Página de checkout - nome original do seu código)
+                    'perfil.html',     // (Pode ter o dropdown para trocar de empresa)
+                    'selecionar-empresa.html' // (Página de seleção de empresa)
+                ];
 
-                // se a empresa tem plano ativo, grava flag de verificação para evitar loop
-                try {
-                    if (sessionProfile?.statusAssinatura?.hasActivePlan) {
-                        try {
-                            sessionStorage.setItem('assinatura_verified_ts', String(now));
-                            console.log("[DEBUG] assinatura_verified_ts setado para evitar loop.");
-                        } catch (e) { /* ignore */ }
+                // Se a assinatura está inativa (e não é admin)
+                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive) {
+                    
+                    // E se a página atual NÃO É uma das permitidas
+                    if (!paginasPermitidasParaExpirados.includes(currentPage)) {
+                        
+                        console.log(`[DEBUG] Assinatura expirada. Redirecionando de '${currentPage}' para 'assinatura.html'.`);
+                        
+                        // Redireciona para a página de assinatura (como no seu código original)
+                        window.location.replace('assinatura.html'); 
+                        
+                        cachedSessionProfile = sessionProfile;
+                        isProcessing = false;
+                        return reject(new Error("Assinatura expirada."));
+                    } else {
+                        console.log(`[DEBUG] Assinatura expirada, mas a página '${currentPage}' é permitida.`);
                     }
-                } catch (e) {
-                    console.warn("[DEBUG] Falha ao setar assinatura_verified_ts:", e);
                 }
+                // ==================================================
+                // ✅ FIM DA CORREÇÃO 2
+                // ==================================================
 
-                // calcula skip se qualquer flag recente indicar que devemos pular redirect
-                const skipRedirectToAssinatura = (
-                    (assinaturaVerifiedTs && (now - assinaturaVerifiedTs) < ASSINATURA_SKIP_WINDOW_MS) ||
-                    (assinaturaRedirectTs && (now - assinaturaRedirectTs) < ASSINATURA_SKIP_WINDOW_MS)
-                );
-                // --- FIM: PATCH CIRÚRGICO ANTI-LOOP ---
 
-                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html' && !skipRedirectToAssinatura) {
-                    console.log("[DEBUG] Assinatura expirada, redirecionando para assinatura.");
-                    try {
-                        // marca que estamos prestes a redirecionar — ajuda a evitar loop imediato
-                        try {
-                            sessionStorage.setItem('assinatura_redirect_ts', String(Date.now()));
-                        } catch (e) { /* ignore */ }
-                    } catch (e) {
-                        console.warn("[DEBUG] Falha ao setar assinatura_redirect_ts:", e);
-                    }
-                    window.location.replace('assinatura.html');
-                    cachedSessionProfile = sessionProfile;
-                    isProcessing = false;
-                    return reject(new Error("Assinatura expirada."));
-                }
-
-                // ✨ NOVO: Adição 1 - Impedir que Dono/Admin fique na vitrine.
-                // Se o usuário for dono ou admin e estiver na página de vitrine,
-                // ele será redirecionado para o painel principal.
-                // Altere 'painel.html' para a página principal do seu sistema.
                 if ((sessionProfile.isOwner || sessionProfile.isAdmin) && paginasDeVitrine.includes(currentPage)) {
                     console.log(`[DEBUG] Dono/Admin na página de vitrine. Redirecionando para o painel...`);
                     window.location.replace('painel.html'); 
-                    // A linha acima causa um redirecionamento, então o código abaixo pode não ser executado.
-                    // Isso é intencional para evitar que a página de vitrine seja renderizada.
                 }
 
                 cachedSessionProfile = sessionProfile;
                 
-                // ✨ NOVO: Adição 2 - Mecanismo para atualizar a tela.
-                // Dispara um evento global com os dados da sessão. Outras partes do seu
-                // app podem "ouvir" este evento e se atualizar sem precisar chamar
-                // verificarAcesso() novamente.
-                // Exemplo de como usar em outro arquivo:
-                // window.addEventListener('sessionProfileReady', (event) => {
-                //  const profile = event.detail;
-                //  console.log('Sessão pronta, atualizando UI!', profile);
-                //  document.getElementById('userName').textContent = profile.perfil.nome;
-                // });
                 window.dispatchEvent(new CustomEvent('sessionProfileReady', { detail: sessionProfile }));
 
                 isProcessing = false;
