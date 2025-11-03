@@ -1,6 +1,6 @@
 // ======================================================================
-//      USER-SERVICE.JS (DEBUG COMPLETO - CORRIGIDO, SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
-// =====================================================================
+//      USER-SERVICE.JS (SEM LOOP) — Mantém todas as regras originais
+// ======================================================================
 
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
@@ -12,14 +12,12 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc(  ) {
+export async function ensureUserAndTrialDoc() {
     try {
         const user = auth.currentUser;
         if (!user) return;
         const userRef = doc(db, "usuarios", user.uid);
         let userSnap = await getDoc(userRef);
-
-        console.log("[DEBUG] Documento do usuário antes:", userSnap.exists() ? userSnap.data() : "não existe");
 
         if (!userSnap.exists()) {
             await setDoc(userRef, {
@@ -28,33 +26,25 @@ export async function ensureUserAndTrialDoc(  ) {
                 trialStart: serverTimestamp(),
                 isPremium: false,
             });
-            console.log("[DEBUG] Criado doc do usuário!");
         } else {
-            // Garante nome, email e trialStart SEMPRE
             const userData = userSnap.data();
             let updateObj = {};
             if (!userData.nome) updateObj.nome = user.displayName || user.email || 'Usuário';
             if (!userData.email) updateObj.email = user.email || '';
             if (!userData.trialStart) updateObj.trialStart = serverTimestamp();
-            if (Object.keys(updateObj).length) {
-                await updateDoc(userRef, updateObj);
-                console.log("[DEBUG] Atualizado doc do usuário:", updateObj);
-            }
+            if (Object.keys(updateObj).length) await updateDoc(userRef, updateObj);
         }
-        let userSnapAfter = await getDoc(userRef);
-        console.log("[DEBUG] Documento do usuário depois:", userSnapAfter.data());
     } catch (error) {
         console.error("❌ [ensureUserAndTrialDoc] Erro:", error);
     }
 }
 
-// --- Função: Checa status de plano/trial corretamente (APENAS trialEndDate) ---
+// --- Função: Checa status de plano/trial (somente trialEndDate) ---
 async function checkUserStatus(user, empresaData) {
     try {
         if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
-        console.log("[DEBUG] Usuário para checkUserStatus:", userSnap.exists() ? userSnap.data() : "não existe");
         if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
         const userData = userSnap.data();
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
@@ -62,7 +52,6 @@ async function checkUserStatus(user, empresaData) {
         let trialDaysRemaining = 0;
         let isTrialActive = false;
 
-        // --- Usar somente trialEndDate da empresa ---
         if (empresaData?.trialEndDate?.toDate) {
             const endDate = empresaData.trialEndDate.toDate();
             const hoje = new Date();
@@ -71,12 +60,6 @@ async function checkUserStatus(user, empresaData) {
                 isTrialActive = true;
                 trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
             }
-            console.log(`[DEBUG] Trial: end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
-        } else {
-            // Se trialEndDate não existir, assume trial inativo
-            isTrialActive = false;
-            trialDaysRemaining = 0;
-            console.log("[DEBUG] Trial: trialEndDate ausente, assumindo trial inativo");
         }
 
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
@@ -86,12 +69,11 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
-// --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade e SEM misturar dados) ---
+// --- Função: Busca empresas ativas (dono e profissional, sem duplicidade) ---
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
     const empresasUnicas = new Map();
 
-    // DONO: só empresas ativas
     try {
         const qDono = query(
             collection(db, "empresarios"),
@@ -99,21 +81,16 @@ export async function getEmpresasDoUsuario(user) {
             where("status", "==", "ativo")
         );
         const snapshotDono = await getDocs(qDono);
-        console.log("[DEBUG] Empresas dono ativas:", snapshotDono.docs.map(doc => doc.id));
-        snapshotDono.forEach(doc => {
-            empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() });
-        });
+        snapshotDono.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
     } catch (e) {
-        console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas como dono:", e);
+        console.error("❌ Erro ao buscar empresas como dono:", e);
     }
 
-    // PROFISSIONAL: só empresas ativas, sem duplicidade, chunk de 10
     try {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
         if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
             const idsDeEmpresas = mapaSnap.data().empresas.filter(id => !empresasUnicas.has(id));
-            console.log("[DEBUG] Empresas profissional ativas (IDs):", idsDeEmpresas);
             for (let i = 0; i < idsDeEmpresas.length; i += 10) {
                 const chunk = idsDeEmpresas.slice(i, i + 10);
                 const q = query(
@@ -122,26 +99,21 @@ export async function getEmpresasDoUsuario(user) {
                     where("status", "==", "ativo")
                 );
                 const snap = await getDocs(q);
-                console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
                 snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
             }
         }
-    } catch(e) {
-        console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas pelo mapa:", e);
+    } catch (e) {
+        console.error("❌ Erro ao buscar empresas pelo mapa:", e);
     }
-    const empresasFinal = Array.from(empresasUnicas.values());
-    console.log("[DEBUG] Empresas finais (ativas e sem duplicidade):", empresasFinal.map(e => e.id));
-    return empresasFinal;
+
+    return Array.from(empresasUnicas.values());
 }
 
 // ======================================================================
-// FUNÇÃO GUARDA PRINCIPAL: Valida sessão, empresa ativa, plano, permissões
+// FUNÇÃO PRINCIPAL: Valida sessão, empresa ativa, plano, permissões
 // ======================================================================
 export async function verificarAcesso() {
-    if (cachedSessionProfile) {
-        console.log("[DEBUG] cachedSessionProfile retornado:", cachedSessionProfile);
-        return cachedSessionProfile;
-    }
+    if (cachedSessionProfile) return cachedSessionProfile;
     if (isProcessing) throw new Error("Race condition detectada.");
     isProcessing = true;
 
@@ -154,10 +126,9 @@ export async function verificarAcesso() {
                 const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
 
                 if (!user) {
-                    console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
                     if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
                     isProcessing = false;
-                    return reject(new Error("Utilizador não autenticado."));
+                    return reject(new Error("Usuário não autenticado."));
                 }
 
                 await ensureUserAndTrialDoc();
@@ -167,53 +138,44 @@ export async function verificarAcesso() {
                 let empresaDocSnap = null;
                 let empresas = await getEmpresasDoUsuario(user);
 
-                console.log("[DEBUG] Empresa ativaId localStorage:", empresaAtivaId);
-                console.log("[DEBUG] Empresas retornadas:", empresas.map(e => e.id));
-
-                if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) { empresaAtivaId = null; }
+                if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) {
+                    empresaAtivaId = null;
+                }
 
                 if (empresaAtivaId) {
                     empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     if (!empresaDocSnap.exists() || empresaDocSnap.data().status !== "ativo") {
-                        console.log("[DEBUG] Empresa ativa não existe ou não está ativa, limpando localStorage.");
                         localStorage.removeItem('empresaAtivaId');
                         empresaAtivaId = null;
                         empresaDocSnap = null;
-                    } else {
-                        console.log("[DEBUG] Empresa ativa encontrada:", empresaDocSnap.id, empresaDocSnap.data());
                     }
                 }
 
                 if (!empresaDocSnap) {
                     if (empresas.length === 0) {
-                        console.log("[DEBUG] Nenhuma empresa associada ao usuário.");
                         cachedSessionProfile = {
                             user,
                             empresaId: null,
                             perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'novo' },
                             isOwner: false,
-                            isAdmin: isAdmin,
+                            isAdmin,
                             papel: 'novo',
                             empresas: []
                         };
-                        if (currentPage !== 'meuperfil.html') {
-                            window.location.replace('meuperfil.html');
-                        }
+                        if (currentPage !== 'meuperfil.html') window.location.replace('meuperfil.html');
                         isProcessing = false;
                         return reject(new Error("Nenhuma empresa associada."));
                     } else if (empresas.length === 1) {
                         empresaAtivaId = empresas[0].id;
                         localStorage.setItem('empresaAtivaId', empresaAtivaId);
                         empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                        console.log("[DEBUG] Empresa única ativada:", empresaAtivaId, empresaDocSnap.data());
                     } else if (empresas.length > 1) {
-                        console.log("[DEBUG] Usuário tem múltiplas empresas, precisa selecionar.", empresas.map(e => e.id));
                         cachedSessionProfile = {
                             user,
                             empresaId: null,
                             perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'multi' },
                             isOwner: false,
-                            isAdmin: isAdmin,
+                            isAdmin,
                             papel: 'multi',
                             empresas
                         };
@@ -221,7 +183,6 @@ export async function verificarAcesso() {
                         isProcessing = false;
                         return reject(new Error("Múltiplas empresas, seleção necessária."));
                     } else if (isAdmin) {
-                        console.log("[DEBUG] Usuário é admin, acesso total.");
                         cachedSessionProfile = {
                             user,
                             empresaId: null,
@@ -237,16 +198,12 @@ export async function verificarAcesso() {
                 }
 
                 if (!empresaDocSnap || !empresaDocSnap.exists()) {
-                    console.log("[DEBUG] Empresa ativa não encontrada!");
                     isProcessing = false;
                     return reject(new Error("Empresa não encontrada."));
                 }
 
                 const empresaData = empresaDocSnap.data();
-                console.log("[DEBUG] Dados da empresa ativa:", empresaData);
-
                 const statusAssinatura = await checkUserStatus(user, empresaData);
-                console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
 
                 let perfilDetalhado, papel;
                 const isOwner = empresaData.donoId === user.uid;
@@ -280,8 +237,12 @@ export async function verificarAcesso() {
                     statusAssinatura
                 };
 
-                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html') {
-                    window.location.replace('assinatura.html');
+                // 🔒 Corrigido para impedir loop na assinatura
+                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive) {
+                    if (currentPage !== 'assinatura.html' && !window.location.pathname.includes('assinatura.html')) {
+                        console.log("[DEBUG] Trial expirado, indo para assinatura.html uma única vez");
+                        window.location.replace('assinatura.html');
+                    }
                     cachedSessionProfile = sessionProfile;
                     isProcessing = false;
                     return reject(new Error("Assinatura expirada."));
