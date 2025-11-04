@@ -110,6 +110,25 @@
         #btn-logout:hover { background: #111827; }
         @media (max-width: 600px) { #btn-logout { display: block; } }
         @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
+
+        /* Badge de status da assinatura (adicionado sem alterar lógica) */
+        #statusAssinatura {
+          position: fixed;
+          top: 15px;
+          right: 15px;
+          background: linear-gradient(90deg, #4f8cff, #7b5cff);
+          color: white;
+          padding: 8px 14px;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+          display: none;
+          z-index: 9999;
+          opacity: 0;
+          transform: translateY(-6px);
+          transition: opacity 0.3s ease, transform 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -138,6 +157,9 @@
     </main>
 
     <button id="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+
+    <!-- Badge de status da assinatura (inserido sem alterar validação) -->
+    <div id="statusAssinatura" aria-hidden="true"></div>
 
     <script type="module" src="messaging.js"></script>
     <script type="module">
@@ -378,6 +400,48 @@
                 window.location.href = "login.html";
             } catch (error) {
                 mostrarMensagemNotificacao("Erro ao sair: " + error.message, "error");
+            }
+        });
+
+        // -------------------------
+        // Listener para atualizar badge de status da assinatura
+        // Não altera nenhuma lógica de validação — apenas exibe estado útil no index.
+        // Não mostramos o estado "expirado" (não necessário quando o usuário já está bloqueado).
+        // -------------------------
+        window.addEventListener('sessionProfileReady', (event) => {
+            try {
+                const badge = document.getElementById('statusAssinatura');
+                if (!badge) return;
+                const sess = event?.detail || {};
+                const statusAssinatura = sess.statusAssinatura || sess.status || {};
+                // Prioriza exibição apenas para plano ativo ou trial ativo
+                if (statusAssinatura.hasActivePlan) {
+                    badge.textContent = '✅ Plano ativo';
+                    badge.style.background = 'linear-gradient(90deg, #10b981, #06a66a)';
+                    badge.style.display = 'block';
+                    requestAnimationFrame(() => {
+                        badge.style.opacity = '1';
+                        badge.style.transform = 'translateY(0)';
+                    });
+                    return;
+                }
+                if (statusAssinatura.isTrialActive) {
+                    const dias = Number(statusAssinatura.trialDaysRemaining ?? 0);
+                    badge.textContent = `⏳ Trial: ${dias} ${dias === 1 ? 'dia' : 'dias'} restante${dias === 1 ? '' : 's'}`;
+                    badge.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+                    badge.style.display = 'block';
+                    requestAnimationFrame(() => {
+                        badge.style.opacity = '1';
+                        badge.style.transform = 'translateY(0)';
+                    });
+                    return;
+                }
+                // caso expirado: esconder badge (não mostrar)
+                badge.style.opacity = '0';
+                badge.style.transform = 'translateY(-6px)';
+                setTimeout(() => { badge.style.display = 'none'; }, 300);
+            } catch (err) {
+                console.error('Erro ao atualizar badge de assinatura:', err);
             }
         });
     </script>
