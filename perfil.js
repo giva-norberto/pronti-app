@@ -2,7 +2,6 @@
 // PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO + MANIFEST DINÂMICO PWA)
 // =====================================================================
 
-// ✅ ALTERAÇÃO 1: Adicionado 'Timestamp' (baseado no seu snippet)
 import {
     getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -157,7 +156,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 descricao: elements.descricaoInput.value.trim(),
                 localizacao: elements.localizacaoInput.value.trim(),
                 horarioFuncionamento: elements.horarioFuncionamentoInput.value.trim(),
-                chavePix: elements.chavePixInput.value.trim(),
+                chavePix: elements.chavePixInput.value.trim() || "",
                 emailDeNotificacao: currentUser.email,
                 donoId: uid,
                 plano: "free",
@@ -184,6 +183,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!empresaId) {
+                // garante doc de usuário (sem sobrescrever demais campos)
                 const userRef = doc(db, "usuarios", uid);
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) {
@@ -196,24 +196,52 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ==================================================
-                // ✅ ALTERAÇÃO 2: Bloco de trial do snippet aplicado aqui
+                // ✅ ALTERAÇÃO: Cria TODOS os campos relevantes da empresa de uma vez
+                // - Padroniza nomes/tipos: trialStart/trialEndDate como Timestamp,
+                //   assinaturaAtiva (false), assinaturaValidaAte (null), proximoPagamento (null)
+                // - freeEmDias configurado, createdAt como serverTimestamp()
                 // ==================================================
                 const agora = new Date();
+                const trialStartTs = Timestamp.fromDate(agora);
+                // Para totalizar 15 dias incluindo o dia inicial, somamos 14 dias e colocamos fim do dia
                 const fimTrial = new Date(agora);
-                fimTrial.setDate(agora.getDate() + 15);
+                fimTrial.setDate(fimTrial.getDate() + 14);
+                fimTrial.setHours(23, 59, 59, 999);
+                const trialEndTs = Timestamp.fromDate(fimTrial);
 
-                dadosEmpresa.trialDisponivel = true; // Garante que é true
-                dadosEmpresa.freeEmDias = 15;
-                dadosEmpresa.trialEndDate = Timestamp.fromDate(fimTrial);
-                // dadosEmpresa.plano = "free"; // Já estava no objeto 'dadosEmpresa'
-                // dadosEmpresa.status = "ativo"; // Já estava no objeto 'dadosEmpresa'
-                dadosEmpresa.createdAt = serverTimestamp();
-                // dadosEmpresa.updatedAt = serverTimestamp(); // Já estava no objeto 'dadosEmpresa'
+                // Campos padrão/completos para nova empresa
+                const camposPadrao = {
+                    // trial
+                    trialStart: trialStartTs,
+                    trialEndDate: trialEndTs,
+                    freeEmDias: 15,
+                    trialDisponivel: true,
+                    trialMotivoBloqueio: trialMotivoBloqueio || "",
+                    // assinatura (vazia inicialmente)
+                    assinaturaAtiva: false,
+                    assinaturaValidaAte: null,
+                    proximoPagamento: null,
+                    // plano e estado
+                    plano: "free",
+                    status: "ativo",
+                    // pagamentos pendentes / flags
+                    pagamentoPendente: null,
+                    // metadados
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    // defaults
+                    chavePix: dadosEmpresa.chavePix || "",
+                    logoUrl: dadosEmpresa.logoUrl || "",
+                    emailDeNotificacao: dadosEmpresa.emailDeNotificacao || currentUser.email || ""
+                };
+
+                Object.assign(dadosEmpresa, camposPadrao);
                 // ==================================================
-
 
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 const novoEmpresaId = novaEmpresaRef.id;
+
+                // atualiza mapaUsuarios (merge)
                 const mapaRef = doc(db, "mapaUsuarios", uid);
                 const mapaSnap = await getDoc(mapaRef);
                 let empresasAtuais = [];
@@ -224,32 +252,32 @@ window.addEventListener('DOMContentLoaded', () => {
                     empresasAtuais.push(novoEmpresaId);
                 }
                 await setDoc(mapaRef, { empresas: empresasAtuais }, { merge: true });
+
+                // cria documento de profissional dono
                 await setDoc(doc(db, "empresarios", novoEmpresaId, "profissionais", uid), {
-                    uid: uid, nome: currentUser.displayName || nomeNegocio,
-                    fotoUrl: currentUser.photoURL || "", ehDono: true,
-                    criadoEm: serverTimestamp(), status: "ativo"
+                    uid: uid,
+                    nome: currentUser.displayName || nomeNegocio,
+                    fotoUrl: currentUser.photoURL || "",
+                    ehDono: true,
+                    criadoEm: serverTimestamp(),
+                    status: "ativo"
                 });
+
                 if (elements.msgCadastroSucesso) {
                     elements.msgCadastroSucesso.innerHTML = `Perfil criado com sucesso!`;
                     elements.msgCadastroSucesso.style.display = "block";
                 }
 
-                // ==================================================
-                // ✅ Correção do Bug de Logout (Mantida)
-                // ==================================================
-                // Em vez de fazer logout, recarrega os dados do usuário
+                // Recarrega lista de empresas do usuário (sem forçar logout)
                 await carregarEmpresasDoUsuario(uid);
 
-                // Apenas esconde a mensagem de sucesso após 4 segundos
                 setTimeout(() => {
                     if (elements.msgCadastroSucesso) {
                         elements.msgCadastroSucesso.style.display = "none";
                     }
                 }, 4000);
-                // 'return' removido
-                // ==================================================
-
             } else {
+                // edição: merge para não sobrescrever campos que não foram informados no formulário
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 if (elements.msgCadastroSucesso) {
                     elements.msgCadastroSucesso.innerHTML = `Perfil atualizado com sucesso!`;
@@ -281,7 +309,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.nomeNegocioInput && elements.slugInput) {
             elements.nomeNegocioInput.addEventListener('input', () => {
                 if (elements.slugInput.value.trim() === '') {
-                    elements.slugInput.value = criarSlug(elements.nomeNegcioInput.value);
+                    elements.slugInput.value = criarSlug(elements.nomeNegocioInput.value);
                 }
             });
         }
@@ -311,7 +339,7 @@ window.addEventListener('DOMContentLoaded', () => {
         empresaId = null;
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el) el.style.display = 'none'; });
-        if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
+        if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = 'none';
         if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
     }
