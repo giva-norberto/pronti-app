@@ -111,23 +111,34 @@
         @media (max-width: 600px) { #btn-logout { display: block; } }
         @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
 
-        /* Badge de status da assinatura (adicionado sem alterar lógica) */
+        /* Badge de status da assinatura (menor visual) */
         #statusAssinatura {
+          --badge-scale: 1;
           position: fixed;
-          top: 15px;
-          right: 15px;
+          top: 12px;
+          right: 12px;
           background: linear-gradient(90deg, #4f8cff, #7b5cff);
           color: white;
-          padding: 8px 14px;
-          border-radius: 20px;
-          font-size: 0.9rem;
-          font-weight: 500;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+          padding: 6px 10px;
+          border-radius: 14px;
+          font-size: 0.78rem;
+          font-weight: 600;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.12);
           display: none;
           z-index: 9999;
           opacity: 0;
-          transform: translateY(-6px);
-          transition: opacity 0.3s ease, transform 0.3s ease;
+          transform: translateY(-6px) scale(var(--badge-scale));
+          transition: opacity 0.28s ease, transform 0.28s ease;
+        }
+        @media (max-width: 600px) {
+          #statusAssinatura {
+            --badge-scale: 0.6;
+            top: 10px;
+            right: 10px;
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            border-radius: 12px;
+          }
         }
     </style>
 </head>
@@ -357,7 +368,8 @@
                 if ('Notification' in window && iniciarOuvinteDeNotificacoes && unlockAudio) {
                     if (Notification.permission === 'granted') {
                         notificationButton.style.display = 'none';
-                        const finalizarConfiguracaoPosInteracao = (e) => {
+                        const finalizarConfiguracaoPosInteraco
+                        n = (e) => {
                             if (e.target && (e.target.id === 'btn-logout' || e.target.closest('#btn-logout'))) {
                                 return;
                             }
@@ -421,7 +433,7 @@
                     badge.style.display = 'block';
                     requestAnimationFrame(() => {
                         badge.style.opacity = '1';
-                        badge.style.transform = 'translateY(0)';
+                        badge.style.transform = 'translateY(0) scale(var(--badge-scale))';
                     });
                     return;
                 }
@@ -432,13 +444,13 @@
                     badge.style.display = 'block';
                     requestAnimationFrame(() => {
                         badge.style.opacity = '1';
-                        badge.style.transform = 'translateY(0)';
+                        badge.style.transform = 'translateY(0) scale(var(--badge-scale))';
                     });
                     return;
                 }
                 // caso expirado: esconder badge (não mostrar)
                 badge.style.opacity = '0';
-                badge.style.transform = 'translateY(-6px)';
+                badge.style.transform = 'translateY(-6px) scale(var(--badge-scale))';
                 setTimeout(() => { badge.style.display = 'none'; }, 300);
             } catch (err) {
                 console.error('Erro ao atualizar badge de assinatura:', err);
