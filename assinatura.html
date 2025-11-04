@@ -183,6 +183,7 @@
         }
 
         // regra principal de validação: retorna objeto com resultado e dados para exibir
+        // ---- SUBSTITUIÇÃO: função unificada para eliminar conflito com user-service.js
         async function avaliarStatusEmpresa(empresaId, userId) {
             const result = {
                 isActive: false,
@@ -193,6 +194,9 @@
                 isFree: false,
                 freeDaysRemaining: 0,
             };
+
+            // usa o toDate já definido para compatibilidade
+            const toDateSafe = toDate;
 
             try {
                 const empRef = doc(db, "empresarios", empresaId);
@@ -205,8 +209,8 @@
                 result.empresaNome = emp.nomeFantasia || emp.nome || null;
                 result.plano = emp.plano || 'free';
 
-                // assinatura ativa + validade
-                const assinaturaValidaAte = toDate(emp.assinaturaValidaAte || emp.assinatura_valida_ate || null);
+                // 1) assinatura paga + validade (prioridade)
+                const assinaturaValidaAte = toDateSafe(emp.assinaturaValidaAte || emp.assinatura_valida_ate || null);
                 if (emp.assinaturaAtiva === true && assinaturaValidaAte) {
                     const agora = new Date();
                     if (assinaturaValidaAte.getTime() > agora.getTime()) {
@@ -217,8 +221,8 @@
                     }
                 }
 
-                // próximo pagamento explícito (proximoPagamento)
-                const proximoPag = toDate(emp.proximoPagamento || emp.proximo_pagamento || null);
+                // 2) próximo pagamento explícito
+                const proximoPag = toDateSafe(emp.proximoPagamento || emp.proximo_pagamento || null);
                 if (proximoPag) {
                     const agora = new Date();
                     if (proximoPag.getTime() > agora.getTime()) {
@@ -231,43 +235,66 @@
                     }
                 }
 
-                // checar se plano é 'free' ou freeEmDias
+                // 3) tratamento de free/trial unificado (prioridades alinhadas ao user-service)
                 const freeEmDias = Number(emp.freeEmDias ?? emp.free_em_dias ?? 0);
-                if (freeEmDias > 0 || (emp.plano && String(emp.plano).toLowerCase() === 'free')) {
-                    let trialEnd = null;
+
+                // tenta company.trialEndDate primeiro (se existir)
+                let trialEnd = toDateSafe(emp.trialEndDate || emp.trial_end || emp.trialEnds || null);
+
+                // se não existe, tenta createdAt + freeEmDias (conta dia inicial e ajusta fim do dia)
+                if (!trialEnd && freeEmDias > 0) {
+                    const createdAt = toDateSafe(emp.createdAt || emp.created_at || null);
+                    if (createdAt) {
+                        const end = new Date(createdAt);
+                        // soma (freeEmDias - 1) para contar o dia inicial como 1 e ajustar para o fim do dia
+                        end.setDate(end.getDate() + (freeEmDias - 1));
+                        end.setHours(23, 59, 59, 999);
+                        trialEnd = end;
+                    }
+                }
+
+                // se ainda não há, tenta fallback user.trialStart + freeEmDias (menos prioritário)
+                if (!trialEnd && freeEmDias > 0) {
                     try {
                         const userRef = doc(db, "usuarios", emp.donoId || userId);
                         const userSnap = await getDoc(userRef);
                         const userData = userSnap.exists() ? userSnap.data() : {};
-                        const trialStart = userData?.trialStart || userData?.trial_start || null;
-                        const startDate = toDate(trialStart);
-                        if (startDate && freeEmDias > 0) {
-                            trialEnd = new Date(startDate);
-                            trialEnd.setDate(trialEnd.getDate() + freeEmDias);
-                            const hoje = new Date(); hoje.setHours(0,0,0,0);
-                            if (trialEnd.getTime() >= hoje.getTime()) {
-                                result.isActive = true;
-                                result.reason = 'trial_ativo';
-                                result.proximoPagamentoDate = trialEnd;
-                                result.isFree = true;
-                                const diffMs = trialEnd.getTime() - hoje.getTime();
-                                result.freeDaysRemaining = Math.ceil(diffMs / (1000*60*60*24));
-                                return result;
-                            } else {
-                                result.freeDaysRemaining = 0;
-                            }
-                        } else {
-                            if (String(emp.plano).toLowerCase() === 'free') {
-                                result.isFree = true;
-                                result.reason = 'plano_free';
-                            }
+                        const userTrialStart = toDateSafe(userData?.trialStart || userData?.trial_start || null);
+                        if (userTrialStart) {
+                            const endU = new Date(userTrialStart);
+                            endU.setDate(endU.getDate() + (freeEmDias - 1));
+                            endU.setHours(23, 59, 59, 999);
+                            trialEnd = endU;
                         }
                     } catch (e) {
-                        console.warn('Erro ao ler usuário para trial:', e);
+                        console.warn('Erro ao ler usuário para calcular trial (fallback):', e);
                     }
                 }
 
-                // fallback: se campo status === 'ativo' and assinaturaAtiva true and no timestamp, consider active
+                if (trialEnd) {
+                    const hoje = new Date();
+                    hoje.setHours(0,0,0,0);
+                    if (trialEnd.getTime() >= hoje.getTime()) {
+                        result.isActive = true;
+                        result.reason = 'trial_ativo';
+                        result.proximoPagamentoDate = trialEnd;
+                        result.isFree = true;
+                        const diffMs = trialEnd.getTime() - hoje.getTime();
+                        result.freeDaysRemaining = Math.ceil(diffMs / (1000*60*60*24));
+                        return result;
+                    } else {
+                        result.freeDaysRemaining = 0;
+                        // trial no passado -> continua para marcar como expirado
+                    }
+                } else {
+                    // sem trial calculável, se plano explicitamente free, marca como free (expirado)
+                    if (String(emp.plano).toLowerCase() === 'free') {
+                        result.isFree = true;
+                        result.reason = 'plano_free';
+                    }
+                }
+
+                // fallback: se campo status === 'ativo' and assinaturaAtiva true and sem datas
                 if (emp.status === 'ativo' && emp.assinaturaAtiva === true && !result.proximoPagamentoDate) {
                     result.isActive = true;
                     result.reason = 'ativo_sem_data';
@@ -282,6 +309,7 @@
                 return result;
             }
         }
+        // ---- FIM DA SUBSTITUIÇÃO (função unificada) ----
 
         // função principal
         async function checkStatusRapido() {
@@ -309,15 +337,21 @@
                         tipoStatusEl.textContent = status.isActive ? (status.isFree ? 'Free (trial)' : 'Ativo') : (status.isFree ? 'Free (expirado)' : 'Expirado');
 
                         if (status.isActive) {
-                            // marca verificação: evita loop entre index <-> assinatura
-                            try {
-                                sessionStorage.setItem('assinatura_verified_ts', String(Date.now()));
-                            } catch (e) { /* ignore */ }
+                            // Evita loop: só redireciona para index se não veio do index
+                            const referrer = document.referrer || "";
+                            const veioDoIndex = referrer.includes('index.html') || referrer === "";
 
-                            // usa replace para não deixar histórico
-                            window.location.replace('index.html');
-                            resolve({ ok: true, status });
-                            return;
+                            if (!veioDoIndex) {
+                                console.log("[DEBUG] Assinatura ativa — redirecionando para index.html");
+                                try {
+                                    sessionStorage.setItem('assinatura_verified_ts', String(Date.now()));
+                                } catch (e) { /* ignore */ }
+                                window.location.replace('index.html');
+                                resolve({ ok: true, status });
+                                return;
+                            }
+
+                            console.log("[DEBUG] Assinatura ativa detectada, mas veio do index — evitando loop.");
                         }
 
                         resolve({ ok: false, status });
