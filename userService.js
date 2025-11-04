@@ -3,7 +3,7 @@
 // ======================================================================
 
 import {
-    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
+    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
@@ -39,33 +39,72 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
-// --- Função: Checa status de plano/trial (somente trialEndDate) ---
+// --- Função auxiliar ---
+function toDateSafe(v) {
+    if (!v) return null;
+    if (typeof v.toDate === 'function') {
+        try { return v.toDate(); } catch (e) { return null; }
+    }
+    if (v && typeof v.seconds === 'number') return new Date(v.seconds * 1000);
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+// --- Função: Checa status de plano/trial (prioriza trialEndDate, com fallback) ---
 async function checkUserStatus(user, empresaData) {
     try {
-        if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        if (!user) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         const userData = userSnap.data();
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
 
         let trialDaysRemaining = 0;
         let isTrialActive = false;
 
-        if (empresaData?.trialEndDate?.toDate) {
-            const endDate = empresaData.trialEndDate.toDate();
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            if (endDate >= hoje) {
+        // 1) Prioriza company.trialEndDate (Timestamp ou variantes)
+        let endDate = toDateSafe(empresaData?.trialEndDate || empresaData?.trial_end || empresaData?.trialEnds);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        // 2) Se não existe trialEndDate, tenta calcular a partir de createdAt + freeEmDias
+        if (!endDate) {
+            const freeEmDias = Number(empresaData?.freeEmDias ?? empresaData?.free_em_dias ?? 0);
+            const createdAt = toDateSafe(empresaData?.createdAt || empresaData?.created_at);
+            if (freeEmDias > 0 && createdAt) {
+                const computed = new Date(createdAt);
+                computed.setDate(computed.getDate() + (freeEmDias - 1));
+                computed.setHours(23, 59, 59, 999);
+                endDate = computed;
+            }
+        }
+
+        // 3) Se ainda não tem, tenta fallback para user.trialStart + freeEmDias (menos prioritário)
+        if (!endDate) {
+            const freeEmDias = Number(empresaData?.freeEmDias ?? empresaData?.free_em_dias ?? 0);
+            const userTrialStart = toDateSafe(userData?.trialStart || userData?.trial_start);
+            if (freeEmDias > 0 && userTrialStart) {
+                const computedU = new Date(userTrialStart);
+                computedU.setDate(computedU.getDate() + (freeEmDias - 1));
+                computedU.setHours(23, 59, 59, 999);
+                endDate = computedU;
+            }
+        }
+
+        if (endDate) {
+            if (endDate.getTime() >= hoje.getTime()) {
                 isTrialActive = true;
-                trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
+                // conta dias completos restantes (base = hoje à 00:00)
+                trialDaysRemaining = Math.ceil((endDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
             }
         }
 
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
-        return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        // Em erro, NÃO liberar por default — negamos trial para evitar falso positivo
+        return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
     }
 }
 
@@ -123,7 +162,7 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
-                const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
+                // const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
 
                 if (!user) {
                     if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
@@ -237,17 +276,25 @@ export async function verificarAcesso() {
                     statusAssinatura
                 };
 
-                // 🔒 Corrigido para impedir loop na assinatura
+                // 🔒 Proteção contra loop: se trial expirado, redireciona UMA vez e NÃO guarda cachedSessionProfile
                 if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive) {
-                    if (currentPage !== 'assinatura.html' && !window.location.pathname.includes('assinatura.html')) {
-                        console.log("[DEBUG] Trial expirado, indo para assinatura.html uma única vez");
-                        window.location.replace('assinatura.html');
+                    const lastRedirect = Number(sessionStorage.getItem('assinatura_redirected_ts') || 0);
+                    const now = Date.now();
+                    // se não redirecionamos nos últimos 10s, faz redirect; caso contrário evita repetir
+                    if (now - lastRedirect > 10000) {
+                        sessionStorage.setItem('assinatura_redirected_ts', String(now));
+                        if (currentPage !== 'assinatura.html' && !window.location.pathname.includes('assinatura.html')) {
+                            console.log("[DEBUG] Trial expirado, indo para assinatura.html (uma vez)");
+                            window.location.replace('assinatura.html');
+                        }
+                    } else {
+                        console.log("[DEBUG] Já redirecionado recentemente para assinatura — evitando loop.");
                     }
-                    cachedSessionProfile = sessionProfile;
                     isProcessing = false;
                     return reject(new Error("Assinatura expirada."));
                 }
 
+                // só grava cache em caso de sessão válida
                 cachedSessionProfile = sessionProfile;
                 isProcessing = false;
                 resolve(sessionProfile);
@@ -264,6 +311,7 @@ export async function verificarAcesso() {
 export function clearCache() {
     cachedSessionProfile = null;
     isProcessing = false;
+    try { sessionStorage.removeItem('assinatura_redirected_ts'); } catch (e) { /* ignore */ }
 }
 
 export async function getTodasEmpresas() {
