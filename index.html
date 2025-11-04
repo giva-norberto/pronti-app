@@ -146,6 +146,123 @@
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
+        // Guard simples para evitar redirect-loop rápido
+        const REDIRECT_GUARD_KEY = 'ultimaRedirectIndex';
+        function canRedirectTo(target, windowMs = 5000) {
+            try {
+                const raw = sessionStorage.getItem(REDIRECT_GUARD_KEY);
+                const now = Date.now();
+                if (raw) {
+                    const last = JSON.parse(raw);
+                    if (last && last.target === target && (now - last.ts) < windowMs) {
+                        console.warn(`Redirect para ${target} bloqueado pelo guard (muito recente).`);
+                        return false;
+                    }
+                }
+                sessionStorage.setItem(REDIRECT_GUARD_KEY, JSON.stringify({ target, ts: now }));
+                return true;
+            } catch (e) {
+                console.error("Erro no redirect guard:", e);
+                return true;
+            }
+        }
+
+        // --- Funções utilitárias de data / normalização ---
+        function toDateObj(value) {
+            if (!value) return null;
+            if (typeof value.toDate === 'function') return value.toDate(); // Firestore Timestamp
+            const d = new Date(value);
+            return isNaN(d) ? null : d;
+        }
+        function dateOnlyUTCms(dateLike) {
+            const d = toDateObj(dateLike);
+            if (!d) return null;
+            return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+        }
+        function todayUTCms() {
+            const now = new Date();
+            return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        }
+
+        // --- Regras de validação de empresa (VALIDAR TRIAL SOMENTE POR trialEndDate — date-only) ---
+        function checkEmpresaStatus(empresaData) {
+            try {
+                if (!empresaData) return { isPaid: false, isTrialActive: false };
+                if (empresaData.status && String(empresaData.status).toLowerCase() !== 'ativo') {
+                    return { isPaid: false, isTrialActive: false };
+                }
+
+                const hojeUTC = todayUTCms();
+
+                // Pagamento / assinatura
+                const assinaturaValidaAteMs = dateOnlyUTCms(empresaData.assinaturaValidaAte || empresaData.paidUntil);
+                const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
+                const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
+                const isApprovedManual = empresaData.aprovado === true || empresaData.approved === true;
+
+                if (planoPago || assinaturaAtivaFlag || isApprovedManual) {
+                    if (assinaturaValidaAteMs !== null) {
+                        return { isPaid: assinaturaValidaAteMs >= hojeUTC, isTrialActive: false };
+                    }
+                    return { isPaid: true, isTrialActive: false };
+                }
+
+                // TRIAL — validar SOMENTE por trialEndDate (ignora trialDisponivel)
+                if (empresaData.trialEndDate) {
+                    const trialEndMs = dateOnlyUTCms(empresaData.trialEndDate);
+                    if (trialEndMs !== null && trialEndMs >= hojeUTC) {
+                        return { isPaid: false, isTrialActive: true };
+                    }
+                }
+
+                return { isPaid: false, isTrialActive: false };
+            } catch (err) {
+                console.error("Erro em checkEmpresaStatus:", err);
+                return { isPaid: false, isTrialActive: false };
+            }
+        }
+
+        // --- Valida se a empresa ativa permite acesso ao index ---
+        async function validarEmpresaAtiva(sessao) {
+            try {
+                // Preferência: localStorage (selecionar-empresa) -> sessao -> null
+                const empresaId = localStorage.getItem('empresaAtivaId') || sessao?.empresaAtivaId || sessao?.empresaId;
+                if (!empresaId) {
+                    // sem empresa ativa: enviar para seleção (evita loop com guard)
+                    if (canRedirectTo('selecionar-empresa')) {
+                        location.replace('selecionar-empresa.html');
+                    }
+                    // se guard bloquear, apenas retorna e deixa a tela carregar (evita loop)
+                    return;
+                }
+
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaRef);
+                if (!empresaSnap.exists()) {
+                    console.warn("Empresa ativa não encontrada:", empresaId);
+                    if (canRedirectTo('selecionar-empresa')) {
+                        location.replace('selecionar-empresa.html');
+                    }
+                    return;
+                }
+                const empresaData = empresaSnap.data();
+                const status = checkEmpresaStatus(empresaData);
+                console.debug("validarEmpresaAtiva ->", { empresaId, status, empresaData });
+
+                // Se não estiver paga nem em trial válido, barrar e mandar para planos
+                if (!(status.isPaid || status.isTrialActive)) {
+                    if (canRedirectTo('planos')) {
+                        // usar replace para não empilhar histórico e reduzir risco de loop
+                        location.replace('planos.html');
+                    }
+                    return;
+                }
+                // caso esteja ok, nada a fazer — a inicialização continua
+            } catch (error) {
+                console.error("Erro ao validar empresa ativa:", error);
+            }
+        }
+
         function temPermissao(menus, id, papelUsuario ) {
             if (!menus[id]) return false;
             if (Array.isArray(papelUsuario)) {
@@ -183,7 +300,7 @@
             }
         }
         function popularCabecalho(sessao) {
-            const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
+            const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil?.nome?.split(" ")[0] || "Usuário";
             const hora = new Date().getHours();
             document.getElementById('saudacao').textContent = 
                 (hora >= 5 && hora < 12) ? "Bom dia" :
@@ -196,6 +313,10 @@
                 if (!sessao || !sessao.user) {
                     return;
                 }
+
+                // valida a empresa ativa antes de montar o menu / permissões
+                await validarEmpresaAtiva(sessao);
+
                 let papelUsuario = sessao.papel;
                 if (sessao.papeis && Array.isArray(sessao.papeis) && sessao.papeis.length > 0) {
                     papelUsuario = sessao.papeis;
