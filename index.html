@@ -111,7 +111,7 @@
         @media (max-width: 600px) { #btn-logout { display: block; } }
         @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
 
-        /* Badge de status da assinatura (menor visual) */
+        /* Badge de status da assinatura (menor visual no canto superior direito) */
         #statusAssinatura {
           --badge-scale: 1;
           position: fixed;
@@ -229,7 +229,7 @@
 
                 // Pagamento / assinatura
                 const assinaturaValidaAteMs = dateOnlyUTCms(empresaData.assinaturaValidaAte || empresaData.paidUntil);
-                const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
+                const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || companyData?.planStatus === 'active');
                 const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
                 const isApprovedManual = empresaData.aprovado === true || empresaData.approved === true;
 
@@ -368,8 +368,7 @@
                 if ('Notification' in window && iniciarOuvinteDeNotificacoes && unlockAudio) {
                     if (Notification.permission === 'granted') {
                         notificationButton.style.display = 'none';
-                        const finalizarConfiguracaoPosInteraco
-                        n = (e) => {
+                        const finalizarConfiguracaoPosInteracao = (e) => {
                             if (e.target && (e.target.id === 'btn-logout' || e.target.closest('#btn-logout'))) {
                                 return;
                             }
@@ -417,8 +416,8 @@
 
         // -------------------------
         // Listener para atualizar badge de status da assinatura
-        // Não altera nenhuma lógica de validação — apenas exibe estado útil no index.
-        // Não mostramos o estado "expirado" (não necessário quando o usuário já está bloqueado).
+        // Apenas exibe "✅ Plano ativo" quando a sessão indicar hasActivePlan = true.
+        // Não altera nenhuma lógica de validação ou redirecionamento.
         // -------------------------
         window.addEventListener('sessionProfileReady', (event) => {
             try {
@@ -426,7 +425,6 @@
                 if (!badge) return;
                 const sess = event?.detail || {};
                 const statusAssinatura = sess.statusAssinatura || sess.status || {};
-                // Prioriza exibição apenas para plano ativo ou trial ativo
                 if (statusAssinatura.hasActivePlan) {
                     badge.textContent = '✅ Plano ativo';
                     badge.style.background = 'linear-gradient(90deg, #10b981, #06a66a)';
@@ -437,18 +435,7 @@
                     });
                     return;
                 }
-                if (statusAssinatura.isTrialActive) {
-                    const dias = Number(statusAssinatura.trialDaysRemaining ?? 0);
-                    badge.textContent = `⏳ Trial: ${dias} ${dias === 1 ? 'dia' : 'dias'} restante${dias === 1 ? '' : 's'}`;
-                    badge.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
-                    badge.style.display = 'block';
-                    requestAnimationFrame(() => {
-                        badge.style.opacity = '1';
-                        badge.style.transform = 'translateY(0) scale(var(--badge-scale))';
-                    });
-                    return;
-                }
-                // caso expirado: esconder badge (não mostrar)
+                // se não houver plano ativo, não mostrar badge
                 badge.style.opacity = '0';
                 badge.style.transform = 'translateY(-6px) scale(var(--badge-scale))';
                 setTimeout(() => { badge.style.display = 'none'; }, 300);
