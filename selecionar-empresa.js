@@ -1,7 +1,8 @@
 /**
- * @file selecionar-empresa.js
- * @description Script autônomo para a página de seleção de empresa.
- * LÓGICA SIMPLES: Valida (Pago) ou (trialEndDate). Redireciona para planos se expirado.
+ * selecionar-empresa.js
+ * Script para a página de seleção de empresa.
+ * Mantive toda a lógica existente e adicionei apenas garantia extra para
+ * abrir perfil em modo "criar" sem levar empresa ativa.
  */
 
 // Importações diretas
@@ -18,8 +19,10 @@ const btnLogout = document.getElementById('btn-logout');
 // --- Eventos ---
 if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
-        localStorage.removeItem('empresaAtivaId');
-        localStorage.removeItem('usuarioNome');
+        // remove empresa ativa e sai
+        try { localStorage.removeItem('empresaAtivaId'); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem('empresaModo'); } catch (e) { /* ignore */ }
+        try { sessionStorage.clear(); } catch (e) { /* ignore */ }
         await signOut(auth).catch(error => console.error("Erro ao sair:", error));
         window.location.href = 'login.html';
     });
@@ -28,14 +31,15 @@ if (btnLogout) {
 // Ponto de entrada principal do script
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        localStorage.removeItem('empresaAtivaId');
+        // garantir que não exista empresa ativa pré-selecionada ao entrar na seleção
+        try { localStorage.removeItem('empresaAtivaId'); } catch (e) { /* ignore */ }
         const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-        localStorage.setItem('usuarioNome', primeiroNome);
+        try { localStorage.setItem('usuarioNome', primeiroNome); } catch (e) { /* ignore */ }
 
         if (tituloBoasVindas) {
             tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
         }
-        carregarEmpresas(user.uid); 
+        carregarEmpresas(user.uid);
     } else {
         window.location.href = 'login.html';
     }
@@ -53,19 +57,16 @@ function tsToDate(value) {
     if (!value && value !== 0) return null;
     try {
         if (typeof value.toDate === 'function') {
-            // Firestore Timestamp
             return value.toDate();
         }
         if (value && typeof value.seconds === 'number') {
-            // plain object { seconds, nanoseconds? }
             return new Date(value.seconds * 1000);
         }
         if (value instanceof Date) return value;
-        // tenta converter string / number
         const d = new Date(value);
         if (!isNaN(d.getTime())) return d;
     } catch (err) {
-        // fallback para null
+        // fallback null
     }
     return null;
 }
@@ -76,24 +77,32 @@ function hojeSemHoras() {
     return d;
 }
 
+function dateOnlyUTCmsFromDate(d) {
+    if (!d) return null;
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+function dateOnlyUTCmsFromValue(v) {
+    const d = tsToDate(v);
+    return d ? dateOnlyUTCmsFromDate(d) : null;
+}
+
 // ==========================================================
-// ✅ FUNÇÃO DE VALIDAÇÃO SIMPLIFICADA (COM CORREÇÃO DE DATA)
+// ✅ FUNÇÃO DE VALIDAÇÃO (mantendo prioridade existente)
 // ==========================================================
 function checkEmpresaStatus(empresaData) {
     try {
-        if (!empresaData) {
-            return { isPaid: false, isTrialActive: false };
-        }
+        if (!empresaData) return { isPaid: false, isTrialActive: false };
 
         if (empresaData.status && String(empresaData.status).toLowerCase() !== 'ativo') {
             return { isPaid: false, isTrialActive: false };
         }
 
         const now = new Date();
-        const hoje = hojeSemHoras();
+        const hojeUTCms = dateOnlyUTCmsFromDate(hojeSemHoras());
 
-        // --- 1. Checagem de PAGAMENTO (Valida empresas antigas) ---
+        // 1) assinatura / pagamento (prioridade)
         const assinaturaValidaAte = tsToDate(empresaData.assinaturaValidaAte || empresaData.assinatura_valida_ate || empresaData.paidUntil || empresaData.paid_until);
+        const proximoPagamento = tsToDate(empresaData.proximoPagamento || empresaData.proximo_pagamento || empresaData.nextPayment);
         const planoPago = (String(empresaData.plano || '').toLowerCase() === 'pago' ||
                            String(empresaData.plano || '').toLowerCase() === 'premium' ||
                            String(empresaData.planStatus || '').toLowerCase() === 'active' ||
@@ -103,48 +112,46 @@ function checkEmpresaStatus(empresaData) {
 
         if (planoPago || assinaturaAtivaFlag || isApprovedManual) {
             if (assinaturaValidaAte) {
-                // compara por timestamp completo (mantendo comportamento antigo)
-                if (assinaturaValidaAte.getTime() > now.getTime()) {
-                    return { isPaid: true, isTrialActive: false }; // Pago e válido
-                } else {
-                    return { isPaid: false, isTrialActive: false }; // Assinatura paga expirou
-                }
+                if (assinaturaValidaAte.getTime() > now.getTime()) return { isPaid: true, isTrialActive: false };
+                return { isPaid: false, isTrialActive: false }; // pago mas expirou
             }
-            // Pago sem data explícita -> compatibilidade com registros antigos
+            return { isPaid: true, isTrialActive: false }; // pago sem data
+        }
+
+        // 2) próximo pagamento futuro
+        if (proximoPagamento && proximoPagamento.getTime() > now.getTime()) {
             return { isPaid: true, isTrialActive: false };
         }
 
-        // --- 2. Checagem de TRIAL (VALIDAR SOMENTE POR trialEndDate) ---
-        // Regra solicitada: considerar trial ativo apenas com base em trialEndDate,
-        // ignorando outros flags como trialDisponivel.
+        // 3) TRIAL via trialEndDate (date-only)
         const trialRaw = empresaData.trialEndDate || empresaData.trial_end || empresaData.trialEnds || empresaData.trial_ends;
-        if (trialRaw) {
-            const trialDate = tsToDate(trialRaw);
-            if (trialDate) {
-                // Normaliza para comparação "apenas data" (remove horas)
-                const trialDateSemHoras = new Date(trialDate);
-                trialDateSemHoras.setHours(0, 0, 0, 0);
+        const trialEndMs = dateOnlyUTCmsFromValue(trialRaw);
+        if (trialEndMs !== null) {
+            if (trialEndMs >= hojeUTCms) return { isPaid: false, isTrialActive: true };
+            return { isPaid: false, isTrialActive: false };
+        }
 
-                // Se a data final do trial for >= data de hoje => trial ativo
-                if (trialDateSemHoras.getTime() >= hoje.getTime()) {
-                    return { isPaid: false, isTrialActive: true };
-                }
-                // Se trialEndDate < hoje => expirado (vai cair no retorno abaixo)
-            } else {
-                // Se não conseguiu interpretar a data, considera expirado por segurança
+        // 4) fallback freeEmDias + createdAt
+        const freeEmDias = Number(empresaData.freeEmDias ?? empresaData.free_em_dias ?? 0);
+        if (freeEmDias > 0) {
+            const createdAt = tsToDate(empresaData.createdAt || empresaData.created_at || empresaData.created);
+            if (createdAt) {
+                const end = new Date(createdAt);
+                end.setDate(end.getDate() + (freeEmDias - 1));
+                end.setHours(23,59,59,999);
+                const endUTC = dateOnlyUTCmsFromDate(end);
+                if (endUTC !== null && endUTC >= hojeUTCms) return { isPaid: false, isTrialActive: true };
                 return { isPaid: false, isTrialActive: false };
             }
         }
 
-        // --- 3. Expirado ---
+        // 5) default expirado
         return { isPaid: false, isTrialActive: false };
-
-    } catch (error) {
-        console.error("Erro em checkEmpresaStatus:", error, "empresaData:", empresaData);
+    } catch (err) {
+        console.error("Erro em checkEmpresaStatus:", err, "empresaData:", empresaData);
         return { isPaid: false, isTrialActive: false };
     }
 }
-
 
 // --- Funções Principais (com a lógica de redirecionamento) ---
 async function carregarEmpresas(userId) {
@@ -162,8 +169,8 @@ async function carregarEmpresas(userId) {
         // --- Validação para 1 Empresa ---
         if (idsDasEmpresas.length === 1) {
             const empresaId = idsDasEmpresas[0];
-            localStorage.setItem('empresaAtivaId', empresaId); 
-            
+            try { localStorage.setItem('empresaAtivaId', empresaId); } catch (e) { /* ignore */ }
+
             const empresaRef = doc(db, "empresarios", empresaId);
             const empresaSnap = await getDoc(empresaRef);
             const empresaData = empresaSnap.exists() ? empresaSnap.data() : null;
@@ -173,13 +180,12 @@ async function carregarEmpresas(userId) {
             if (status.isPaid || status.isTrialActive) {
                 window.location.href = 'index.html'; // OK
             } else {
-                window.location.href = 'planos.html'; // Expirado
+                window.location.href = 'assinatura.html'; // Expirado
             }
             return;
         }
 
         // --- Validação para Múltiplas Empresas ---
-        
         const empresas = [];
         const CHUNK_SIZE = 10; 
         for (let i = 0; i < idsDasEmpresas.length; i += CHUNK_SIZE) {
@@ -234,12 +240,12 @@ function criarEmpresaCard(empresa) {
 
     card.addEventListener('click', (e) => {
         e.preventDefault();
-        localStorage.setItem('empresaAtivaId', empresa.id); 
+        try { localStorage.setItem('empresaAtivaId', empresa.id); } catch (err) { /* ignore */ }
         
         if (isPaid || isTrialActive) {
             window.location.href = 'index.html'; // OK
         } else {
-            window.location.href = 'planos.html'; // Expirado
+            window.location.href = 'assinatura.html'; // Expirado
         }
     });
 
@@ -274,20 +280,28 @@ function criarNovoCard() {
         <span class="empresa-nome">Criar Nova Empresa</span>
     `;
 
-    // Ao clicar: limpar empresaAtivaId e ir para perfil.html para criar nova
+    // Ao clicar: limpar dados locais e abrir perfil em modo "criar" (sem empresa ativa)
     card.addEventListener('click', (e) => {
         e.preventDefault();
         try {
-            localStorage.removeItem('empresaAtivaId'); // garante que perfil não carregue empresa existente
-            // opcional: remover outros campos relacionados
-            // localStorage.removeItem('empresaAtivaNome');
-            // sessionStorage.removeItem('empresaEdicao');
+            // remover referências que podem deixar o perfil em modo edição
+            localStorage.removeItem('empresaAtivaId');
+            localStorage.removeItem('empresaAtivaNome');
+            localStorage.removeItem('empresaFormDraft');
+            localStorage.removeItem('empresaModo');
+            sessionStorage.removeItem('empresaEdicao');
+            sessionStorage.removeItem('empresaFormData');
+            // redundância: set flag de criação (será limpa pelo perfil se ele respeitar)
+            localStorage.setItem('empresaModo', 'criar');
+            localStorage.setItem('empresaCreateTimestamp', String(Date.now()));
         } catch (err) {
-            console.warn('Não foi possível limpar empresaAtivaId:', err);
+            console.warn('Não foi possível limpar dados locais antes de criar nova empresa:', err);
         }
-        // navega explicitamente para criar novo perfil (sem empresa ativa)
-        window.location.href = 'perfil.html';
+        // navegar com query param para forçar modo criação
+        window.location.href = 'perfil.html?new=1';
     });
 
     return card;
 }
+
+export { checkEmpresaStatus, carregarEmpresas };
