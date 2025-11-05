@@ -50,6 +50,25 @@ async function garantirSlugUnico(slugBase, idEmpresaAtual = null) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    // ✅ Detecta se veio de "Criar Nova Empresa" e força modo criação
+    // Inserido para garantir que perfil abra em tela limpa quando acessado via ?new=1
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('new')) {
+            try {
+                localStorage.removeItem('empresaAtivaId');
+                localStorage.setItem('empresaModo', 'criar');
+                sessionStorage.removeItem('empresaEdicao');
+                sessionStorage.removeItem('empresaFormData');
+                console.log("🔄 Entrando em modo criação de nova empresa (parâmetro ?new=1 detectado).");
+            } catch (err) {
+                console.warn("Falha ao preparar modo criação:", err);
+            }
+        }
+    } catch (err) {
+        console.warn("Não foi possível interpretar query params no perfil:", err);
+    }
+
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
