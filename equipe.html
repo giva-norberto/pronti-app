@@ -1,282 +1,264 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento de Equipe</title>
-    <link rel="stylesheet" href="equipe.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Equipe</title>
+    <link rel="stylesheet" href="equipe.css">
 </head>
 <body>
-        <div id="sidebar-placeholder"></div>
+    <!-- Menu lateral dinâmico -->
+    <div id="sidebar-placeholder"></div>
 
-    <div class="container">
-        <div class="header">
-            <h1>👥 Gerenciamento de Equipe</h1>
-            <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
-        </div>
-        <div class="content">
-            <div class="actions">
-                <h2>Minha Equipe</h2>
-                <button id="btn-convite" class="btn btn-info">
-                    🔗 Enviar Link de Convite
-                </button>
-                <button id="btn-cancelar-equipe" class="btn btn-secondary">
-                    ❌ Cancelar
-                </button>
-            </div>
-            <div id="lista-profissionais-painel" class="equipe-grid">
-                            </div>
-        </div>
-    </div>
+    <div class="container">
+        <div class="header">
+            <h1>👥 Gerenciamento de Equipe</h1>
+            <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
+        </div>
+        <div class="content">
+            <div class="actions">
+                <h2>Minha Equipe</h2>
+                <button id="btn-convite" class="btn btn-info">
+                    🔗 Enviar Link de Convite
+                </button>
+                <button id="btn-cancelar-equipe" class="btn btn-secondary">
+                    ❌ Cancelar
+                </button>
+            </div>
+            <div id="lista-profissionais-painel" class="equipe-grid">
+                <!-- Profissionais renderizados pelo JS -->
+            </div>
+        </div>
+    </div>
 
-        <div id="modal-add-profissional" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="titulo-modal-profissional">➕ Adicionar Novo Profissional</h2>
-                <p>Preencha os dados do membro da equipe</p>
-            </div>
-            <form id="form-add-profissional">
-                <div class="form-group">
-                    <label for="nome-profissional">Nome Completo *</label>
-                    <input 
-                        type="text" 
-                        id="nome-profissional" 
-                        name="nome" 
-        _               class="form-control" 
-                        placeholder="Digite o nome completo do profissional"
-                        required
-                    >
-                </div>
-                <div class="form-group">
-                    <label for="foto-profissional">Foto do Profissional</label>
-                    <input 
-                        type="file" 
-                        id="foto-profissional" 
-                        name="foto" 
-                        class="form-control"
-                        accept="image/*"
-                    >
-                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
-                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
-                    </small>
-                </div>
-                <div class="form-actions">
-                    <button type="button" id="btn-cancelar-profissional" class="btn btn-secondary">
-                        ❌ Cancelar
-                  _ </button>
-                    <button type="submit" class="btn btn-success btn-submit">
-                        💾 Salvar Profissional
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Modal Adicionar/Editar Profissional -->
+    <div id="modal-add-profissional" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="titulo-modal-profissional">➕ Adicionar Novo Profissional</h2>
+                <p>Preencha os dados do membro da equipe</p>
+            </div>
+            <form id="form-add-profissional">
+                <div class="form-group">
+                    <label for="nome-profissional">Nome Completo *</label>
+                    <input 
+                        type="text" 
+                        id="nome-profissional" 
+                        name="nome" 
+                        class="form-control" 
+                        placeholder="Digite o nome completo do profissional"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="foto-profissional">Foto do Profissional</label>
+                    <input 
+                        type="file" 
+                        id="foto-profissional" 
+                        name="foto" 
+                        class="form-control"
+                        accept="image/*"
+                    >
+                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
+                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
+                    </small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="btn-cancelar-profissional" class="btn btn-secondary">
+                        ❌ Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success btn-submit">
+                        💾 Salvar Profissional
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        <div id="modal-perfil-profissional" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
-                <p>Configure os serviços e horários de atendimento</p>
-            </div>
-            <div id="perfil-profissional-foto-container" style="text-align: center; margin-bottom: 20px;">
-                            </div>
-            <div class="tabs">
-                <button id="tab-servicos" class="tab-btn active">Serviços</button>
-                <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
-                <button id="tab-agenda-especial" class="tab-btn">Agenda Especial</button>
-                                <button id="tab-comissao" class="tab-btn">Comissão</button>
-            </div>
+    <!-- Modal Perfil do Profissional (com abas) -->
+    <div id="modal-perfil-profissional" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
+                <p>Configure os serviços e horários de atendimento</p>
+            </div>
+            <div id="perfil-profissional-foto-container" style="text-align: center; margin-bottom: 20px;">
+                <!-- O componente de foto será renderizado aqui pelo JavaScript -->
+            </div>
+            <div class="tabs">
+                <button id="tab-servicos" class="tab-btn active">Serviços</button>
+                <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
+                <button id="tab-agenda-especial" class="tab-btn">Agenda Especial</button>
+                <!-- NOVA ABA -->
+                <button id="tab-comissao" class="tab-btn">Comissão</button>
+            </div>
 
-            <div id="tab-content-servicos" class="tab-content active">
-                <h3>🛠️ Serviços Disponíveis</h3>
-                <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
-                <div id="servicos-lista" class="servicos-grid"></div>
-            </div>
+            <div id="tab-content-servicos" class="tab-content active">
+                <h3>🛠️ Serviços Disponíveis</h3>
+                <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
+                <div id="servicos-lista" class="servicos-grid"></div>
+            </div>
 
-            <div id="tab-content-horarios" class="tab-content">
-A             <h3>🕐 Horários de Atendimento</h3>
-                <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos:</p>
-                <div class="form-group">
-                    <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
-                    <input 
-                        type="number" 
-                        id="intervalo-atendimento" 
-                        name="intervalo-atendimento"
-                        class="form-control"
-                        min="5" 
-                        max="180" 
-                        step="5" 
-                        value="30"
-                        style="width:100px; margin-bottom:12px;"
-                    >
-                </div>
-                <div id="horarios-lista" class="horarios-grid"></div>
-                <div class="form-group" style="margin-top: 25px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                    <label for="permitir-agendamento-multiplo" style="display: flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" id="permitir-agendamento-multiplo" name="permitir-agendamento-multiplo" style="width: 18px; height: 18px; margin-right: 10px;">
-                        Permitir vários serviços de uma vez
-                    </label>
-                    <small style="color: #7f8c8d; margin-top: 8px; display: block; padding-left: 28px;">
-                    </small>
-                </div>
-            </div>
+            <div id="tab-content-horarios" class="tab-content">
+                <h3>🕐 Horários de Atendimento</h3>
+                <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos:</p>
+                <div class="form-group">
+                    <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
+                    <input 
+                        type="number" 
+                        id="intervalo-atendimento" 
+                        name="intervalo-atendimento"
+                        class="form-control"
+                        min="5" 
+                        max="180" 
+                        step="5" 
+                        value="30"
+                        style="width:100px; margin-bottom:12px;"
+                    >
+                </div>
+                <div id="horarios-lista" class="horarios-grid"></div>
+                <div class="form-group" style="margin-top: 25px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                    <label for="permitir-agendamento-multiplo" style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="permitir-agendamento-multiplo" name="permitir-agendamento-multiplo" style="width: 18px; height: 18px; margin-right: 10px;">
+                        Permitir vários serviços de uma vez
+                    </label>
+                    <small style="color: #7f8c8d; margin-top: 8px; display: block; padding-left: 28px;">
+                    </small>
+                </div>
+            </div>
 
-            <div id="tab-content-agenda-especial" class="tab-content">
-                <h3>📅 Agenda Especial</h3>
-                <p style="color: #7f8c8d; margin-bottom: 10px;">
-                    Libere a agenda do profissional em um mês ou intervalo específico.
-                </p>
-                <div class="agenda-especial-area">
-                    <form id="form-agenda-especial">
-                        <label for="agenda-tipo">Tipo:</label>
-                        <select id="agenda-tipo" class="form-control" style="margin-bottom:10px;">
-                            <option value="mes">Mês</option>
-                            <option value="intervalo">Intervalo de datas</option>
-                        </select>
-                        <div id="agenda-mes-area" style="display:block;">
-                            <label for="agenda-mes">Mês:</label>
-                            <input type="month" id="agenda-mes" class="form-control">
-t                     </div>
-                        <div id="agenda-intervalo-area" style="display:none;">
-                            <label for="agenda-inicio">De:</label>
-                            <input type="date" id="agenda-inicio" class="form-control">
-                            <label for="agenda-fim">Até:</label>
-                            <input type="date" id="agenda-fim" class="form-control">
-                        </div>
-                        <button type="button" id="btn-agenda-especial" class="btn btn-success" style="margin-top:12px;">
-                            💾 Liberar Agenda
-                        </button>
-                    </form>
-                    <div id="agenda-especial-lista" style="margin-top:18px;"></div>
-                </div>
-            </div>
+            <div id="tab-content-agenda-especial" class="tab-content">
+                <h3>📅 Agenda Especial</h3>
+                <p style="color: #7f8c8d; margin-bottom: 10px;">
+                    Libere a agenda do profissional em um mês ou intervalo específico.
+                </p>
+                <div class="agenda-especial-area">
+                    <form id="form-agenda-especial">
+                        <label for="agenda-tipo">Tipo:</label>
+                        <select id="agenda-tipo" class="form-control" style="margin-bottom:10px;">
+                            <option value="mes">Mês</option>
+                            <option value="intervalo">Intervalo de datas</option>
+                        </select>
+                        <div id="agenda-mes-area" style="display:block;">
+                            <label for="agenda-mes">Mês:</label>
+                            <input type="month" id="agenda-mes" class="form-control">
+                        </div>
+                        <div id="agenda-intervalo-area" style="display:none;">
+                            <label for="agenda-inicio">De:</label>
+                            <input type="date" id="agenda-inicio" class="form-control">
+                            <label for="agenda-fim">Até:</label>
+                            <input type="date" id="agenda-fim" class="form-control">
+                        </div>
+                        <button type="button" id="btn-agenda-especial" class="btn btn-success" style="margin-top:12px;">
+                            💾 Liberar Agenda
+                        </button>
+                    </form>
+                    <div id="agenda-especial-lista" style="margin-top:18px;"></div>
+                </div>
+            </div>
 
-                        <div id="tab-content-comissao" class="tab-content">
-                <h3>💰 Configuração de Comissão</h3>
-                <p style="color: #7f8c8d; margin-bottom: 10px;">
-                    Defina as comissões padrão e específicas por serviço para este profissional.
-                </p>
+            <!-- ABA COMISSÃO COM LISTAGEM DE SERVIÇOS -->
+            <div id="tab-content-comissao" class="tab-content">
+                <h3>💰 Configuração de Comissão</h3>
+                <p style="color: #7f8c8d; margin-bottom: 10px;">
+                    Defina as comissões padrão e específicas por serviço para este profissional.
+                </p>
 
-                <div class="form-group">
-                    <label for="comissao-padrao">Comissão Padrão (%)</label>
-                    <input 
-                        type="number" 
-                        id="comissao-padrao" 
-                        name="comissao-padrao"A                 class="form-control" 
-                        placeholder="Ex: 40"
-                        min="0" 
-                        max="100"
-                    >
-                    <small style="color: #7f8c8d; margin-top: 4px; display: block;">
-                        Percentual aplicado em todos os serviços, caso não haja uma comissão específica.
-                    </small>
-    D             </div>
+                <div class="form-group">
+                    <label for="comissao-padrao">Comissão Padrão (%)</label>
+                    <input 
+                        type="number" 
+                        id="comissao-padrao" 
+                        name="comissao-padrao" 
+                        class="form-control" 
+                        placeholder="Ex: 40"
+                        min="0" 
+                        max="100"
+                    >
+                    <small style="color: #7f8c8d; margin-top: 4px; display: block;">
+                        Percentual aplicado em todos os serviços, caso não haja uma comissão específica.
+                    </small>
+                </div>
 
-                <div class="form-group" style="margin-top: 15px;">
-                    <label>Comissão por Serviço (%)</label>
-                    <div id="comissao-servicos-lista"></div>
-                    <small style="color: #7f8c8d; margin-top: 4px; display: block;">
-                        Preencha a comissão de cada serviço. Se deixar vazio, será usada a comissão padrão.
-                    </small>
-                </div>
-            </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Comissão por Serviço (%)</label>
+                    <div id="comissao-servicos-lista"></div>
+                    <small style="color: #7f8c8d; margin-top: 4px; display: block;">
+                        Preencha a comissão de cada serviço. Se deixar vazio, será usada a comissão padrão.
+                    </small>
+                </div>
+            </div>
 
-            <div class="form-actions">
-                <button type="button" id="btn-cancelar-perfil" class="btn btn-secondary">
-                    ❌ Cancelar
-                </button>
-                <button type="button" id="btn-salvar-perfil" class="btn btn-success">
-                    💾 Salvar Configurações
-                </button>
-            </div>
-        </div>
-    </div>
+            <div class="form-actions">
+                <button type="button" id="btn-cancelar-perfil" class="btn btn-secondary">
+                    ❌ Cancelar
+                </button>
+                <button type="button" id="btn-salvar-perfil" class="btn btn-success">
+                    💾 Salvar Configurações
+                </button>
+            </div>
+        </div>
+    </div>
 
-        <div id="custom-confirm-modal" class="modal-overlay" style="display:none;">
-      <div class="modal-card">
-        <h2 id="modal-titulo"></h2>
-        <div id="modal-mensagem"></div>
-        <div class="modal-botoes"></div>
-      </div>
-    </div>
+    <!-- Modal Customizado para Alertas e Confirmações (necessário para vitrini-utils.js) -->
+    <div id="custom-confirm-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-card">
+        <h2 id="modal-titulo"></h2>
+        <div id="modal-mensagem"></div>
+        <div class="modal-botoes"></div>
+      </div>
+    </div>
 
-    <script>
-        // Carregar menu lateral dinâmico
-        document.addEventListener("DOMContentLoaded", function() {
-  	       fetch('menu-lateral.html')
-                .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-                .then(html => {
-                    document.getElementById('sidebar-placeholder').innerHTML = html;
-MA             })
-                .catch(error => {
-                    console.error('Erro ao carregar o menu lateral:', error);
-                });
-      	 });
-    </script>
+    <script>
+        // Carregar menu lateral dinâmico
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('menu-lateral.html')
+                .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
+                .then(html => {
+                    document.getElementById('sidebar-placeholder').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar o menu lateral:', error);
+                });
+        });
+    </script>
 
-    <script type="module" src="equipe.js"></script>
+    <script type="module" src="equipe.js"></script>
 
-    <style>
-    .modal-overlay {
-      display: none;
-      position: fixed; z-index: 9999;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.45);
-      align-items: center; justify-content: center;
-    }
-    .modal-overlay.ativo {
-      display: flex;
-    }
-    .modal-card {
-      background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 400px; width: 100%;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.13);
-      text-align: center;
-    }
-    .modal-botoes {
-      margin-top: 28px;
-      display: flex; gap: 12px; justify-content: center;
-    }
-    .modal-botoes button {
-      padding: 8px 22px; border-radius: 6px; border: none; cursor: pointer;
-      background: #4f46e5; color: #fff; font-weight: 600; font-size: 1rem;
-  	   transition: background 0.2s;
-    }
-    .modal-botoes button#modal-btn-cancelar { background: #aaa; }
-
-    /*
-    ============================================
-    ✅ INÍCIO DA SOLUÇÃO PARA ROLAGEM NO CELULAR ✅
-    ============================================
-    */
-    @media (max-width: 768px) {
-        /*
-         * Isso limita a altura do CONTEÚDO da aba ativa (qualquer uma delas)
-         * a um máximo de 60% da altura da tela (60vh).
-         */
-        #modal-perfil-profissional .tab-content.active {
-            max-height: 60vh; /* Você pode ajustar esse valor (ex: 50vh, 65vh) */
-            
-            /*
-             * Isso adiciona a barra de rolagem vertical APENAS 
-             * se o conteúdo da aba ultrapassar os 60% de altura.
-             */
-            overflow-y: auto;
-            
-            /* Melhora a experiência de rolagem em celulares (especialmente iOS) */
-            -webkit-overflow-scrolling: touch;
-        }
+    <style>
+    .modal-overlay {
+      display: none;
+      position: fixed; z-index: 9999;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.45);
+      align-items: center; justify-content: center;
     }
-    /* ==================================
-       FIM DA SOLUÇÃO
-       ================================== */
-  	 </style>
+    .modal-overlay.ativo {
+      display: flex;
+    }
+    .modal-card {
+      background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 400px; width: 100%;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+      text-align: center;
+    }
+    .modal-botoes {
+      margin-top: 28px;
+      display: flex; gap: 12px; justify-content: center;
+    }
+    .modal-botoes button {
+      padding: 8px 22px; border-radius: 6px; border: none; cursor: pointer;
+      background: #4f46e5; color: #fff; font-weight: 600; font-size: 1rem;
+      transition: background 0.2s;
+    }
+    .modal-botoes button#modal-btn-cancelar { background: #aaa; }
+    </style>
 
-  	 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        window.addEventListener("profissionalSalvo", function() {
-  	         window.location.reload();
-        });
-  	 });
-    </script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        window.addEventListener("profissionalSalvo", function() {
+            window.location.reload();
+        });
+    });
+    </script>
 </body>
 </html>
