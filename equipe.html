@@ -103,7 +103,7 @@
                 <h3>🕐 Horários de Atendimento</h3>
                 <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos:</p>
 
-                <!-- ADIÇÃO: container rolável específico para esta aba (apenas marcação estrutural, sem alterar lógica) -->
+                <!-- ADIÇÃO MÍNIMA: wrapper que controla a rolagem apenas nesta aba (não altera JS/logic) -->
                 <div class="horarios-scroll">
                     <div class="form-group">
                         <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
@@ -129,7 +129,7 @@
                         </small>
                     </div>
                 </div>
-                <!-- fim do container .horarios-scroll -->
+                <!-- fim .horarios-scroll -->
             </div>
 
             <div id="tab-content-agenda-especial" class="tab-content">
@@ -257,64 +257,71 @@
     }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
 
-    /* ===== ALTERAÇÕES MÓVEIS: apenas para a aba "Horários & Intervalos" =====
-       - Não altera lógica JS.
-       - Adiciona um container rolável (.horarios-scroll) somente nesta aba em telas pequenas.
-       - Garante que os botões (.form-actions) fiquem visíveis (sticky) no rodapé do modal.
+    /* ===== MUDANÇA MÍNIMA (APLICADA SOMENTE PARA CELULAR) =====
+       Objetivo: permitir rolagem completa dentro da aba "Horários & Intervalos"
+       e garantir que os botões permaneçam visíveis/clicáveis.
+       Não altera JS ou estrutura existente além do wrapper .horarios-scroll.
     */
     @media (max-width: 768px) {
-      .modal {
-        display: none;
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        align-items: center;
-        justify-content: center;
-        z-index: 9998;
-      }
-      .modal.ativo {
+      /* Escopo apenas para o modal de perfil do profissional */
+      #modal-perfil-profissional .modal-content {
         display: flex;
+        flex-direction: column;
+        height: 100vh;
+        max-height: 100vh;
+        margin: 0;
+        border-radius: 8px 8px 0 0;
+        overflow: hidden; /* o conteúdo interno controla a rolagem */
+        width: 100%;
+        max-width: 100%;
+        padding: 12px;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
       }
 
-      .modal .modal-content {
-        background: #fff;
-        border-radius: 10px;
-        padding: 18px;
-        max-width: 680px;
-        width: calc(100% - 32px);
-        max-height: calc(100vh - 40px);
-        overflow: visible; /* deixar o conteúdo interno controlar o scroll */
-        position: relative;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      /* manter header e abas fixos (não rolarem) */
+      #modal-perfil-profissional .modal-header,
+      #modal-perfil-profissional .tabs {
+        flex: 0 0 auto;
       }
 
-      /* Container rolável específico da aba de horários */
-      #tab-content-horarios .horarios-scroll {
-        /* calcular altura para caber dentro do modal sem sobrepor os botões.
-           Ajuste o valor de 220px se necessário (depende do header/abcs). */
-        max-height: calc(100vh - 260px);
+      /* área das abas ocupa o restante e controla rolagem interna */
+      #modal-perfil-profissional .tab-content {
+        flex: 1 1 auto;
+        overflow: hidden; /* cada tab controla sua própria rolagem */
+      }
+
+      /* rolagem específica apenas para a aba de horários (wrapper .horarios-scroll) */
+      #modal-perfil-profissional #tab-content-horarios .horarios-scroll {
+        /* Reserve espaço para header + abas + blocos de botões.
+           Ajuste o valor (170px / 190px) caso necessário no seu dispositivo. */
+        height: calc(100vh - 170px);
+        max-height: calc(100vh - 170px);
         overflow-y: auto;
-        -webkit-overflow-scrolling: touch; /* melhora "momentum" no iOS */
-        padding-right: 8px; /* evita que o conteúdo fique colado na borda quando rolar */
+        -webkit-overflow-scrolling: touch; /* momentum em iOS */
+        overscroll-behavior-y: contain;
+        padding-right: 8px;
       }
 
-      /* Mantém os botões do modal sempre visíveis */
-      .modal .modal-content .form-actions {
-        position: -webkit-sticky;
+      /* garantir que a área de horários tenha espaçamento inferior para não ficar encoberta */
+      #modal-perfil-profissional #tab-content-horarios .horarios-scroll > *:last-child {
+        margin-bottom: 12px;
+      }
+
+      /* manter botões visíveis e clicáveis no rodapé do modal */
+      #modal-perfil-profissional .form-actions {
         position: sticky;
         bottom: 0;
         left: 0;
         right: 0;
+        z-index: 30;
+        background: linear-gradient(transparent, #ffffff);
+        padding: 10px 12px;
         display: flex;
         gap: 10px;
         justify-content: flex-end;
-        align-items: center;
-        padding: 10px 16px;
-        background: #ffffff;
-        z-index: 30;
-        border-top: 1px solid rgba(0,0,0,0.06);
       }
     }
-    /* fim das alterações CSS */
     </style>
 
     <script>
