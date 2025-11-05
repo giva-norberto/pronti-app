@@ -251,6 +251,58 @@
       transition: background 0.2s;
     }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
+
+    /* ===== ALTERAÇÕES: aplicar apenas em dispositivos móveis (celular) =====
+       - tornar o conteúdo do modal rolável com "momentum" no iOS
+       - deixar .form-actions sticky no rodapé do modal
+       - garantir padding-bottom extra para que o conteúdo não fique escondido atrás das ações
+    */
+    @media (max-width: 768px) {
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        align-items: center;
+        justify-content: center;
+        z-index: 9998;
+      }
+      .modal.ativo {
+        display: flex;
+      }
+
+      .modal .modal-content {
+        background: #fff;
+        border-radius: 10px;
+        padding: 18px;
+        /* espaço extra embaixo para evitar que o conteúdo fique escondido atrás das ações fixas */
+        padding-bottom: 88px;
+        max-width: 680px;
+        width: calc(100% - 32px);
+        max-height: calc(100vh - 40px); /* deixa espaço nas laterais/topo para o overlay */
+        overflow-y: auto; /* conteúdo rolável */
+        -webkit-overflow-scrolling: touch; /* suaviza o scrolling no iOS */
+        position: relative;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      }
+
+      /* tornar as actions do formulário "fixas" (sticky) ao fundo do modal-content */
+      .modal .modal-content .form-actions {
+        position: -webkit-sticky;
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 10px 16px;
+        background: #ffffff; /* fundo sólido para legibilidade */
+        z-index: 30; /* acima do conteúdo rolável */
+        border-top: 1px solid rgba(0,0,0,0.06);
+      }
+    }
+    /* fim das alterações CSS */
     </style>
 
     <script>
