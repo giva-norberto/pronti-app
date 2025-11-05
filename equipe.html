@@ -102,29 +102,34 @@
             <div id="tab-content-horarios" class="tab-content">
                 <h3>🕐 Horários de Atendimento</h3>
                 <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos:</p>
-                <div class="form-group">
-                    <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
-                    <input 
-                        type="number" 
-                        id="intervalo-atendimento" 
-                        name="intervalo-atendimento"
-                        class="form-control"
-                        min="5" 
-                        max="180" 
-                        step="5" 
-                        value="30"
-                        style="width:100px; margin-bottom:12px;"
-                    >
+
+                <!-- ADIÇÃO: container rolável específico para esta aba (apenas marcação estrutural, sem alterar lógica) -->
+                <div class="horarios-scroll">
+                    <div class="form-group">
+                        <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
+                        <input 
+                            type="number" 
+                            id="intervalo-atendimento" 
+                            name="intervalo-atendimento"
+                            class="form-control"
+                            min="5" 
+                            max="180" 
+                            step="5" 
+                            value="30"
+                            style="width:100px; margin-bottom:12px;"
+                        >
+                    </div>
+                    <div id="horarios-lista" class="horarios-grid"></div>
+                    <div class="form-group" style="margin-top: 25px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                        <label for="permitir-agendamento-multiplo" style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="permitir-agendamento-multiplo" name="permitir-agendamento-multiplo" style="width: 18px; height: 18px; margin-right: 10px;">
+                            Permitir vários serviços de uma vez
+                        </label>
+                        <small style="color: #7f8c8d; margin-top: 8px; display: block; padding-left: 28px;">
+                        </small>
+                    </div>
                 </div>
-                <div id="horarios-lista" class="horarios-grid"></div>
-                <div class="form-group" style="margin-top: 25px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                    <label for="permitir-agendamento-multiplo" style="display: flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" id="permitir-agendamento-multiplo" name="permitir-agendamento-multiplo" style="width: 18px; height: 18px; margin-right: 10px;">
-                        Permitir vários serviços de uma vez
-                    </label>
-                    <small style="color: #7f8c8d; margin-top: 8px; display: block; padding-left: 28px;">
-                    </small>
-                </div>
+                <!-- fim do container .horarios-scroll -->
             </div>
 
             <div id="tab-content-agenda-especial" class="tab-content">
@@ -252,10 +257,10 @@
     }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
 
-    /* ===== ALTERAÇÕES: aplicar apenas em dispositivos móveis (celular) =====
-       - tornar o conteúdo do modal rolável com "momentum" no iOS
-       - deixar .form-actions sticky no rodapé do modal
-       - garantir padding-bottom extra para que o conteúdo não fique escondido atrás das ações
+    /* ===== ALTERAÇÕES MÓVEIS: apenas para a aba "Horários & Intervalos" =====
+       - Não altera lógica JS.
+       - Adiciona um container rolável (.horarios-scroll) somente nesta aba em telas pequenas.
+       - Garante que os botões (.form-actions) fiquem visíveis (sticky) no rodapé do modal.
     */
     @media (max-width: 768px) {
       .modal {
@@ -274,18 +279,25 @@
         background: #fff;
         border-radius: 10px;
         padding: 18px;
-        /* espaço extra embaixo para evitar que o conteúdo fique escondido atrás das ações fixas */
-        padding-bottom: 88px;
         max-width: 680px;
         width: calc(100% - 32px);
-        max-height: calc(100vh - 40px); /* deixa espaço nas laterais/topo para o overlay */
-        overflow-y: auto; /* conteúdo rolável */
-        -webkit-overflow-scrolling: touch; /* suaviza o scrolling no iOS */
+        max-height: calc(100vh - 40px);
+        overflow: visible; /* deixar o conteúdo interno controlar o scroll */
         position: relative;
         box-shadow: 0 10px 30px rgba(0,0,0,0.15);
       }
 
-      /* tornar as actions do formulário "fixas" (sticky) ao fundo do modal-content */
+      /* Container rolável específico da aba de horários */
+      #tab-content-horarios .horarios-scroll {
+        /* calcular altura para caber dentro do modal sem sobrepor os botões.
+           Ajuste o valor de 220px se necessário (depende do header/abcs). */
+        max-height: calc(100vh - 260px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* melhora "momentum" no iOS */
+        padding-right: 8px; /* evita que o conteúdo fique colado na borda quando rolar */
+      }
+
+      /* Mantém os botões do modal sempre visíveis */
       .modal .modal-content .form-actions {
         position: -webkit-sticky;
         position: sticky;
@@ -297,8 +309,8 @@
         justify-content: flex-end;
         align-items: center;
         padding: 10px 16px;
-        background: #ffffff; /* fundo sólido para legibilidade */
-        z-index: 30; /* acima do conteúdo rolável */
+        background: #ffffff;
+        z-index: 30;
         border-top: 1px solid rgba(0,0,0,0.06);
       }
     }
