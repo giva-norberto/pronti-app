@@ -229,7 +229,7 @@
 
                 // Pagamento / assinatura
                 const assinaturaValidaAteMs = dateOnlyUTCms(empresaData.assinaturaValidaAte || empresaData.paidUntil);
-                const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || companyData?.planStatus === 'active');
+                const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData?.planStatus === 'active');
                 const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
                 const isApprovedManual = empresaData.aprovado === true || empresaData.approved === true;
 
@@ -282,11 +282,11 @@
                 const status = checkEmpresaStatus(empresaData);
                 console.debug("validarEmpresaAtiva ->", { empresaId, status, empresaData });
 
-                // Se não estiver paga nem em trial válido, barrar e mandar para planos
+                // Se não estiver paga nem em trial válido, barrar e mandar para assinatura (alterado para assinatura.html)
                 if (!(status.isPaid || status.isTrialActive)) {
-                    if (canRedirectTo('planos')) {
+                    if (canRedirectTo('assinatura')) {
                         // usar replace para não empilhar histórico e reduzir risco de loop
-                        location.replace('planos.html');
+                        location.replace('assinatura.html');
                     }
                     return;
                 }
@@ -372,8 +372,8 @@
                             if (e.target && (e.target.id === 'btn-logout' || e.target.closest('#btn-logout'))) {
                                 return;
                             }
-                            unlockAudio();
-                            iniciarOuvinteDeNotificacoes(sessao.user.uid);
+                            try { unlockAudio(); } catch (err) { console.warn('unlockAudio falhou:', err); }
+                            try { iniciarOuvinteDeNotificacoes(sessao.user.uid); } catch (err) { console.warn('iniciarOuvinteDeNotificacoes falhou:', err); }
                             window.removeEventListener('click', finalizarConfiguracaoPosInteracao);
                             window.removeEventListener('touchstart', finalizarConfiguracaoPosInteracao);
                         };
