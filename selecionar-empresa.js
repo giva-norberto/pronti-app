@@ -42,11 +42,32 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // --- Utilitários de Data ---
-function tsToDate(ts) {
-    if (!ts) return null;
-    if (typeof ts.toDate === 'function') return ts.toDate();
-    const d = new Date(ts);
-    return isNaN(d) ? null : d;
+/**
+ * Converte vários formatos possíveis em Date ou retorna null:
+ * - Firestore Timestamp (objeto com toDate())
+ * - Objeto plain { seconds: number }
+ * - Date
+ * - ISO string / timestamp string
+ */
+function tsToDate(value) {
+    if (!value && value !== 0) return null;
+    try {
+        if (typeof value.toDate === 'function') {
+            // Firestore Timestamp
+            return value.toDate();
+        }
+        if (value && typeof value.seconds === 'number') {
+            // plain object { seconds, nanoseconds? }
+            return new Date(value.seconds * 1000);
+        }
+        if (value instanceof Date) return value;
+        // tenta converter string / number
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) return d;
+    } catch (err) {
+        // fallback para null
+    }
+    return null;
 }
 
 function hojeSemHoras() {
@@ -72,29 +93,33 @@ function checkEmpresaStatus(empresaData) {
         const hoje = hojeSemHoras();
 
         // --- 1. Checagem de PAGAMENTO (Valida empresas antigas) ---
-        const assinaturaValidaAte = tsToDate(empresaData.assinaturaValidaAte || empresaData.paidUntil);
-        const planoPago = (empresaData.plano === 'pago' || empresaData.plano === 'premium' || empresaData.planStatus === 'active');
-        const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true;
+        const assinaturaValidaAte = tsToDate(empresaData.assinaturaValidaAte || empresaData.assinatura_valida_ate || empresaData.paidUntil || empresaData.paid_until);
+        const planoPago = (String(empresaData.plano || '').toLowerCase() === 'pago' ||
+                           String(empresaData.plano || '').toLowerCase() === 'premium' ||
+                           String(empresaData.planStatus || '').toLowerCase() === 'active' ||
+                           String(empresaData.plan_status || '').toLowerCase() === 'active');
+        const assinaturaAtivaFlag = empresaData.assinaturaAtiva === true || empresaData.assinatura_ativa === true;
         const isApprovedManual = empresaData.aprovado === true || empresaData.approved === true;
 
         if (planoPago || assinaturaAtivaFlag || isApprovedManual) {
             if (assinaturaValidaAte) {
-                if (assinaturaValidaAte > now) {
+                // compara por timestamp completo (mantendo comportamento antigo)
+                if (assinaturaValidaAte.getTime() > now.getTime()) {
                     return { isPaid: true, isTrialActive: false }; // Pago e válido
                 } else {
                     return { isPaid: false, isTrialActive: false }; // Assinatura paga expirou
                 }
             }
-            return { isPaid: true, isTrialActive: false }; // Pago (sem data)
+            // Pago sem data explícita -> compatibilidade com registros antigos
+            return { isPaid: true, isTrialActive: false };
         }
 
         // --- 2. Checagem de TRIAL (VALIDAR SOMENTE POR trialEndDate) ---
         // Regra solicitada: considerar trial ativo apenas com base em trialEndDate,
         // ignorando outros flags como trialDisponivel.
-        if (empresaData.trialEndDate) {
-
-            // Converter o Timestamp do Firestore (ou string/Date) para Date
-            const trialDate = tsToDate(empresaData.trialEndDate);
+        const trialRaw = empresaData.trialEndDate || empresaData.trial_end || empresaData.trialEnds || empresaData.trial_ends;
+        if (trialRaw) {
+            const trialDate = tsToDate(trialRaw);
             if (trialDate) {
                 // Normaliza para comparação "apenas data" (remove horas)
                 const trialDateSemHoras = new Date(trialDate);
@@ -115,7 +140,7 @@ function checkEmpresaStatus(empresaData) {
         return { isPaid: false, isTrialActive: false };
 
     } catch (error) {
-        console.error("Erro em checkEmpresaStatus:", error);
+        console.error("Erro em checkEmpresaStatus:", error, "empresaData:", empresaData);
         return { isPaid: false, isTrialActive: false };
     }
 }
@@ -242,11 +267,27 @@ function criarEmpresaCard(empresa) {
 function criarNovoCard() {
     const card = document.createElement('a');
     card.className = 'criar-empresa-card';
-    card.href = 'perfil.html';
+    card.href = '#';
 
     card.innerHTML = `
         <div class="plus-icon"><i class="fas fa-plus"></i></div>
         <span class="empresa-nome">Criar Nova Empresa</span>
     `;
+
+    // Ao clicar: limpar empresaAtivaId e ir para perfil.html para criar nova
+    card.addEventListener('click', (e) => {
+        e.preventDefault();
+        try {
+            localStorage.removeItem('empresaAtivaId'); // garante que perfil não carregue empresa existente
+            // opcional: remover outros campos relacionados
+            // localStorage.removeItem('empresaAtivaNome');
+            // sessionStorage.removeItem('empresaEdicao');
+        } catch (err) {
+            console.warn('Não foi possível limpar empresaAtivaId:', err);
+        }
+        // navega explicitamente para criar novo perfil (sem empresa ativa)
+        window.location.href = 'perfil.html';
+    });
+
     return card;
 }
