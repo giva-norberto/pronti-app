@@ -59,11 +59,51 @@ function mapearElementos() {
     elementos.comissaoServicosLista = document.getElementById('comissao-servicos-lista'); // campo container da lista de comissões por serviço
 
     // --- Adição: garantir binding do select de agenda especial assim que os elementos estiverem mapeados ---
-    // Função definida abaixo (atualizarAreasAgendaEspecial)
     if (elementos.agendaTipo) {
         elementos.agendaTipo.addEventListener('change', atualizarAreasAgendaEspecial);
-        // inicializa o estado das áreas (mes / intervalo) com base no valor atual do select
         atualizarAreasAgendaEspecial();
+    }
+}
+
+/* =========================
+   Lock / unlock body scroll
+   =========================
+   Estas funções travam o scroll do body enquanto o modal estiver aberto,
+   evitando o "rubber-band" / efeito mola ao soltar o dedo no mobile.
+   Implementação mínima, segura e reversível.
+*/
+let __bodyScrollPosition = null;
+function lockBodyScroll() {
+    try {
+        // guarda scroll atual
+        __bodyScrollPosition = window.scrollY || document.documentElement.scrollTop || 0;
+        // aplica estilos para travar fundo
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${__bodyScrollPosition}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.overflow = 'hidden';
+        // opcional: aumentar z-index do modal já cobrir
+    } catch (e) {
+        // se falhar, não interrompe fluxo
+        console.warn('lockBodyScroll falhou', e);
+    }
+}
+function unlockBodyScroll() {
+    try {
+        // remove estilos
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        // restaura posição de scroll
+        if (__bodyScrollPosition !== null) {
+            window.scrollTo(0, __bodyScrollPosition);
+            __bodyScrollPosition = null;
+        }
+    } catch (e) {
+        console.warn('unlockBodyScroll falhou', e);
     }
 }
 
@@ -240,6 +280,9 @@ async function abrirPerfilProfissional(profissionalId) {
         atualizarAreasAgendaEspecial();
 
         elementos.modalPerfilProfissional.classList.add('show');
+
+        // --- LOCK BODY SCROLL to prevent background bounce in mobile ---
+        lockBodyScroll();
     } catch (error) {
         await showAlert("Erro", "Não foi possível abrir o perfil do profissional.");
     }
@@ -476,6 +519,10 @@ async function salvarPerfilProfissional() {
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
         await setDoc(horariosRef, horarios, { merge: true });
         if(elementos.modalPerfilProfissional) elementos.modalPerfilProfissional.classList.remove('show');
+
+        // unlock body scroll quando modal fecha
+        unlockBodyScroll();
+
         await showAlert("Sucesso!", "Perfil atualizado com sucesso!");
     } catch (error) {
         await showAlert("Erro", `Ocorreu um erro ao salvar o perfil: ${error.message}`);
@@ -485,13 +532,25 @@ async function salvarPerfilProfissional() {
 function adicionarEventListeners() {
     if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
     if (elementos.btnCancelarProfissional) elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
-    if (elementos.btnCancelarPerfil) elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
+    if (elementos.btnCancelarPerfil) elementos.btnCancelarPerfil.addEventListener("click", () => {
+        if (elementos.modalPerfilProfissional) elementos.modalPerfilProfissional.classList.remove('show');
+        // unlock body scroll quando modal fecha via botão cancelar
+        unlockBodyScroll();
+    });
     if (elementos.btnSalvarPerfil) elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
     if (elementos.btnAgendaEspecial) elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
     if (elementos.btnConvite) elementos.btnConvite.addEventListener('click', gerarLinkDeConvite);
 
     [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
-        if(modal) modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
+        if(modal) modal.addEventListener("click", (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+                // se for o modal de perfil, desbloqueia o body também
+                if (modal === elementos.modalPerfilProfissional) {
+                    unlockBodyScroll();
+                }
+            }
+        });
     });
 
     // O listener de submissão do formulário é adicionado APENAS UMA VEZ, aqui.
