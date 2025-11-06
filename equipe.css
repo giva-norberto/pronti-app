@@ -1,3 +1,6 @@
+/* === Arquivo: equipe.css (revisado) === */
+
+/* Reset e base */
 * {
     margin: 0;
     padding: 0;
@@ -430,6 +433,7 @@ body {
     font-size: 0.87rem;
 }
 
+/* === Mobile adjustments (mantive suas regras principais, removendo sobrescritas que alteravam o modal structure) === */
 @media (max-width: 768px) {
     .container {
         margin: 10px;
@@ -451,6 +455,8 @@ body {
         padding: 18px 7px;
         margin: 12px;
         max-width: 98vw;
+        /* mantemos o comportamento padrão do modal (max-height:95vh e overflow-y:auto do desktop)
+           para que o modal no mobile se comporte igual ao desktop e não trave */
     }
     .form-actions {
         flex-direction: column;
@@ -475,78 +481,41 @@ body {
         border-radius: 12px 12px 0 0;
     }
 
-    /* === Ajuste mobile: permitir que apenas o conteúdo da aba role internamente
-       e manter o bloco de botões (Salvar/Cancelar) visível === */
-
-    /* Escopo somente para o modal de perfil do profissional para não impactar outros modais */
-    /* Impedir que o toque deslize a rolagem para o documento por baixo (scroll chaining) */
+    /* Mantive a ideia de controlar a rolagem das abas, mas sem sobrescrever a estrutura do modal.
+       A área .tab-content segue rolando quando necessário (comportamento padrão do modal-content). */
     #modal-perfil-profissional {
         overscroll-behavior: none;
     }
 
-    #modal-perfil-profissional .modal-content {
-        display: flex;
-        flex-direction: column;
-        /* ocupar a altura da viewport para permitir rolagem interna controlada */
-        height: 100vh;
-        max-height: 100vh;
-        margin: 0;
-        border-radius: 8px 8px 0 0;
-        overflow: hidden; /* evita que o modal externo role; o conteúdo interno rola */
-        width: 100%;
-        max-width: 100%;
-        padding: 14px 12px; /* mantém espaçamento confortável em mobile */
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain; /* evita que a rolagem "escape" para o body */
-    }
-
-    /* Header e abas não devem rolar, ficam fixos no topo do modal */
-    #modal-perfil-profissional .modal-header,
-    #modal-perfil-profissional .tabs {
-        flex: 0 0 auto;
-    }
-
-    /* Área de conteúdo das abas ocupa o espaço restante e é a que rola internamente */
+    /* Certifique-se que cada aba possa rolar quando necessário */
     #modal-perfil-profissional .tab-content {
-        flex: 1 1 auto;
+        /* Não forçamos height:100vh nem overflow:hidden no modal-content — mantemos o modal padrão */
         overflow-y: auto;
-        -webkit-overflow-scrolling: touch; /* rolagem suave no iOS/Android */
-        overscroll-behavior-y: contain; /* impede que o scroll passe para o documento pai */
-        touch-action: pan-y; /* prioriza a rolagem vertical dentro da aba */
-        padding-right: 12px; /* evitar que conteúdo fique colado no scroll */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+        padding-right: 12px;
         padding-left: 12px;
-        padding-bottom: 20px; /* espaço para não ficar encoberto pelo bloco de ações */
+        padding-bottom: 20px;
     }
 
-    /* Ajuste específico para a aba 'Horários' (pode ajustar o 170px se necessário) */
+    /* Ajuste específico para a aba 'Horários': deixamos rolável conforme o fluxo normal do modal */
     #modal-perfil-profissional #tab-content-horarios {
-        max-height: calc(100vh - 170px); /* ajuste fino: header + abas + botões ≈ 170px */
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-y: contain;
         touch-action: pan-y;
     }
 
-    /* Garantir que o bloco de botões fique sempre visível no final do modal */
+    /* Somente no celular: travar os botões Salvar e Cancelar no modal, sem modificar o resto */
     #modal-perfil-profissional .form-actions {
-        flex: 0 0 auto;
         position: sticky;
         bottom: 0;
-        background: linear-gradient(transparent, rgba(255,255,255,0.98)); /* leve fade para separar do conteúdo */
+        background: white;
         padding: 12px 16px;
-        z-index: 12;
+        border-top: 1px solid #ddd;
+        z-index: 20;
         justify-content: flex-end;
         gap: 10px;
     }
-}
-/* Somente no celular: travar os botões Salvar e Cancelar no modal */
-@media (max-width: 768px) {
-  #modal-perfil-profissional .form-actions {
-    position: sticky;
-    bottom: 0;
-    background: white;
-    padding: 12px 16px;
-    border-top: 1px solid #ddd;
-    z-index: 20;
-  }
 }
