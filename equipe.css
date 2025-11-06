@@ -1,6 +1,3 @@
-/* === Arquivo: equipe.css (revisado - mudanças mínimas para comportamento mobile igual ao desktop) === */
-
-/* Reset e base */
 * {
     margin: 0;
     padding: 0;
@@ -266,46 +263,23 @@ body {
     display: flex;
     gap: 5px;
     margin-bottom: 18px;
-    justify-content: flex-start;
-    overflow-x: auto; /* permite rolar quando não couber */
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 6px;
+    justify-content: center;
 }
-.tabs::-webkit-scrollbar {
-    height: 8px;
-}
-.tabs::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.06);
-    border-radius: 8px;
-}
-
-/* Botões das abas destacados em azul */
-/* Botão padrão: tom suave de azul claro com texto azul escuro */
 .tab-btn {
-    background: linear-gradient(135deg, #e6f7ff 0%, #dbeffd 100%);
-    color: #064e7a; /* azul escuro para o texto */
+    background: #f2f3f6;
+    color: #764ba2;
     border: none;
     border-radius: 15px 15px 0 0;
-    padding: 8px 14px; /* reduzido para evitar estouro em telas pequenas */
+    padding: 10px 26px;
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    transition: background 0.15s, color 0.15s, transform 0.12s;
-    flex: 0 0 auto; /* não encolher, permite rolagem horizontal */
-    white-space: nowrap; /* evita quebra de texto dentro do botão */
-    box-shadow: 0 1px 0 rgba(3, 105, 161, 0.06) inset;
+    transition: background 0.2s, color 0.2s;
 }
-.tab-btn:hover {
-    transform: translateY(-2px);
-    background: linear-gradient(135deg, #d1efff 0%, #c6e8ff 100%);
-}
-
-/* Botão ativo: fundo azul forte e texto branco para destaque */
 .tab-btn.active {
-    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-    color: #ffffff;
-    border-bottom: 2px solid rgba(0,0,0,0.08);
-    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
+    background: #fff;
+    color: #2c3e50;
+    border-bottom: 2px solid #4facfe;
 }
 .tab-content {
     display: none;
@@ -433,7 +407,6 @@ body {
     font-size: 0.87rem;
 }
 
-/* === Mobile adjustments (mantive suas regras principais, removendo sobrescritas que alteravam o modal structure) === */
 @media (max-width: 768px) {
     .container {
         margin: 10px;
@@ -455,11 +428,6 @@ body {
         padding: 18px 7px;
         margin: 12px;
         max-width: 98vw;
-        /* mantemos o comportamento padrão do modal (max-height:95vh e overflow-y:auto do desktop)
-           para que o modal no mobile se comporte igual ao desktop e não trave */
-        max-height: 95vh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
     }
     .form-actions {
         flex-direction: column;
@@ -475,49 +443,5 @@ body {
         font-size: 0.92rem;
         padding: 7px 10px;
         height: 32px;
-    }
-
-    /* Ajustes específicos para as abas em telas menores (reduz padding e tamanho, mantém rolagem) */
-    .tab-btn {
-        padding: 6px 10px;
-        font-size: 0.9rem;
-        border-radius: 12px 12px 0 0;
-    }
-
-    /* Mantive a ideia de controlar a rolagem das abas, mas sem sobrescrever a estrutura do modal.
-       A área .tab-content segue rolando quando necessário (comportamento padrão do modal-content). */
-    #modal-perfil-profissional {
-        overscroll-behavior: auto;
-    }
-
-    /* Certifique-se que cada aba possa rolar quando necessário */
-    #modal-perfil-profissional .tab-content {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior-y: contain;
-        touch-action: pan-y;
-        padding-right: 12px;
-        padding-left: 12px;
-        padding-bottom: 20px;
-    }
-
-    /* Ajuste específico para a aba 'Horários': deixamos rolável conforme o fluxo normal do modal */
-    #modal-perfil-profissional #tab-content-horarios {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior-y: contain;
-        touch-action: pan-y;
-    }
-
-    /* Somente no celular: travar os botões Salvar e Cancelar no modal,
-       mas sem forçar estrutura que mude o comportamento do modal (não usamos height:100vh) */
-    #modal-perfil-profissional .form-actions {
-        position: static; /* manter no fluxo do conteúdo, igual ao desktop */
-        background: transparent;
-        padding: 12px 0 0;
-        border-top: none;
-        z-index: auto;
-        justify-content: flex-end;
-        gap: 10px;
     }
 }
