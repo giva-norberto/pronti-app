@@ -57,6 +57,21 @@ function mapearElementos() {
     // NOVOS CAMPOS ABA COMISSÃO
     elementos.comissaoPadrao = document.getElementById('comissao-padrao');
     elementos.comissaoServicosLista = document.getElementById('comissao-servicos-lista'); // campo container da lista de comissões por serviço
+
+    // --- Adição: garantir binding do select de agenda especial assim que os elementos estiverem mapeados ---
+    // Função definida abaixo (atualizarAreasAgendaEspecial)
+    if (elementos.agendaTipo) {
+        elementos.agendaTipo.addEventListener('change', atualizarAreasAgendaEspecial);
+        // inicializa o estado das áreas (mes / intervalo) com base no valor atual do select
+        atualizarAreasAgendaEspecial();
+    }
+}
+
+// Função isolada para mostrar/ocultar as áreas da aba "Agenda Especial"
+function atualizarAreasAgendaEspecial() {
+    if (!elementos.agendaTipo) return;
+    if (elementos.agendaMesArea) elementos.agendaMesArea.style.display = elementos.agendaTipo.value === "mes" ? "block" : "none";
+    if (elementos.agendaIntervaloArea) elementos.agendaIntervaloArea.style.display = elementos.agendaTipo.value === "intervalo" ? "block" : "none";
 }
 
 async function garantirPerfilDoDono() {
@@ -220,6 +235,10 @@ async function abrirPerfilProfissional(profissionalId) {
         }
         // Preencher lista de campos comissão por serviço
         renderizarComissaoServicos(profissional);
+
+        // --- Garantir estado correto da área Agenda Especial ao abrir o perfil ---
+        atualizarAreasAgendaEspecial();
+
         elementos.modalPerfilProfissional.classList.add('show');
     } catch (error) {
         await showAlert("Erro", "Não foi possível abrir o perfil do profissional.");
@@ -416,6 +435,10 @@ async function adicionarAgendaEspecial() {
         agendaEspecial.push({ tipo: 'mes', mes: elementos.agendaMes.value });
     } else {
         if (!elementos.agendaInicio.value || !elementos.agendaFim.value) return await showAlert("Aviso", "Informe o intervalo de datas.");
+        // validação adicional: início <= fim
+        if (elementos.agendaInicio.value > elementos.agendaFim.value) {
+            return await showAlert("Atenção", "A data inicial não pode ser posterior à data final.");
+        }
         agendaEspecial.push({ tipo: 'intervalo', inicio: elementos.agendaInicio.value, fim: elementos.agendaFim.value });
     }
     renderizarAgendaEspecial();
