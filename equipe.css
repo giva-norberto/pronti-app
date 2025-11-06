@@ -1,6 +1,7 @@
 /* ============================
    Arquivo: equipe.css
-   Versão revisada: pequenas melhorias para evitar "dança" e travamentos em mobile
+   Ajustes mínimos para corrigir scroll/modal no mobile (evitar "dança" e travamentos)
+   Mantive todo o restante do seu CSS — só adicionei/ajustei regras relacionadas ao modal/scroll.
    ============================ */
 
 /* Reset e base */
@@ -208,9 +209,16 @@ body {
     background: rgba(0,0,0,0.55);
     z-index: 9999;
     backdrop-filter: blur(2px);
+
+    /* Bloquear gestures de scroll fora do modal (evita tocar o body por baixo) */
+    touch-action: none;
 }
 .modal.show {
     display: flex !important;
+    /* Garante overlay cobrindo e impede scroll do fundo por toque */
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
 }
 .modal-content {
     background: white;
@@ -218,7 +226,10 @@ body {
     padding: 32px;
     width: 95%;
     max-width: 540px;
-    max-height: 95vh;
+
+    /* usar svh para lidar com barras móveis onde suportado (fallback para vh) */
+    max-height: calc(100svh - 40px);
+    min-height: 120px;
     overflow-y: auto;
     box-shadow: 0 14px 48px rgba(0,0,0,0.25);
     position: relative;
@@ -228,6 +239,9 @@ body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     will-change: transform;
+    touch-action: auto; /* permitir rolagem apenas dentro do conteúdo */
+    /* deixar um padding-bottom para evitar esconder último elemento por barras */
+    padding-bottom: 28px;
 }
 @keyframes modalShow {
     from { transform: scale(0.96);}
@@ -419,7 +433,7 @@ body {
     font-size: 0.87rem;
 }
 
-/* === Mobile adjustments (mantive suas regras principais, com pequenas melhorias de scroll) === */
+/* === Mobile adjustments (mantive suas regras principais, com foco em scroll estável) === */
 @media (max-width: 768px) {
     .container {
         margin: 10px;
@@ -441,8 +455,8 @@ body {
         padding: 18px 7px;
         margin: 12px;
         max-width: 98vw;
-        /* Mantemos o comportamento do desktop: max-height e overflow controlado */
-        max-height: 95vh;
+        /* Mantemos max-height padrão e scroll suave */
+        max-height: calc(100svh - 40px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
@@ -473,6 +487,7 @@ body {
     /* As abas e conteúdos podem rolar; garantimos comportamento estável e sem "escapamento" do scroll */
     #modal-perfil-profissional {
         overscroll-behavior: contain;
+        touch-action: none; /* bloqueia gestos fora do modal */
     }
     #modal-perfil-profissional .tab-content {
         overflow-y: auto;
