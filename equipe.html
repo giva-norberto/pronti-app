@@ -89,6 +89,7 @@
                 <button id="tab-servicos" class="tab-btn active">Serviços</button>
                 <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
                 <button id="tab-agenda-especial" class="tab-btn">Agenda Especial</button>
+                <!-- NOVA ABA -->
                 <button id="tab-comissao" class="tab-btn">Comissão</button>
             </div>
 
@@ -156,11 +157,13 @@
                 </div>
             </div>
 
+            <!-- ABA COMISSÃO COM LISTAGEM DE SERVIÇOS -->
             <div id="tab-content-comissao" class="tab-content">
                 <h3>💰 Configuração de Comissão</h3>
                 <p style="color: #7f8c8d; margin-bottom: 10px;">
                     Defina as comissões padrão e específicas por serviço para este profissional.
                 </p>
+
                 <div class="form-group">
                     <label for="comissao-padrao">Comissão Padrão (%)</label>
                     <input 
@@ -176,6 +179,7 @@
                         Percentual aplicado em todos os serviços, caso não haja uma comissão específica.
                     </small>
                 </div>
+
                 <div class="form-group" style="margin-top: 15px;">
                     <label>Comissão por Serviço (%)</label>
                     <div id="comissao-servicos-lista"></div>
@@ -196,7 +200,7 @@
         </div>
     </div>
 
-    <!-- Modal Customizado para Alertas e Confirmações -->
+    <!-- Modal Customizado para Alertas e Confirmações (necessário para vitrini-utils.js) -->
     <div id="custom-confirm-modal" class="modal-overlay" style="display:none;">
       <div class="modal-card">
         <h2 id="modal-titulo"></h2>
@@ -206,13 +210,16 @@
     </div>
 
     <script>
+        // Carregar menu lateral dinâmico
         document.addEventListener("DOMContentLoaded", function() {
             fetch('menu-lateral.html')
                 .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
                 .then(html => {
                     document.getElementById('sidebar-placeholder').innerHTML = html;
                 })
-                .catch(error => console.error('Erro ao carregar o menu lateral:', error));
+                .catch(error => {
+                    console.error('Erro ao carregar o menu lateral:', error);
+                });
         });
     </script>
 
@@ -226,7 +233,9 @@
       background: rgba(0,0,0,0.45);
       align-items: center; justify-content: center;
     }
-    .modal-overlay.ativo { display: flex; }
+    .modal-overlay.ativo {
+      display: flex;
+    }
     .modal-card {
       background: #fff; padding: 32px 24px; border-radius: 12px; max-width: 400px; width: 100%;
       box-shadow: 0 6px 24px rgba(0,0,0,0.13);
@@ -242,33 +251,6 @@
       transition: background 0.2s;
     }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
-
-    /* FIXAR RODAPÉ DA ABA HORÁRIOS IGUAL AO SERVIÇOS */
-    #tab-content-horarios .form-actions {
-      position: sticky;
-      bottom: 0;
-      background: #fff;
-      padding: 12px 0;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      z-index: 10;
-    }
-    @media (max-width: 768px) {
-      #tab-content-horarios .form-actions {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 10px;
-        background: #fff;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
-      }
-      #tab-content-horarios {
-        padding-bottom: 80px;
-      }
-    }
     </style>
 
     <script>
