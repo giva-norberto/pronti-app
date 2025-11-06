@@ -1,3 +1,9 @@
+/* ============================
+   Arquivo: equipe.css
+   Versão revisada: pequenas melhorias para evitar "dança" e travamentos em mobile
+   ============================ */
+
+/* Reset e base */
 * {
     margin: 0;
     padding: 0;
@@ -217,6 +223,11 @@ body {
     box-shadow: 0 14px 48px rgba(0,0,0,0.25);
     position: relative;
     animation: modalShow 0.2s ease;
+
+    /* Melhoria para mobile: rolagem suave e isolamento de overscroll (evita "dança") */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    will-change: transform;
 }
 @keyframes modalShow {
     from { transform: scale(0.96);}
@@ -246,6 +257,7 @@ body {
     border-radius: 7px;
     font-size: 1rem;
     transition: all 0.3s;
+    -webkit-tap-highlight-color: transparent;
 }
 .form-control:focus {
     outline: none;
@@ -407,6 +419,7 @@ body {
     font-size: 0.87rem;
 }
 
+/* === Mobile adjustments (mantive suas regras principais, com pequenas melhorias de scroll) === */
 @media (max-width: 768px) {
     .container {
         margin: 10px;
@@ -428,6 +441,11 @@ body {
         padding: 18px 7px;
         margin: 12px;
         max-width: 98vw;
+        /* Mantemos o comportamento do desktop: max-height e overflow controlado */
+        max-height: 95vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
     }
     .form-actions {
         flex-direction: column;
@@ -443,5 +461,46 @@ body {
         font-size: 0.92rem;
         padding: 7px 10px;
         height: 32px;
+    }
+
+    /* Ajustes específicos para as abas em telas menores (reduz padding e tamanho, mantém rolagem) */
+    .tab-btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        border-radius: 12px 12px 0 0;
+    }
+
+    /* As abas e conteúdos podem rolar; garantimos comportamento estável e sem "escapamento" do scroll */
+    #modal-perfil-profissional {
+        overscroll-behavior: contain;
+    }
+    #modal-perfil-profissional .tab-content {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+        padding-right: 12px;
+        padding-left: 12px;
+        padding-bottom: 20px;
+        will-change: transform;
+    }
+
+    /* Ajuste específico para a aba 'Horários' */
+    #modal-perfil-profissional #tab-content-horarios {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+    }
+
+    /* No mobile: mantenha os botões no fluxo (igual ao desktop) para evitar sobreposição e "dança" */
+    #modal-perfil-profissional .form-actions {
+        position: static;
+        background: transparent;
+        padding: 12px 0 0;
+        border-top: none;
+        z-index: auto;
+        justify-content: flex-end;
+        gap: 10px;
     }
 }
