@@ -287,17 +287,18 @@
       cursor: pointer;
       color: #1f2937; /* cinza escuro */
       font-weight: 700;
-      font-size: 0. nine; /* fallback if older browsers */
-      /* use explicit numeric value to avoid "0. nine" parsing issues */
       font-size: 0.95rem;
       transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
       position: relative;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      /* allow wrapping so two-word labels stack and make tab taller */
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+      overflow: visible;
       max-width: 120px;
       min-width: 68px;
       box-shadow: inset 0 -1px 0 rgba(3,105,161,0.03);
+      line-height: 1.05;
     }
 
     .tab-btn:hover {
@@ -305,12 +306,21 @@
       background: rgba(79,102,229,0.05);
     }
 
-    /* Aba ativa: cor viva, sombra e destaque */
+    /* Aba ativa: cor viva, sombra e destaque (mais evidente) */
     .tab-btn.active {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      background: linear-gradient(135deg, #0575E6 0%, #00C6FF 100%);
       color: #ffffff;
-      box-shadow: 0 8px 22px rgba(37,99,235,0.12);
-      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(5,117,230,0.18);
+      transform: translateY(-4px);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* Strong visual contrast for active tab label (avoid washed-out look) */
+    .tab-btn.active,
+    .tab-btn.active * {
+      opacity: 1 !important;
+      color: #fff !important;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.12);
     }
 
     /* Pequeno indicador decorativo abaixo da aba ativa */
@@ -323,12 +333,12 @@
       width: 36%;
       height: 3px;
       border-radius: 3px;
-      background: rgba(0,0,0,0.06);
+      background: rgba(0,0,0,0.08);
     }
 
     /* Acessibilidade - foco visível */
     .tab-btn:focus {
-      outline: 3px solid rgba(59,130,246,0.12);
+      outline: 3px solid rgba(59,130,246,0.14);
       outline-offset: 3px;
     }
 
@@ -341,14 +351,13 @@
         min-width: 56px;
         max-width: 92px;
       }
-      /* For very small screens, allow wrapping shorter labels */
-      #tab-horarios, #tab-agenda-especial {
-        /* allow small text scale if necessary */
-        font-size: 0.8rem;
-      }
+      /* Allow labels to wrap to 2 lines naturally */
+      .tab-btn { line-height: 1.05; }
+      /* Slightly larger active shadow on small screens for better contrast */
+      .tab-btn.active { box-shadow: 0 10px 26px rgba(5,117,230,0.20); }
     }
 
-    /* Optional: when there are many tabs, allow them to shrink a bit */
+    /* Very small screens */
     @media (max-width: 360px) {
       .tab-btn {
         padding: 4px 6px;
