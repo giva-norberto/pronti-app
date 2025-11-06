@@ -1,447 +1,634 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+// ======================================================================
+//                              EQUIPE.JS
+//        VERSÃO FINAL, COMPLETA E REVISADA (2024-09) - PADRÃO PRONTI
+// ======================================================================
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
-}
+import { db, auth, storage } from "./firebase-config.js";
+import { collection, onSnapshot, query, doc, getDoc, setDoc, updateDoc, serverTimestamp, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
+// --- VARIÁVEIS DE ESTADO ---
+let isDono = false;
+let empresaId = null;
+let profissionalAtual = null;
+let servicosDisponiveis = [];
+let horariosBase = {
+    segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    quarta:  { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    quinta:  { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    sexta:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    sabado:  { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    domingo: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] }
+};
+let intervaloBase = 30;
+let agendaEspecial = [];
 
-.header {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    padding: 30px;
-    text-align: center;
-}
+const elementos = {};
+function mapearElementos() {
+    elementos.btnCancelarEquipe = document.getElementById('btn-cancelar-equipe');
+    elementos.modalAddProfissional = document.getElementById('modal-add-profissional');
+    elementos.formAddProfissional = document.getElementById('form-add-profissional');
+    elementos.btnCancelarProfissional = document.getElementById('btn-cancelar-profissional');
+    elementos.listaProfissionaisPainel = document.getElementById('lista-profissionais-painel');
+    elementos.nomeProfissional = document.getElementById('nome-profissional');
+    elementos.fotoProfissional = document.getElementById('foto-profissional');
+    elementos.tituloModalProfissional = document.getElementById('titulo-modal-profissional');
+    elementos.modalPerfilProfissional = document.getElementById('modal-perfil-profissional');
+    elementos.perfilNomeProfissional = document.getElementById('perfil-nome-profissional');
+    elementos.servicosLista = document.getElementById('servicos-lista');
+    elementos.horariosLista = document.getElementById('horarios-lista');
+    elementos.btnCancelarPerfil = document.getElementById('btn-cancelar-perfil');
+    elementos.btnSalvarPerfil = document.getElementById('btn-salvar-perfil');
+    elementos.tabAgendaEspecial = document.getElementById('tab-agenda-especial');
+    elementos.tabContentAgendaEspecial = document.getElementById('tab-content-agenda-especial');
+    elementos.agendaTipo = document.getElementById('agenda-tipo');
+    elementos.agendaMesArea = document.getElementById('agenda-mes-area');
+    elementos.agendaIntervaloArea = document.getElementById('agenda-intervalo-area');
+    elementos.agendaMes = document.getElementById('agenda-mes');
+    elementos.agendaInicio = document.getElementById('agenda-inicio');
+    elementos.agendaFim = document.getElementById('agenda-fim');
+    elementos.btnAgendaEspecial = document.getElementById('btn-agenda-especial');
+    elementos.agendaEspecialLista = document.getElementById('agenda-especial-lista');
+    elementos.inputIntervalo = document.getElementById('intervalo-atendimento');
+    elementos.btnConvite = document.getElementById('btn-convite');
+    elementos.permitirAgendamentoMultiplo = document.getElementById('permitir-agendamento-multiplo');
+    // NOVOS CAMPOS ABA COMISSÃO
+    elementos.comissaoPadrao = document.getElementById('comissao-padrao');
+    elementos.comissaoServicosLista = document.getElementById('comissao-servicos-lista'); // campo container da lista de comissões por serviço
 
-.header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-    font-weight: 300;
-}
-
-.header p {
-    opacity: 0.9;
-    font-size: 1.1rem;
-}
-
-.content {
-    padding: 40px;
-}
-
-.actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 7px 14px;
-    border-radius: 15px;
-    cursor: pointer;
-    font-size: 0.93rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    min-width: unset;
-    height: 32px;
-    box-shadow: none;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-    color: #fff;
-    font-weight: 500;
-    display: inline-flex !important;
-    align-items: center;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-.btn-danger .icon-trash {
-    font-size: 1.1rem;
-    margin-right: 4px;
-}
-
-.btn-secondary {
-    background: linear-gradient(135deg, #a8a8a8 0%, #7f8c8d 100%);
-}
-
-.btn-profile {
-    background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
-    color: #fff;
-    font-weight: 500;
-}
-
-.btn-edit {
-    background: linear-gradient(135deg, #FFD54F 0%, #FFA726 100%);
-    color: #333;
-    font-weight: 500;
-}
-
-.equipe-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.profissional-card {
-    background: white;
-    border: 1px solid #e1e8ed;
-    border-radius: 15px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-    position: relative;
-    min-width: 0;
-}
-
-.profissional-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-}
-
-.profissional-foto {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 3px solid #4facfe;
-    align-self: flex-start;
-}
-
-.profissional-foto img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.profissional-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-}
-
-.profissional-nome {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: #2c3e50;
-    margin-bottom: 5px;
-}
-
-.profissional-status {
-    display: inline-block;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.profissional-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-}
-
-/* MODAL CENTRALIZADO */
-.modal {
-    position: fixed;
-    left: 0; top: 0;
-    width: 100vw; height: 100vh;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0,0,0,0.55);
-    z-index: 9999;
-    backdrop-filter: blur(2px);
-}
-.modal.show {
-    display: flex !important;
-}
-.modal-content {
-    background: white;
-    border-radius: 18px;
-    padding: 32px;
-    width: 95%;
-    max-width: 540px;
-    max-height: 95vh;
-    overflow-y: auto;
-    box-shadow: 0 14px 48px rgba(0,0,0,0.25);
-    position: relative;
-    animation: modalShow 0.2s ease;
-}
-@keyframes modalShow {
-    from { transform: scale(0.96);}
-    to { transform: scale(1);}
-}
-.modal-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-.modal-header h2 {
-    color: #2c3e50;
-    font-size: 1.3rem;
-    margin-bottom: 6px;
-}
-.form-group {
-    margin-bottom: 20px;
-}
-.form-group label {
-    margin-bottom: 5px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-.form-control {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1.5px solid #e1e8ed;
-    border-radius: 7px;
-    font-size: 1rem;
-    transition: all 0.3s;
-}
-.form-control:focus {
-    outline: none;
-    border-color: #4facfe;
-}
-.form-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 20px;
-}
-
-/* TABS NO PERFIL DO PROFISSIONAL */
-.tabs {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 18px;
-    justify-content: center;
-}
-.tab-btn {
-    background: #f2f3f6;
-    color: #764ba2;
-    border: none;
-    border-radius: 15px 15px 0 0;
-    padding: 10px 26px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: background 0.2s, color 0.2s;
-}
-.tab-btn.active {
-    background: #fff;
-    color: #2c3e50;
-    border-bottom: 2px solid #4facfe;
-}
-.tab-content {
-    display: none;
-}
-.tab-content.active {
-    display: block;
-}
-
-/* Serviços grid */
-.servicos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-    max-height: 220px;
-    overflow-y: auto;
-    border: 1px solid #e1e8ed;
-    border-radius: 10px;
-    padding: 10px;
-}
-
-.servico-item {
-    background: #e9ecef;
-    border: 2px solid #e1e8ed;
-    border-radius: 10px;
-    padding: 11px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 2px;
-    color: #333;
-}
-.servico-item.selected {
-    border-color: #2196f3;
-    background: #e3f2fd;
-    color: #1565c0;
-}
-.servico-nome {
-    font-weight: 600;
-    color: inherit;
-}
-.servico-preco {
-    color: #28a745;
-    font-weight: 500;
-}
-
-.horarios-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    margin-bottom: 12px;
-}
-.dia-horario {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 13px 13px 13px 13px;
-    margin-bottom: 2px;
-}
-.dia-nome {
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 7px;
-}
-.horario-intervalos {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.horario-inputs {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-.horario-inputs input[type="time"] {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #e1e8ed;
-    border-radius: 5px;
-}
-.horario-inputs .btn-remover-intervalo {
-    background: #ff6b6b;
-    color: white;
-    border: none;
-    border-radius: 7px;
-    padding: 2px 10px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    margin-left: 5px;
-}
-.btn-incluir-intervalo {
-    background: #4facfe;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 4px 15px;
-    font-size: 0.95rem;
-    font-weight: 500;
-    margin-top: 5px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.btn-incluir-intervalo:hover {
-    background: #00f2fe;
-}
-
-/* Agenda Especial */
-.agenda-especial-area {
-    padding: 10px 0;
-}
-#agenda-especial-lista {
-    font-size: 0.97rem;
-}
-.agenda-especial-item {
-    background: #f3f6fa;
-    border: 1px solid #e1e8ed;
-    border-radius: 8px;
-    padding: 8px;
-    margin-bottom: 6px;
-    color: #333;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.agenda-especial-item .btn-danger {
-    padding: 2px 9px;
-    font-size: 0.87rem;
-}
-
-@media (max-width: 768px) {
-    .container {
-        margin: 10px;
-        border-radius: 10px;
-    }
-    .content {
-        padding: 20px;
-    }
-    .header {
-        padding: 20px;
-    }
-    .header h1 {
-        font-size: 2rem;
-    }
-    .equipe-grid {
-        grid-template-columns: 1fr;
-    }
-    .modal-content {
-        padding: 18px 7px;
-        margin: 12px;
-        max-width: 98vw;
-    }
-    .form-actions {
-        flex-direction: column;
-        gap: 8px;
-    }
-    .servicos-grid {
-        grid-template-columns: 1fr;
-    }
-    .horarios-grid {
-        flex-direction: column;
-    }
-    .profissional-actions .btn {
-        font-size: 0.92rem;
-        padding: 7px 10px;
-        height: 32px;
+    // --- Adição: garantir binding do select de agenda especial assim que os elementos estiverem mapeados ---
+    // Função definida abaixo (atualizarAreasAgendaEspecial)
+    if (elementos.agendaTipo) {
+        elementos.agendaTipo.addEventListener('change', atualizarAreasAgendaEspecial);
+        // inicializa o estado das áreas (mes / intervalo) com base no valor atual do select
+        atualizarAreasAgendaEspecial();
     }
 }
+
+// Função isolada para mostrar/ocultar as áreas da aba "Agenda Especial"
+function atualizarAreasAgendaEspecial() {
+    if (!elementos.agendaTipo) return;
+    if (elementos.agendaMesArea) elementos.agendaMesArea.style.display = elementos.agendaTipo.value === "mes" ? "block" : "none";
+    if (elementos.agendaIntervaloArea) elementos.agendaIntervaloArea.style.display = elementos.agendaTipo.value === "intervalo" ? "block" : "none";
+}
+
+async function garantirPerfilDoDono() {
+    const user = auth.currentUser;
+    if (!user || !empresaId) return;
+    try {
+        const empresaRef = doc(db, "empresarios", empresaId);
+        const empresaSnap = await getDoc(empresaRef);
+        if (!empresaSnap.exists() || empresaSnap.data().donoId !== user.uid) return;
+        const donoId = user.uid;
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", donoId);
+        const profissionalSnap = await getDoc(profissionalRef);
+        if (!profissionalSnap.exists()) {
+            const usuarioRef = doc(db, "usuarios", donoId);
+            const usuarioSnap = await getDoc(usuarioRef);
+            const nomeDono = usuarioSnap.exists() && usuarioSnap.data().nome ? usuarioSnap.data().nome : "Dono";
+            await setDoc(profissionalRef, {
+                nome: nomeDono, ehDono: true, status: 'ativo',
+                criadoEm: serverTimestamp(), uid: donoId,
+                fotoUrl: user.photoURL || "", empresaId: empresaId
+            });
+        }
+    } catch (error) {
+        console.error("Erro ao garantir perfil do dono:", error);
+        mostrarErro("Não foi possível verificar o perfil do dono.");
+    }
+}
+
+async function inicializar() {
+    mapearElementos();
+    empresaId = localStorage.getItem("empresaAtivaId");
+    if (!empresaId) {
+        await showAlert("Atenção", "Nenhuma empresa ativa selecionada! Redirecionando...");
+        window.location.href = "selecionar-empresa.html";
+        return;
+    }
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            const empresaRef = doc(db, "empresarios", empresaId);
+            const empresaSnap = await getDoc(empresaRef);
+            if (empresaSnap.exists()) {
+                const empresaData = empresaSnap.data();
+                const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                isDono = (empresaData.donoId === user.uid) || (user.uid === adminUID);
+                if (empresaData.donoId === user.uid) {
+                    await garantirPerfilDoDono();
+                }
+                await carregarServicos();
+                iniciarListenerDaEquipe();
+                adicionarEventListeners();
+            } else {
+                await showAlert("Erro", "A empresa selecionada não foi encontrada. Redirecionando...");
+                window.location.href = "selecionar-empresa.html";
+            }
+        } else {
+            window.location.href = "login.html";
+        }
+    });
+}
+
+async function iniciarListenerDaEquipe() {
+    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+    onSnapshot(query(profissionaisRef), (snapshot) => {
+        renderizarEquipe(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+        console.error("Erro no listener da equipe:", error);
+        mostrarErro("Não foi possível carregar a equipe em tempo real.");
+    });
+}
+
+function setupPerfilTabs() {
+    const tabServicos = document.getElementById('tab-servicos');
+    const tabHorarios = document.getElementById('tab-horarios');
+    const tabAgendaEspecial = document.getElementById('tab-agenda-especial');
+    const tabComissao = document.getElementById('tab-comissao');
+    const contentServicos = document.getElementById('tab-content-servicos');
+    const contentHorarios = document.getElementById('tab-content-horarios');
+    const contentAgendaEspecial = document.getElementById('tab-content-agenda-especial');
+    const contentComissao = document.getElementById('tab-content-comissao');
+    if (!tabServicos || !tabHorarios || !tabAgendaEspecial || !tabComissao) return;
+    const setActiveTab = (activeTab, activeContent) => {
+        [tabServicos, tabHorarios, tabAgendaEspecial, tabComissao].forEach(t => t.classList.remove('active'));
+        [contentServicos, contentHorarios, contentAgendaEspecial, contentComissao].forEach(c => c.classList.remove('active'));
+        activeTab.classList.add('active');
+        activeContent.classList.add('active');
+    };
+    tabServicos.onclick = () => setActiveTab(tabServicos, contentServicos);
+    tabHorarios.onclick = () => setActiveTab(tabHorarios, contentHorarios);
+    tabAgendaEspecial.onclick = () => setActiveTab(tabAgendaEspecial, contentAgendaEspecial);
+    tabComissao.onclick = () => setActiveTab(tabComissao, contentComissao);
+    if (elementos.agendaTipo) {
+        elementos.agendaTipo.onchange = function () {
+            if(elementos.agendaMesArea) elementos.agendaMesArea.style.display = this.value === "mes" ? "block" : "none";
+            if(elementos.agendaIntervaloArea) elementos.agendaIntervaloArea.style.display = this.value === "intervalo" ? "block" : "none";
+        };
+    }
+}
+window.addEventListener('DOMContentLoaded', setupPerfilTabs);
+
+function voltarMenuLateral() { window.location.href = "index.html"; }
+
+async function carregarServicos() {
+    try {
+        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+        const snapshot = await getDocs(servicosRef);
+        servicosDisponiveis = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Erro ao carregar serviços:", error);
+        servicosDisponiveis = [];
+    }
+}
+
+function renderizarEquipe(equipe) {
+    if (!elementos.listaProfissionaisPainel) return;
+    elementos.listaProfissionaisPainel.innerHTML = "";
+    if (equipe.length === 0) {
+        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda. Clique em "Convidar Funcionário" para começar.</p></div>`;
+        return;
+    }
+    equipe.sort((a, b) => {
+        if (a.ehDono && !b.ehDono) return -1;
+        if (!a.ehDono && b.ehDono) return 1;
+        return (a.nome || "").localeCompare(b.nome || "");
+    }).forEach(profissional => {
+        const div = document.createElement("div");
+        div.className = "profissional-card";
+        if (profissional.status === 'pendente') div.classList.add('pendente');
+        let botoesDeAcao = '';
+        if (profissional.status === 'pendente') {
+            botoesDeAcao = `<button class="btn btn-success" onclick="window.ativarFuncionario('${profissional.id}')">✅ Ativar</button>
+                            <button class="btn btn-danger" onclick="window.recusarFuncionario('${profissional.id}')">❌ Recusar</button>`;
+        } else {
+            botoesDeAcao = `<button class="btn btn-profile" onclick="window.abrirPerfilProfissional('${profissional.id}')">👤 Perfil</button>
+                            <button class="btn btn-edit" onclick="window.editarProfissional('${profissional.id}')">✏️ Editar</button>
+                            ${!profissional.ehDono ? `<button class="btn btn-danger" onclick="window.excluirProfissional('${profissional.id}')">🗑️ Excluir</button>` : ""}`;
+        }
+        div.innerHTML = `<div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
+                         <div class="profissional-info">
+                             <span class="profissional-nome">${profissional.nome}</span>
+                             <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário')}</span>
+                         </div>
+                         <div class="profissional-actions">${botoesDeAcao}</div>`;
+        elementos.listaProfissionaisPainel.appendChild(div);
+    });
+}
+
+async function abrirPerfilProfissional(profissionalId) {
+    try {
+        const profissional = await carregarDadosProfissional(profissionalId);
+        if (!profissional) {
+            return mostrarErro("Não foi possível carregar os dados deste profissional.");
+        }
+        profissionalAtual = profissionalId;
+        elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${profissional.nome}`;
+        renderizarServicosNoPerfil(profissional.servicos || []);
+        agendaEspecial = profissional.agendaEspecial || [];
+        renderizarAgendaEspecial();
+        // Preencher comissão padrão
+        if (elementos.comissaoPadrao) {
+            elementos.comissaoPadrao.value = profissional.comissaoPadrao !== undefined ? profissional.comissaoPadrao : "";
+        }
+        // Preencher lista de campos comissão por serviço
+        renderizarComissaoServicos(profissional);
+
+        // --- Garantir estado correto da área Agenda Especial ao abrir o perfil ---
+        atualizarAreasAgendaEspecial();
+
+        elementos.modalPerfilProfissional.classList.add('show');
+    } catch (error) {
+        await showAlert("Erro", "Não foi possível abrir o perfil do profissional.");
+    }
+}
+
+function renderizarComissaoServicos(profissional) {
+    const container = elementos.comissaoServicosLista;
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!servicosDisponiveis || servicosDisponiveis.length === 0) {
+        container.innerHTML = '<div style="color:#aaa;">Nenhum serviço cadastrado.</div>';
+        return;
+    }
+
+    // Preenche valores já definidos pelo profissional
+    const comissoes = profissional?.comissaoPorServico || {};
+
+    servicosDisponiveis.forEach(servico => {
+        const linha = document.createElement('div');
+        linha.style.display = 'flex';
+        linha.style.alignItems = 'center';
+        linha.style.gap = '12px';
+        linha.style.marginBottom = '6px';
+
+        const label = document.createElement('span');
+        label.textContent = servico.nome;
+        label.style.flex = '1';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.max = '100';
+        input.step = '1';
+        input.style.width = '80px';
+        input.value = comissoes[servico.id] !== undefined ? comissoes[servico.id] : '';
+        input.className = 'input-comissao-servico';
+        input.setAttribute('data-servico-id', servico.id);
+
+        linha.appendChild(label);
+        linha.appendChild(input);
+        linha.appendChild(document.createTextNode('%'));
+        container.appendChild(linha);
+    });
+}
+
+async function carregarDadosProfissional(profissionalId) {
+    try {
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        const profissionalDoc = await getDoc(profissionalRef);
+        if (!profissionalDoc.exists()) return null;
+        const dados = profissionalDoc.data();
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+        const horariosDoc = await getDoc(horariosRef);
+        if (horariosDoc.exists()) {
+            renderizarHorarios(horariosDoc.data());
+            if (elementos.permitirAgendamentoMultiplo) {
+                elementos.permitirAgendamentoMultiplo.checked = horariosDoc.data().permitirAgendamentoMultiplo || false;
+            }
+        } else {
+            renderizarHorarios({ ...horariosBase, intervalo: intervaloBase });
+            if (elementos.permitirAgendamentoMultiplo) {
+                elementos.permitirAgendamentoMultiplo.checked = false;
+            }
+        }
+        return dados;
+    } catch (error) {
+        return null;
+    }
+}
+
+function renderizarServicosNoPerfil(servicosSelecionados = []) {
+    if(!elementos.servicosLista) return;
+    elementos.servicosLista.innerHTML = "";
+    if (servicosDisponiveis.length === 0) {
+        elementos.servicosLista.innerHTML = `<div class="servicos-empty-state"><p>Nenhum serviço cadastrado.</p><p>Vá para a página de serviços para adicioná-los.</p></div>`;
+        return;
+    }
+    servicosDisponiveis.forEach(servico => {
+        const div = document.createElement("div");
+        div.className = "servico-item";
+        div.setAttribute('data-servico-id', servico.id);
+        div.innerHTML = `<div class="servico-nome">${servico.nome}</div><div class="servico-preco">R$ ${Number(servico.preco || 0).toFixed(2)}</div>`;
+        if (servicosSelecionados.includes(servico.id)) div.classList.add('selected');
+        div.addEventListener('click', () => div.classList.toggle('selected'));
+        elementos.servicosLista.appendChild(div);
+    });
+}
+
+function renderizarHorarios(horariosDataCompleta = {}) {
+    if(!elementos.horariosLista) return;
+    const horariosLista = elementos.horariosLista;
+    horariosLista.innerHTML = '';
+    const diasSemana = [
+        { key: 'segunda', nome: 'Segunda-feira' }, { key: 'terca', nome: 'Terça-feira' },
+        { key: 'quarta', nome: 'Quarta-feira' }, { key: 'quinta', nome: 'Quinta-feira' },
+        { key: 'sexta', nome: 'Sexta-feira' }, { key: 'sabado', nome: 'Sábado' },
+        { key: 'domingo', nome: 'Domingo' }
+    ];
+    elementos.inputIntervalo.value = horariosDataCompleta.intervalo || intervaloBase;
+    diasSemana.forEach(dia => {
+        const diaData = horariosDataCompleta[dia.key] || { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] };
+        const estaAtivo = diaData.ativo;
+        const blocos = diaData.blocos && diaData.blocos.length > 0 ? diaData.blocos : [{ inicio: '09:00', fim: '18:00' }];
+        const div = document.createElement('div');
+        div.className = 'dia-horario';
+        if (!estaAtivo) div.classList.add('inativo');
+        div.setAttribute('data-dia', dia.key);
+        div.innerHTML = `
+            <div class="dia-header"><label class="dia-nome">${dia.nome}</label><label class="switch"><input type="checkbox" class="toggle-dia" ${estaAtivo ? 'checked' : ''}><span class="slider"></span></label></div>
+            <div class="horario-conteudo"><div class="horario-intervalos">${blocos.map(bloco => `<div class="horario-inputs"><input type="time" name="inicio" value="${bloco.inicio}"><span>até</span><input type="time" name="fim" value="${bloco.fim}"><button type="button" class="btn-remover-intervalo" title="Remover intervalo">✖</button></div>`).join('')}</div><button type="button" class="btn-incluir-intervalo">+ Incluir horário</button></div>`;
+        horariosLista.appendChild(div);
+    });
+    horariosLista.querySelectorAll('.toggle-dia').forEach(toggle => toggle.addEventListener('change', function() { this.closest('.dia-horario').classList.toggle('inativo', !this.checked); }));
+    horariosLista.querySelectorAll('.btn-incluir-intervalo').forEach(btn => {
+        btn.onclick = function () {
+            const container = this.previousElementSibling;
+            const novoBloco = document.createElement('div');
+            novoBloco.className = 'horario-inputs';
+            novoBloco.innerHTML = `<input type="time" name="inicio" value="09:00"><span>até</span><input type="time" name="fim" value="18:00"><button type="button" class="btn-remover-intervalo" title="Remover intervalo">✖</button>`;
+            container.appendChild(novoBloco);
+            setupRemoverIntervalo();
+        };
+    });
+    setupRemoverIntervalo();
+}
+
+function setupRemoverIntervalo() {
+    if(!elementos.horariosLista) return;
+    elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
+        btn.onclick = async function () {
+            const container = this.closest('.horario-intervalos');
+            if (container.children.length > 1) {
+                this.closest('.horario-inputs').remove();
+            } else {
+                await showAlert("Aviso", "Para desativar o dia, use o botão ao lado do nome do dia.");
+            }
+        };
+    });
+}
+
+function coletarHorarios() {
+    const horarios = {};
+    document.querySelectorAll('.dia-horario').forEach(diaDiv => {
+        const dia = diaDiv.getAttribute('data-dia');
+        const estaAtivo = diaDiv.querySelector('.toggle-dia').checked;
+        const blocos = [];
+        if (estaAtivo) {
+            diaDiv.querySelectorAll('.horario-inputs').forEach(inputDiv => {
+                const inicio = inputDiv.querySelector('input[name="inicio"]').value;
+                const fim = inputDiv.querySelector('input[name="fim"]').value;
+                if (inicio && fim) blocos.push({ inicio, fim });
+            });
+        }
+        horarios[dia] = { ativo: estaAtivo, blocos: blocos.length > 0 ? blocos : [{ inicio: '09:00', fim: '18:00' }] };
+    });
+    horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
+    if (elementos.permitirAgendamentoMultiplo) {
+        horarios.permitirAgendamentoMultiplo = elementos.permitirAgendamentoMultiplo.checked;
+    }
+    return horarios;
+}
+
+function renderizarAgendaEspecial() {
+    if(!elementos.agendaEspecialLista) return;
+    const lista = elementos.agendaEspecialLista;
+    lista.innerHTML = '';
+    if (!agendaEspecial || agendaEspecial.length === 0) {
+        lista.innerHTML = '<div class="empty-state-agenda-especial">Nenhuma agenda especial cadastrada.</div>';
+        return;
+    }
+    agendaEspecial.forEach((item, idx) => {
+        let desc = (item.tipo === 'mes') ? `Mês: <b>${item.mes}</b>` : `De <b>${item.inicio}</b> até <b>${item.fim}</b>`;
+        const div = document.createElement('div');
+        div.className = 'agenda-especial-item';
+        div.innerHTML = `<span>${desc}</span><button type="button" class="btn btn-danger" data-agenda-idx="${idx}">Excluir</button>`;
+        lista.appendChild(div);
+    });
+    lista.querySelectorAll('.btn-danger').forEach(btn => {
+        btn.onclick = function () {
+            const idx = parseInt(this.getAttribute('data-agenda-idx'), 10);
+            agendaEspecial.splice(idx, 1);
+            renderizarAgendaEspecial();
+        };
+    });
+}
+
+async function adicionarAgendaEspecial() {
+    if(!elementos.agendaTipo) return;
+    const tipo = elementos.agendaTipo.value;
+    if (tipo === 'mes') {
+        if (!elementos.agendaMes.value) return await showAlert("Aviso", "Selecione o mês.");
+        agendaEspecial.push({ tipo: 'mes', mes: elementos.agendaMes.value });
+    } else {
+        if (!elementos.agendaInicio.value || !elementos.agendaFim.value) return await showAlert("Aviso", "Informe o intervalo de datas.");
+        // validação adicional: início <= fim
+        if (elementos.agendaInicio.value > elementos.agendaFim.value) {
+            return await showAlert("Atenção", "A data inicial não pode ser posterior à data final.");
+        }
+        agendaEspecial.push({ tipo: 'intervalo', inicio: elementos.agendaInicio.value, fim: elementos.agendaFim.value });
+    }
+    renderizarAgendaEspecial();
+}
+
+// ======================
+// SALVAR PERFIL PROFISSIONAL COM COMISSÃO
+// ======================
+async function salvarPerfilProfissional() {
+    try {
+        const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
+        const horarios = coletarHorarios();
+
+        // Comissão padrão
+        let comissaoPadrao = elementos.comissaoPadrao && elementos.comissaoPadrao.value !== "" ? Number(elementos.comissaoPadrao.value) : null;
+        // Comissão por serviço (via campos)
+        let comissaoPorServico = {};
+        if (elementos.comissaoServicosLista) {
+            elementos.comissaoServicosLista.querySelectorAll('.input-comissao-servico').forEach(input => {
+                const servicoId = input.getAttribute('data-servico-id');
+                const valor = input.value.trim();
+                if (valor !== '') {
+                    comissaoPorServico[servicoId] = Number(valor);
+                }
+            });
+        }
+
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
+        await updateDoc(profissionalRef, {
+            servicos: servicosSelecionados,
+            agendaEspecial: agendaEspecial,
+            comissaoPadrao: comissaoPadrao,
+            comissaoPorServico: comissaoPorServico
+        });
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
+        await setDoc(horariosRef, horarios, { merge: true });
+        if(elementos.modalPerfilProfissional) elementos.modalPerfilProfissional.classList.remove('show');
+        await showAlert("Sucesso!", "Perfil atualizado com sucesso!");
+    } catch (error) {
+        await showAlert("Erro", `Ocorreu um erro ao salvar o perfil: ${error.message}`);
+    }
+}
+
+function adicionarEventListeners() {
+    if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
+    if (elementos.btnCancelarProfissional) elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
+    if (elementos.btnCancelarPerfil) elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
+    if (elementos.btnSalvarPerfil) elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
+    if (elementos.btnAgendaEspecial) elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
+    if (elementos.btnConvite) elementos.btnConvite.addEventListener('click', gerarLinkDeConvite);
+
+    [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
+        if(modal) modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
+    });
+
+    // O listener de submissão do formulário é adicionado APENAS UMA VEZ, aqui.
+    if (elementos.formAddProfissional) {
+        elementos.formAddProfissional.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Salvando...";
+            }
+            await salvarEdicaoProfissional();
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "💾 Salvar Profissional";
+            }
+        });
+    }
+}
+
+// --- BOTÃO CONVITE COM TODAS AS CONFIRMAÇÕES PADRÃO PRONTI ---
+async function gerarLinkDeConvite() {
+    if (!isDono) {
+        await showAlert("Acesso negado", "Apenas o dono da empresa pode gerar links de convite.");
+        return;
+    }
+    if (!empresaId) {
+        await showAlert("Erro", "Não foi possível identificar a sua empresa para gerar o convite.");
+        return;
+    }
+    const baseUrl = window.location.origin;
+    const conviteUrl = `${baseUrl}/convite.html?empresaId=${empresaId}`;
+    try {
+        await navigator.clipboard.writeText(conviteUrl);
+        await showAlert("Link de convite copiado!", "O link de convite foi copiado para a área de transferência.<br>Compartilhe com o novo colaborador.");
+    } catch (err) {
+        await showAlert("Atenção", "Não foi possível copiar automaticamente. Copie o link abaixo:<br><input style='width:90%;margin-top:10px;' value='"+conviteUrl+"' readonly onclick='this.select()'/>");
+    }
+}
+
+// --- ATIVAR FUNCIONÁRIO SEMPRE COM MENSAGEM DE CONFIRMAÇÃO ---
+async function ativarFuncionario(profissionalId) {
+    const confirmado = await showCustomConfirm("Ativar Funcionário", "Deseja ativar este profissional? Ele terá acesso ao sistema.");
+    if(!confirmado) return;
+    try {
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        await updateDoc(profissionalRef, { status: 'ativo' });
+        await showAlert("Pronto!", "O profissional foi ativado e já pode acessar o sistema.");
+    } catch (error) {
+        await showAlert("Erro", "Ocorreu um erro ao ativar o profissional.");
+    }
+}
+
+async function editarProfissional(profissionalId) {
+    try {
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        const profissionalDoc = await getDoc(profissionalRef);
+        if (profissionalDoc.exists()) {
+            const dados = profissionalDoc.data();
+            elementos.formAddProfissional.reset();
+            elementos.nomeProfissional.value = dados.nome || "";
+            elementos.tituloModalProfissional.textContent = "✏️ Editar Profissional";
+            window.editandoProfissionalId = profissionalId;
+            elementos.modalAddProfissional.classList.add('show');
+        }
+    } catch (error) {
+        await showAlert("Erro", `Erro ao buscar profissional: ${error.message}`);
+    }
+}
+
+async function salvarEdicaoProfissional() {
+    const profissionalId = window.editandoProfissionalId;
+    if (!profissionalId) {
+        return await showAlert("Erro", "ID do profissional não definido.");
+    }
+    const nome = elementos.nomeProfissional.value.trim();
+    if (!nome) {
+        return await showAlert("Erro", "O nome do profissional é obrigatório.");
+    }
+    try {
+        const updateData = { nome };
+        const fotoFile = elementos.fotoProfissional.files[0];
+        if (fotoFile) {
+            const usuarioLogadoId = auth.currentUser.uid;
+            const caminhoStorage = `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`;
+            const storageRef = ref(storage, caminhoStorage);
+            const metadata = {
+                customMetadata: {
+                    'uploaderId': usuarioLogadoId,
+                    'isOwnerUploading': isDono ? 'true' : 'false'
+                }
+            };
+            const snapshot = await uploadBytes(storageRef, fotoFile, metadata);
+            updateData.fotoUrl = await getDownloadURL(snapshot.ref);
+        }
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        await updateDoc(profissionalRef, updateData);
+        elementos.modalAddProfissional.classList.remove('show');
+        await showAlert("Pronto!", "Dados do profissional salvos com sucesso.");
+        window.location.reload(); // Atualiza a tela após alteração/salvamento
+    } catch (error) {
+        await showAlert("Erro", `Ocorreu um erro ao salvar a edição. Verifique suas permissões de segurança se o erro persistir.`);
+    }
+}
+
+async function excluirProfissional(profissionalId) {
+    const confirmado = await showCustomConfirm("Excluir Profissional", "Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.");
+    if (!confirmado) return;
+    if (!isDono) {
+        return await showAlert("Acesso negado", "Apenas o dono pode excluir um funcionário.");
+    }
+    try {
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        await deleteDoc(profissionalRef);
+        await showAlert("Pronto!", "Profissional removido da equipe.");
+    } catch (error) {
+        await showAlert("Erro", `Erro ao excluir profissional: ${error.message}`);
+    }
+}
+
+async function recusarFuncionario(profissionalId) {
+    const confirmado = await showCustomConfirm("Recusar Funcionário", "Tem certeza que deseja recusar e excluir este cadastro pendente?");
+    if(!confirmado) return;
+    await excluirProfissional(profissionalId);
+}
+
+function mostrarErro(mensagem) {
+    if(elementos.listaProfissionaisPainel) {
+       elementos.listaProfissionaisPainel.innerHTML = `<div class="error-message"><h4>❌ Erro</h4><p>${mensagem}</p></div>`;
+    }
+}
+
+// Funções globais para uso no HTML (onclick)
+window.abrirPerfilProfissional = abrirPerfilProfissional;
+window.editarProfissional = editarProfissional;
+window.excluirProfissional = excluirProfissional;
+window.ativarFuncionario = ativarFuncionario;
+window.recusarFuncionario = recusarFuncionario;
+
+window.addEventListener("DOMContentLoaded", inicializar);
