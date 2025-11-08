@@ -225,9 +225,9 @@
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
             <!-- ====== NOVO BOTÃO ADICIONADO (AGENDA LIVRE) ====== -->
-            <button id="btn-agenda-livre" class="btn btn-outline">
+            <a href="horarios-disponiveis.html" target="_blank" id="btn-agenda-livre" class="btn btn-outline">
                 <i class="fa-regular fa-calendar-check"></i> Agenda Livre
-            </button>
+            </a>
             <!-- ==================================================== -->
             <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                 <div class="filtro-item">
@@ -281,16 +281,10 @@
         </div>
     </div>
 
-    <!-- ================================================================== -->
-    <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
-    <!-- ================================================================== -->
     <script type="module">
         // Importa a função de verificação de acesso
         import { verificarAcesso } from './userService.js'; 
 
-        /**
-         * Carrega o menu lateral e o ativa com os papéis do usuário.
-         */
         async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -305,9 +299,6 @@
             }
         }
 
-        /**
-         * Ponto de entrada único que orquestra a inicialização da página.
-         */
         async function inicializarPagina() {
             try {
                 const sessao = await verificarAcesso();
@@ -330,6 +321,5 @@
     </script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script type="module" src="agenda.js"></script>
-    <!-- O script antigo que usava DOMContentLoaded foi removido -->
 </body>
 </html>
