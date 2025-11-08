@@ -75,7 +75,7 @@
         }
 
         .btn-ausencia {
-            background-color: var(--danger-color) !important;
+        _   background-color: var(--danger-color) !important;
             color: white !important;
             border: none;
         }
@@ -140,7 +140,7 @@
         }
 
         #legenda-container {
-        _   margin: 16px 0;
+            margin: 16px 0;
             padding: 10px 16px;
             font-size: 0.95em;
             color: #fff;
@@ -152,7 +152,7 @@
             display: none;
             background-color: var(--card-bg);
             padding: 16px;
-      _       border-radius: 12px;
+            border-radius: 12px;
             box-shadow: var(--shadow);
             margin-bottom: 16px;
             gap: 15px;
@@ -204,34 +204,29 @@
         <div id="menu-container"></div>
 
     <main class="main-content">
-        
-                                <div class="page-header">
+        <div class="page-header">
             <h1>Minha Agenda</h1>
-            
-                        <div class="header-botoes" style="display: flex; gap: 12px; flex-wrap: wrap;">
-                
-                                <a href="horarios-disponiveis.html" class="btn btn-outline" style="background: white;">
-                    <i class="fa-solid fa-eye"></i>
-                    Ver Horários Livres
-                </a>
-
-                                <a href="novo-agendamento.html" class="btn btn-pronti" id="btn-novo-agendamento">
-                    <i class="fa-solid fa-plus"></i>
-                    Novo Agendamento
-                </a>
-            </div>
+            <a href="novo-agendamento.html" class="btn btn-pronti" id="btn-novo-agendamento">
+                <i class="fa-solid fa-plus"></i>
+                Novo Agendamento
+            </a>
         </div>
-                                
-        <div class="filtros-agenda" id="filtros-agenda">
+        
+                                <div class="filtros-agenda" id="filtros-agenda">
             <button id="btn-agenda-dia" class="btn btn-outline active">
                 <i class="fa-solid fa-calendar-day"></i> Agenda do Dia
             </button>
             <button id="btn-agenda-semana" class="btn btn-outline">
                 <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
-            </button>
+      _     </button>
             <button id="btn-historico" class="btn btn-outline">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
+            
+                        <a href="horarios-disponiveis.html" class="btn btn-outline">
+                <i class="fa-solid fa-eye"></i> Agenda Livre
+            </a>
+            
             <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                 <div class="filtro-item">
                     <label for="data-semana">Data</label>
@@ -248,6 +243,7 @@
                 </div>
             </div>
         </div>
+                                
         <div id="legenda-container" style="display: none;">
             <small id="legenda-semana">
                 Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
@@ -276,6 +272,7 @@
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-card">
             <h3 id="modal-titulo">Confirmar Ação</h3>
+section: 2
             <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
             <div class="modal-botoes">
                 <button id="btn-modal-cancelar" class="btn">Cancelar</button>
@@ -294,7 +291,7 @@
         async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
-                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+          _     if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 // ✅ O ID foi padronizado para 'menu-container'
                 document.getElementById('menu-container').innerHTML = await response.text();
                 
@@ -304,7 +301,7 @@
                     await menuModule.ativarMenuLateral(papelUsuario);
                 }
             } catch (error) {
-                console.error("Falha ao carregar o menu lateral:", error);
+  D             console.error("Falha ao carregar o menu lateral:", error);
             }
         }
 
@@ -325,7 +322,7 @@
                     if(sessao.isAdmin) papelUsuario.push('admin');
                     if(sessao.isOwner) papelUsuario.push('dono');
                     if(papelUsuario.length === 0) papelUsuario.push('funcionario');
-            _   }
+                }
 
                 // 3. Carrega o menu lateral e aplica as permissões.
                 await carregarMenu(papelUsuario);
@@ -333,7 +330,7 @@
                 // 4. A lógica de negócio (carregar agenda) já é iniciada pelos
                 // scripts importados abaixo, então não precisamos fazer mais nada aqui.
 
-            } catch (error) {
+      _     } catch (error) {
                 console.error("Erro crítico ao inicializar a página da agenda:", error);
                 document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
             }
@@ -341,7 +338,7 @@
 
         // Inicia todo o processo de inicialização da página.
         inicializarPagina();
-    </script>
+  _ </script>
     
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script type="module" src="agenda.js"></script>
