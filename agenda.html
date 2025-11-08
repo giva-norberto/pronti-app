@@ -295,12 +295,9 @@
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
-                // ✅ O ID foi padronizado para 'menu-container'
                 document.getElementById('menu-container').innerHTML = await response.text();
-                
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
-                    // Passa os papéis do usuário para que o menu aplique as permissões
                     await menuModule.ativarMenuLateral(papelUsuario);
                 }
             } catch (error) {
@@ -313,45 +310,26 @@
          */
         async function inicializarPagina() {
             try {
-                // 1. Garante que o usuário está logado e obtém a sessão.
                 const sessao = await verificarAcesso();
                 if (!sessao || !sessao.user) {
-                    return; // Se não estiver logado, a função já redireciona.
+                    return;
                 }
-
-                // 2. Define os papéis do usuário a partir da sessão.
                 let papelUsuario = sessao.papeis || [];
-                if (papelUsuario.length === 0) { // Garante que sempre haja um papel
+                if (papelUsuario.length === 0) {
                     if(sessao.isAdmin) papelUsuario.push('admin');
                     if(sessao.isOwner) papelUsuario.push('dono');
                     if(papelUsuario.length === 0) papelUsuario.push('funcionario');
                 }
-
-                // 3. Carrega o menu lateral e aplica as permissões.
                 await carregarMenu(papelUsuario);
-
-                // 4. A lógica de negócio (carregar agenda) já é iniciada pelos
-                // scripts importados abaixo, então não precisamos fazer mais nada aqui.
-
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página da agenda:", error);
                 document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
             }
         }
-
-        // Inicia todo o processo de inicialização da página.
         inicializarPagina();
     </script>
-    
-    <!-- Seus scripts de negócio são mantidos intactos no final -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script type="module" src="agenda.js"></script>
-    
     <!-- O script antigo que usava DOMContentLoaded foi removido -->
-    <!-- 
-    <script>
-        document.addEventListener("DOMContentLoaded", function(  ) { ... });
-    </script>
-    -->
 </body>
 </html>
