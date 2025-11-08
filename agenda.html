@@ -1,346 +1,345 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Minha Agenda</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    
-    <style>
-        /* ======================================================================
-                    SEU CSS ORIGINAL - NENHUMA ALTERAÇÃO FOI FEITA AQUI
-           ====================================================================== */
-        
-        :root {
-            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
-            --primary-color: #4f46e5;
-            --danger-color: #ef4444; /* Cor de perigo/ausência */
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --shadow: 0 4px 20px rgba(0,0,0,0.06);
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Minha Agenda</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
-        body {
-      _       font-family: 'Inter', sans-serif;
-            background: var(--gradient-primary);
-            color: var(--text-main);
-            display: flex;
-        }
+    <style>
+        :root {
+            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            --primary-color: #4f46e5;
+            --danger-color: #ef4444;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
 
-        .main-content {
-            margin-left: 270px;
-            padding: 32px;
-            flex-grow: 1;
-            min-height: 100vh;
-        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gradient-primary);
+            color: var(--text-main);
+            display: flex;
+        }
 
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--card-bg);
-            padding: 16px 24px;
-            border-radius: 14px;
-            box-shadow: var(--shadow);
-            margin-bottom: 24px;
-        }
-        .page-header h1 {
-            font-size: 1.9rem;
-            font-weight: 800;
-            color: var(--text-main);
-        }
-        .btn-pronti {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .btn-pronti:hover {
-            background-color: #4338ca;
-        }
+        .main-content {
+            margin-left: 270px;
+            padding: 32px;
+            flex-grow: 1;
+            min-height: 100vh;
+        }
 
-        .btn-ausencia {
-            background-color: var(--danger-color) !important;
-            color: white !important;
-            border: none;
-        }
-        .btn-ausencia:hover {
-            background-color: #dc2626 !important;
-        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 16px 24px;
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
 
-        .filtros-agenda {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            background-color: var(--card-bg);
-            padding: 16px;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            margin-bottom: 16px;
-        }
-        .btn-outline {
-            background-color: transparent;
-            color: var(--text-secondary);
-            border: 1.5px solid var(--border-color);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-outline:hover {
-            background-color: #f8fafc;
-            color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        .btn-outline.active {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-        .filtro-item { display: flex; flex-direction: column; gap: 4px; }
-        .filtro-item label { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
-        .filtro-input, .filtro-select {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1.5px solid var(--border-color);
-            background-color: #f8fafc;
-        }
-        .btn-light {
-            background-color: #f1f5f9;
-            color: var(--text-secondary);
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .btn-secondary {
-            background-color: #334155;
-            color: white;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
+        .page-header h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
 
-        #legenda-container {
-            margin: 16px 0;
-            padding: 10px 16px;
-            font-size: 0.95em;
-            color: #fff;
-            background-color: rgba(0,0,0,0.1);
-            border-radius: 8px;
-            text-align: center;
-        }
-        #filtros-historico {
-            display: none;
-            background-color: var(--card-bg);
-            padding: 16px;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            margin-bottom: 16px;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: flex-end;
-        }
+        .btn-pronti {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
 
-        #lista-agendamentos {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        #agendamentos-placeholder {
-            color: #fff;
-            font-weight: 500;
-            text-align: center;
-            padding: 40px;
-        }
-        .agendamento-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            padding: 20px;
-        }
+        .btn-pronti:hover {
+            background-color: #4338ca;
+        }
 
-        .modal-overlay {
-            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.6); display: none; justify-content: center;
-            align-items: center; z-index: 9999; opacity: 0; transition: opacity 0.3s ease;
-        }
-        .modal-overlay.ativo { display: flex; opacity: 1; }
-        .modal-card {
-            background: white; padding: 30px; border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.25); text-align: center;
-            max-width: 420px; width: 90%;
-        }
-        .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-        .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
-  S     .btn-remove { background-color: #ef4444; color: white; border: none; }
+        .btn-ausencia {
+            background-color: var(--danger-color) !important;
+            color: white !important;
+            border: none;
+        }
 
-        @media (max-width: 900px) {
-            body { flex-direction: column; }
-            .main-content { margin-left: 0; padding: 16px; }
-            .page-header, .filtros-agenda { flex-direction: column; align-items: stretch; }
-        }
-    </style>
+        .btn-ausencia:hover {
+            background-color: #dc2626 !important;
+        }
+
+        .filtros-agenda {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1.5px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline:hover {
+            background-color: #f8fafc;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .filtro-item { display: flex; flex-direction: column; gap: 4px; }
+        .filtro-item label { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
+
+        .filtro-input, .filtro-select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border-color);
+            background-color: #f8fafc;
+        }
+
+        .btn-light {
+            background-color: #f1f5f9;
+            color: var(--text-secondary);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background-color: #334155;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        #legenda-container {
+            margin: 16px 0;
+            padding: 10px 16px;
+            font-size: 0.95em;
+            color: #fff;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        #filtros-historico {
+            display: none;
+            background-color: var(--card-bg);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        #lista-agendamentos {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #agendamentos-placeholder {
+            color: #fff;
+            font-weight: 500;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .agendamento-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .modal-overlay {
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6); display: none; justify-content: center;
+            align-items: center; z-index: 9999; opacity: 0; transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.ativo { display: flex; opacity: 1; }
+
+        .modal-card {
+            background: white; padding: 30px; border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.25); text-align: center;
+            max-width: 420px; width: 90%;
+        }
+
+        .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
+        .btn-remove { background-color: #ef4444; color: white; border: none; }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            .main-content { margin-left: 0; padding: 16px; }
+            .page-header, .filtros-agenda { flex-direction: column; align-items: stretch; }
+        }
+    </style>
 </head>
 <body>
-    <div id="menu-container"></div>
+    <div id="menu-container"></div>
 
-    <main class="main-content">
-        <div class="page-header">
-            <h1>Minha Agenda</h1>
-            <a href="novo-agendamento.html" class="btn btn-pronti" id="btn-novo-agendamento">
-                <i class="fa-solid fa-plus"></i>
-                Novo Agendamento
-            </a>
-        </div>
-        
-                                <div class="filtros-agenda" id="filtros-agenda">
-            <button id="btn-agenda-dia" class="btn btn-outline active">
-                <i class="fa-solid fa-calendar-day"></i> Agenda do Dia
-            </button>
-            <button id="btn-agenda-semana" class="btn btn-outline">
-                <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
-            </button>
-            <button id="btn-historico" class="btn btn-outline">
-                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
-            </button>
-            
-                        <a href="horarios-disponiveis.html" target="_blank" id="btn-agenda-livre" class="btn btn-outline">
-                <i class="fa-regular fa-calendar-check"></i> Agenda Livre
-            </a>
-            
-            <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-                <div class="filtro-item">
-                    <label for="data-semana">Data</label>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <input type="date" id="data-semana" class="filtro-input">
-                        <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="filtro-item" id="filtro-profissional-item">
-                    <label for="filtro-profissional">Profissional</label>
-                    <select id="filtro-profissional" class="filtro-select"></select>
-                </div>
-            </div>
-        </div>
-                                
-        <div id="legenda-container" style="display: none;">
-            <small id="legenda-semana">
-                Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
-            </small>
-        </div>
-        <div id="filtros-historico">
-            <div class="filtro-item">
-                <label for="data-inicial">De:</label>
-                <input type="date" id="data-inicial" class="filtro-input">
-            </div>
-            <div class="filtro-item">
-                <label for="data-final">Até:</label>
-  M             <input type="date" id="data-final" class="filtro-input">
-            </div>
-            <button id="btn-aplicar-historico" class="btn btn-secondary">
-                <i class="fa-solid fa-filter"></i> Aplicar
-            </button>
-            <button id="btn-mes-atual" class="btn btn-light">
-                <i class="fa-solid fa-calendar"></i> Mês Atual
-            </button>
-        </div>
-        <div id="lista-agendamentos" class="dashboard-cards">
-            <p id="agendamentos-placeholder">A carregar agendamentos...</p>
-        </div>
-    </main>
-    <div id="modal-confirmacao" class="modal-overlay">
-        <div class="modal-card">
-            <h3 id="modal-titulo">Confirmar Ação</h3>
-TODO       <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
-            <div class="modal-botoes">
-                <button id="btn-modal-cancelar" class="btn">Cancelar</button>
-                <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
-            </div>
-        </div>
-    </div>
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Minha Agenda</h1>
+            <a href="novo-agendamento.html" class="btn btn-pronti" id="btn-novo-agendamento">
+                <i class="fa-solid fa-plus"></i>
+                Novo Agendamento
+            </a>
+        </div>
 
-                <script type="module">
-        // Importa a função de verificação de acesso
-        import { verificarAcesso } from './userService.js'; 
+        <div class="filtros-agenda" id="filtros-agenda">
+            <button id="btn-agenda-dia" class="btn btn-outline active">
+                <i class="fa-solid fa-calendar-day"></i> Agenda do Dia
+            </button>
+            <button id="btn-agenda-semana" class="btn btn-outline">
+                <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
+            </button>
+            <button id="btn-historico" class="btn btn-outline">
+                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+            </button>
 
-        /**
-         * Carrega o menu lateral e o ativa com os papéis do usuário.
-         */
-        async function carregarMenu(papelUsuario) {
-            try {
-                const response = await fetch('menu-lateral.html');
-                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
-              _ // ✅ O ID foi padronizado para 'menu-container'
-                document.getElementById('menu-container').innerHTML = await response.text();
-                
-                const menuModule = await import('./menu-lateral.js');
-                if (menuModule.ativarMenuLateral) {
-                    // Passa os papéis do usuário para que o menu aplique as permissões
-                    await menuModule.ativarMenuLateral(papelUsuario);
-                }
-            } catch (error) {
-                console.error("Falha ao carregar o menu lateral:", error);
-            }
-        }
+            <a href="horarios-disponiveis.html" target="_blank" id="btn-agenda-livre" class="btn btn-outline">
+                <i class="fa-regular fa-calendar-check"></i> Agenda Livre
+            </a>
 
-        /**
-         * Ponto de entrada único que orquestra a inicialização da página.
-         */
-        async function inicializarPagina() {
-            try {
-                // 1. Garante que o usuário está logado e obtém a sessão.
-CHATO           const sessao = await verificarAcesso();
-        _       if (!sessao || !sessao.user) {
-                    return; // Se não estiver logado, a função já redireciona.
-                }
+            <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                <div class="filtro-item">
+                    <label for="data-semana">Data</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="date" id="data-semana" class="filtro-input">
+                        <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="filtro-item" id="filtro-profissional-item">
+                    <label for="filtro-profissional">Profissional</label>
+                    <select id="filtro-profissional" class="filtro-select"></select>
+                </div>
+            </div>
+        </div>
 
-                // 2. Define os papéis do usuário a partir da sessão.
-A               let papelUsuario = sessao.papeis || [];
-                if (papelUsuario.length === 0) { // Garante que sempre haja um papel
-                    if(sessao.isAdmin) papelUsuario.push('admin');
-                    if(sessao.isOwner) papelUsuario.push('dono');
-                    if(papelUsuario.length === 0) papelUsuario.push('funcionario');
-                }
+        <div id="legenda-container" style="display: none;">
+            <small id="legenda-semana">
+                Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
+            </small>
+        </div>
 
-                // 3. Carrega o menu lateral e aplica as permissões.
-                await carregarMenu(papelUsuario);
+        <div id="filtros-historico">
+            <div class="filtro-item">
+                <label for="data-inicial">De:</label>
+                <input type="date" id="data-inicial" class="filtro-input">
+            </div>
+            <div class="filtro-item">
+                <label for="data-final">Até:</label>
+                <input type="date" id="data-final" class="filtro-input">
+            </div>
+            <button id="btn-aplicar-historico" class="btn btn-secondary">
+                <i class="fa-solid fa-filter"></i> Aplicar
+            </button>
+            <button id="btn-mes-atual" class="btn btn-light">
+                <i class="fa-solid fa-calendar"></i> Mês Atual
+            </button>
+        </div>
 
-                // 4. A lógica de negócio (carregar agenda) já é iniciada pelos
-                // scripts importados abaixo, então não precisamos fazer mais nada aqui.
+        <div id="lista-agendamentos" class="dashboard-cards">
+            <p id="agendamentos-placeholder">A carregar agendamentos...</p>
+        </div>
+    </main>
 
-            } catch (error) {
-                console.error("Erro crítico ao inicializar a página da agenda:", error);
-CONSEGUIU       document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
-            }
-        }
+    <div id="modal-confirmacao" class="modal-overlay">
+        <div class="modal-card">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
+            <div class="modal-botoes">
+                <button id="btn-modal-cancelar" class="btn">Cancelar</button>
+                <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
 
-        // Inicia todo o processo de inicialização da página.
-        inicializarPagina();
-    </script>
-    
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script type="module" src="agenda.js"></script>
-    
-        </body>
+    <script type="module">
+        import { verificarAcesso } from './userService.js';
+
+        async function carregarMenu(papelUsuario) {
+            try {
+                const response = await fetch('menu-lateral.html');
+                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                document.getElementById('menu-container').innerHTML = await response.text();
+
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) {
+                    await menuModule.ativarMenuLateral(papelUsuario);
+                }
+            } catch (error) {
+                console.error("Falha ao carregar o menu lateral:", error);
+            }
+        }
+
+        async function inicializarPagina() {
+            try {
+                const sessao = await verificarAcesso();
+                if (!sessao || !sessao.user) return;
+
+                let papelUsuario = sessao.papeis || [];
+                if (papelUsuario.length === 0) {
+                    if (sessao.isAdmin) papelUsuario.push('admin');
+                    if (sessao.isOwner) papelUsuario.push('dono');
+                    if (papelUsuario.length === 0) papelUsuario.push('funcionario');
+                }
+
+                await carregarMenu(papelUsuario);
+            } catch (error) {
+                console.error("Erro crítico ao inicializar a página da agenda:", error);
+                document.querySelector('.main-content').innerHTML = `
+                    <h1>Ocorreu um erro</h1>
+                    <p>Não foi possível carregar a página. Tente novamente.</p>
+                `;
+            }
+        }
+
+        inicializarPagina();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module" src="agenda.js"></script>
+</body>
 </html>
