@@ -16,7 +16,7 @@
             font-family: 'Inter',sans-serif;
         }
         .main-content {
-            margin-left: 270px;
+            /* margin-left: 270px; removido para retirar espaço do menu lateral */
             padding: 20px 8vw;
             max-width: 1080px;
         }
@@ -111,7 +111,7 @@
             padding: 40px;
         }
         @media(max-width:900px) {
-            .main-content { margin-left: 0; padding: 10px 2vw; }
+            .main-content { /* margin-left removido */ padding: 10px 2vw; }
             .page-header { flex-direction: column; gap: 10px; padding: 10px; }
             .filtros-relatorio { padding: 10px; gap:10px;}
             .card, .funcionario-card { padding: 12px; }
@@ -121,8 +121,7 @@
     </style>
 </head>
 <body>
-    <div id="menu-container"></div>
-
+    <!-- Menu lateral removido -->
     <main class="main-content">
         <div class="page-header">
             <h1>Agenda Livre - Horários Disponíveis</h1>
@@ -164,18 +163,7 @@
         let profissionaisGlobal = [];
         let agendaCompletaPorProfGlobal = {};
 
-        async function carregarMenu(papelUsuario) {
-            try {
-                const response = await fetch('menu-lateral.html');
-                document.getElementById('menu-container').innerHTML = await response.text();
-                const menuModule = await import('./menu-lateral.js');
-                if (menuModule.ativarMenuLateral) {
-                    await menuModule.ativarMenuLateral(papelUsuario);
-                }
-            } catch (error) {
-                console.error("Falha ao carregar o menu lateral:", error);
-            }
-        }
+        // Removido o carregamento do menu lateral daqui!
 
         function definirDataAlvo(format) {
             if (format) {
@@ -273,7 +261,7 @@
             if (!sessao) return;
             let papelUsuario = sessao.papeis || [];
             if (papelUsuario.length === 0) papelUsuario.push('funcionario');
-            await carregarMenu(papelUsuario);
+            // não carrega menu lateral aqui
             iniciar(sessao.clinicaId);
         }
         inicializarPagina();
