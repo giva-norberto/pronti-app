@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Relatório de Horários</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    
+    <style>
+        /* Estilos da grade (reutilizados da tela de novo agendamento) */
+        .grade-horarios-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .slot-horario {
+            padding: 10px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            cursor: not-allowed;
+            background-color: #f8fafc;
+            color: var(--text-main);
+        }
+        .slot-horario.livre {
+             background-color: #dcfce7; /* Verde claro */
+             color: #166534;
+             border-color: #a7f3d0;
+        }
+        .aviso-horarios {
+            grid-column: 1 / -1;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* ✅ NOVOS ESTILOS PARA O RELATÓRIO */
+        
+        /* Card de "linha" do funcionário */
+        .funcionario-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px; /* Espaço entre cada funcionário */
+        }
+        
+        /* Nome do funcionário destacado */
+        .funcionario-nome {
+            font-size: 1.3rem; /* Tamanho maior */
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+            padding-bottom: 12px;
+            border-bottom: 1.5px solid var(--border-color);
+        }
+        
+        /* Placeholder de carregamento centralizado */
+        #relatorio-placeholder {
+            color: #fff;
+            font-weight: 500;
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu-container"></div>
+
+    <main class="main-content">
+        
+        <div class="page-header">
+            <h1>Relatório de Horários Livres</h1>
+            <a href="agenda.html" class="btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Voltar para Agenda
+            </a>
+        </div>
+
+        <div class="card" style="padding: 20px; margin-bottom: 24px;">
+            <h3 style="margin: 0;">
+                Exibindo horários disponíveis para: 
+                <strong id="data-alvo-display" style="color: var(--primary-color);">--/--/----</strong>
+            </h3>
+        </div>
+
+        <div id="relatorio-container">
+            <p id="relatorio-placeholder">A carregar relatório...</p>
+        </div>
+
+    </main>
+    
+    <script type="module">
+        import { verificarAcesso } from './userService.js';
+
+        async function carregarMenu(papelUsuario) {
+            try {
+                const response = await fetch('menu-lateral.html');
+                document.getElementById('menu-container').innerHTML = await response.text();
+                
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) {
+                    await menuModule.ativarMenuLateral(papelUsuario);
+                }
+            } catch (error) {
+                console.error("Falha ao carregar o menu lateral:", error);
+            }
+        }
+
+        async function inicializarPagina() {
+            const sessao = await verificarAcesso();
+            if (!sessao) return;
+
+            let papelUsuario = sessao.papeis || [];
+            if (papelUsuario.length === 0) papelUsuario.push('funcionario');
+
+            await carregarMenu(papelUsuario);
+            
+            // ✅ Importa e executa a lógica do RELATÓRIO
+            const pageLogic = await import('./relatorio-horarios.js');
+            pageLogic.iniciar(sessao.clinicaId); 
+        }
+
+        inicializarPagina();
+    </script>
+</body>
+</html>
