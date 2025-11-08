@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Relatório de Horários Livres</title>
-
+    <title>Pronti - Agenda Livre (Horários Disponíveis)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
         body {
@@ -33,15 +33,28 @@
             box-shadow: var(--shadow,0 4px 20px rgba(0,0,0,0.06));
             margin-bottom: 30px;
         }
-        .func-filtro-topo {
+        .filtros-relatorio {
             display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 20px;
+            gap: 18px;
+            align-items: flex-end;
+            margin-bottom: 30px;
             flex-wrap: wrap;
+            background: var(--card-bg,#fff);
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow,0 4px 20px rgba(0,0,0,0.06));
         }
-        .func-filtro-topo label { font-weight: 600; }
-        .func-filtro-select {
+        .item-filtro-rel {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .item-filtro-rel label {
+            font-weight: 700;
+            font-size: 0.95em;
+            color: var(--primary-color,#4f46e5);
+        }
+        .filtro-select, .filtro-input {
             padding: 8px 14px;
             border-radius: 8px;
             border: 1.5px solid var(--border-color,#e2e8f0);
@@ -105,6 +118,7 @@
         @media(max-width:900px) {
             .main-content { margin-left: 0; padding: 10px 2vw; }
             .page-header { flex-direction: column; gap: 10px; padding: 10px; }
+            .filtros-relatorio { padding: 10px; gap:10px;}
             .card, .funcionario-card { padding: 12px; }
             .funcionario-nome { font-size:1rem; padding-bottom:5px;}
             .grade-horarios-container { grid-template-columns: repeat(auto-fill, minmax(70px,1fr)); gap:7px;}
@@ -116,20 +130,27 @@
 
     <main class="main-content">
         <div class="page-header">
-            <h1>Relatório de Horários Livres</h1>
+            <h1>Agenda Livre - Horários Disponíveis</h1>
             <a href="agenda.html" class="btn">
                 <i class="fa-solid fa-arrow-left"></i>
                 Voltar para Agenda
             </a>
         </div>
 
-        <!-- Filtro de profissionais -->
-        <div class="func-filtro-topo">
-            <label for="select-profissional"><i class="fa-solid fa-user"></i> Profissional:</label>
-            <select id="select-profissional" class="func-filtro-select">
-                <option value="todos">Todos os profissionais</option>
-            </select>
+        <!-- NOVOS filtros de profissional e data -->
+        <div class="filtros-relatorio">
+            <div class="item-filtro-rel">
+                <label for="select-profissional"><i class="fa-solid fa-user"></i> Profissional</label>
+                <select id="select-profissional" class="filtro-select">
+                    <option value="todos">Todos os profissionais</option>
+                </select>
+            </div>
+            <div class="item-filtro-rel">
+                <label for="input-data"><i class="fa-solid fa-calendar-day"></i> Data</label>
+                <input type="date" id="input-data" class="filtro-input" />
+            </div>
         </div>
+
         <div class="card" style="margin-bottom: 24px;">
             <h3 style="margin: 0;">
                 Exibindo horários disponíveis para: 
@@ -145,6 +166,14 @@
     <script type="module">
         import { verificarAcesso } from './userService.js';
 
+        let dataAlvoEl = null;
+        let relatorioContainerEl = null;
+        let selectProfissionalEl = null;
+        let inputDataEl = null;
+        let clinicaIdGlobal = null;
+        let profissionaisGlobal = [];
+        let horariosPorProfGlobal = {};
+
         async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -158,24 +187,14 @@
             }
         }
 
-        // --- RELATÓRIO REFINADO ---
-        let dataAlvoEl = null;
-        let relatorioContainerEl = null;
-        let selectProfissionalEl = null;
-        let clinicaIdGlobal = null;
-        let profissionaisGlobal = [];
-        let horariosPorProfGlobal = {};
-
-        export async function iniciar(clinicaId) {
-            clinicaIdGlobal = clinicaId;
-            dataAlvoEl = document.getElementById('data-alvo-display');
-            relatorioContainerEl = document.getElementById('relatorio-container');
-            selectProfissionalEl = document.getElementById('select-profissional');
-            selectProfissionalEl.addEventListener('change', renderizarRelatorioFiltrado);
-            await carregarRelatorio();
-        }
-
-        function definirDataAlvo() {
+        function definirDataAlvo(format) {
+            // Se vier do filtro, retorna formatado
+            if (format) {
+                const offset = (new Date()).getTimezoneOffset();
+                const dataFormatada = new Date(new Date(format).getTime() - (offset * 60 * 1000));
+                return dataFormatada.toISOString().split('T')[0];
+            }
+            // Senão, padrão hoje/amanhã (logica hora corte)
             const agora = new Date();
             const HORA_CORTE = 17;
             if (agora.getHours() >= HORA_CORTE) agora.setDate(agora.getDate() + 1);
@@ -185,26 +204,27 @@
         }
 
         async function carregarRelatorio() {
-            const dataAlvo = definirDataAlvo();
+            relatorioContainerEl.innerHTML = '<p id="relatorio-placeholder">A carregar relatório...</p>';
+            const dataFiltro = inputDataEl.value ? inputDataEl.value : null;
+            const dataAlvo = definirDataAlvo(dataFiltro);
             const [ano, mes, dia] = dataAlvo.split('-');
             dataAlvoEl.textContent = `${dia}/${mes}/${ano}`;
 
             try {
                 const { getProfissionaisDaClinica } = await import('./firebaseService.js');
                 const { getHorariosLivres } = await import('./horarioService.js');
-                // 1. Buscar profissionais
+                // Buscar profissionais
                 profissionaisGlobal = await getProfissionaisDaClinica(clinicaIdGlobal);
-
                 if (!profissionaisGlobal || profissionaisGlobal.length === 0) {
                     relatorioContainerEl.innerHTML = '<p id="relatorio-placeholder">Nenhum profissional encontrado.</p>';
                     return;
                 }
-
                 // Preencher filtro
                 selectProfissionalEl.innerHTML = '<option value="todos">Todos os profissionais</option>' +
                     profissionaisGlobal.map(prof => `<option value="${prof.id}">${prof.nome}</option>`).join('');
 
-                // Buscar horários livres de TODOS em paralelo
+                // Buscar horários de TODOS paralelamente
+                horariosPorProfGlobal = {};
                 const promises = profissionaisGlobal.map(prof =>
                     getHorariosLivres(dataAlvo, prof.id, 30, clinicaIdGlobal)
                         .then(horarios => horariosPorProfGlobal[prof.id] = horarios)
@@ -233,36 +253,45 @@
                 const card = document.createElement('div');
                 card.className = 'funcionario-card';
 
-                // nome
                 const nomeEl = document.createElement('h3');
                 nomeEl.className = 'funcionario-nome';
                 nomeEl.textContent = prof.nome;
                 card.appendChild(nomeEl);
 
-                // horários
                 const gradeEl = document.createElement('div');
                 gradeEl.className = 'grade-horarios-container';
                 card.appendChild(gradeEl);
 
                 const horarios = horariosPorProfGlobal[prof.id];
-                renderizarGradeInterna(gradeEl, horarios);
-
+                if (!horarios || !horarios.length) {
+                    gradeEl.innerHTML = '<p class="aviso-horarios">Nenhum horário livre encontrado.</p>';
+                } else {
+                    horarios.forEach(slot => {
+                        const div = document.createElement('div');
+                        div.className = 'slot-horario livre';
+                        div.textContent = slot.inicio;
+                        gradeEl.appendChild(div);
+                    });
+                }
                 relatorioContainerEl.appendChild(card);
             });
         }
 
-        function renderizarGradeInterna(containerGrade, horarios) {
-            if (!horarios || !horarios.length) {
-                containerGrade.innerHTML = '<p class="aviso-horarios">Nenhum horário livre encontrado.</p>';
-                return;
-            }
-            containerGrade.innerHTML = '';
-            horarios.forEach(slot => {
-                const div = document.createElement('div');
-                div.className = 'slot-horario livre';
-                div.textContent = slot.inicio;
-                containerGrade.appendChild(div);
-            });
+        // Inicialização e eventos
+        export async function iniciar(clinicaId) {
+            clinicaIdGlobal = clinicaId;
+            dataAlvoEl = document.getElementById('data-alvo-display');
+            relatorioContainerEl = document.getElementById('relatorio-container');
+            selectProfissionalEl = document.getElementById('select-profissional');
+            inputDataEl = document.getElementById('input-data');
+
+            selectProfissionalEl.addEventListener('change', renderizarRelatorioFiltrado);
+            inputDataEl.addEventListener('change', carregarRelatorio);
+
+            // Data default = hoje/amanhã
+            inputDataEl.value = definirDataAlvo();
+
+            await carregarRelatorio();
         }
 
         async function inicializarPagina() {
@@ -275,7 +304,7 @@
             await carregarMenu(papelUsuario);
 
             // Chama a lógica refinada do relatório
-            iniciar(sessao.clinicaId); 
+            iniciar(sessao.clinicaId);
         }
         inicializarPagina();
     </script>
