@@ -14,14 +14,10 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
     <style>
-        /* ======================================================================
-                    SEU CSS ORIGINAL - NENHUMA ALTERAÇÃO FOI FEITA AQUI
-           ====================================================================== */
-        
         :root {
             --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
             --primary-color: #4f46e5;
-            --danger-color: #ef4444; /* Cor de perigo/ausência */
+            --danger-color: #ef4444;
             --card-bg: #ffffff;
             --text-main: #1e293b;
             --text-secondary: #64748b;
@@ -203,7 +199,6 @@
     </style>
 </head>
 <body>
-    <!-- ✅ O ID foi padronizado para 'menu-container' para consistência -->
     <div id="menu-container"></div>
 
     <main class="main-content">
@@ -224,11 +219,10 @@
             <button id="btn-historico" class="btn btn-outline">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
-            <!-- ====== NOVO BOTÃO ADICIONADO (AGENDA LIVRE) ====== -->
+            <!-- Botão novo adicionado: Agenda Livre -->
             <a href="horarios-disponiveis.html" target="_blank" id="btn-agenda-livre" class="btn btn-outline">
                 <i class="fa-regular fa-calendar-check"></i> Agenda Livre
             </a>
-            <!-- ==================================================== -->
             <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                 <div class="filtro-item">
                     <label for="data-semana">Data</label>
@@ -282,7 +276,6 @@
     </div>
 
     <script type="module">
-        // Importa a função de verificação de acesso
         import { verificarAcesso } from './userService.js'; 
 
         async function carregarMenu(papelUsuario) {
