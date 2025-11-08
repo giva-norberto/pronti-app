@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Minha Agenda</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="style.css" rel="stylesheet" type="text/css" />
+        <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
     <style>
@@ -28,7 +28,7 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+      _       font-family: 'Inter', sans-serif;
             background: var(--gradient-primary);
             color: var(--text-main);
             display: flex;
@@ -191,7 +191,7 @@
         }
         .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
-        .btn-remove { background-color: #ef4444; color: white; border: none; }
+  S     .btn-remove { background-color: #ef4444; color: white; border: none; }
 
         @media (max-width: 900px) {
             body { flex-direction: column; }
@@ -223,13 +223,13 @@
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
             
-                        <a href="horarios-disponiveis.html" class="btn btn-outline">
-                <i class="fa-solid fa-eye"></i> Agenda Livre
+                        <a href="horarios-disponiveis.html" target="_blank" id="btn-agenda-livre" class="btn btn-outline">
+                <i class="fa-regular fa-calendar-check"></i> Agenda Livre
             </a>
             
             <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                 <div class="filtro-item">
-                  _ <label for="data-semana">Data</label>
+                    <label for="data-semana">Data</label>
                     <div style="display:flex; align-items:center; gap:5px;">
                         <input type="date" id="data-semana" class="filtro-input">
                         <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
@@ -256,7 +256,7 @@
             </div>
             <div class="filtro-item">
                 <label for="data-final">Até:</label>
-                <input type="date" id="data-final" class="filtro-input">
+  M             <input type="date" id="data-final" class="filtro-input">
             </div>
             <button id="btn-aplicar-historico" class="btn btn-secondary">
                 <i class="fa-solid fa-filter"></i> Aplicar
@@ -272,10 +272,9 @@
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-card">
             <h3 id="modal-titulo">Confirmar Ação</h3>
-            <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
+TODO       <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
             <div class="modal-botoes">
                 <button id="btn-modal-cancelar" class="btn">Cancelar</button>
-section: 2
                 <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
             </div>
         </div>
@@ -292,7 +291,7 @@ section: 2
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
-                // ✅ O ID foi padronizado para 'menu-container'
+              _ // ✅ O ID foi padronizado para 'menu-container'
                 document.getElementById('menu-container').innerHTML = await response.text();
                 
                 const menuModule = await import('./menu-lateral.js');
@@ -311,13 +310,13 @@ section: 2
         async function inicializarPagina() {
             try {
                 // 1. Garante que o usuário está logado e obtém a sessão.
-                const sessao = await verificarAcesso();
-                if (!sessao || !sessao.user) {
+CHATO           const sessao = await verificarAcesso();
+        _       if (!sessao || !sessao.user) {
                     return; // Se não estiver logado, a função já redireciona.
                 }
 
                 // 2. Define os papéis do usuário a partir da sessão.
-                let papelUsuario = sessao.papeis || [];
+A               let papelUsuario = sessao.papeis || [];
                 if (papelUsuario.length === 0) { // Garante que sempre haja um papel
                     if(sessao.isAdmin) papelUsuario.push('admin');
                     if(sessao.isOwner) papelUsuario.push('dono');
@@ -332,7 +331,7 @@ section: 2
 
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página da agenda:", error);
-                document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
+CONSEGUIU       document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
             }
         }
 
