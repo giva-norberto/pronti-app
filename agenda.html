@@ -75,7 +75,7 @@
         }
 
         .btn-ausencia {
-        _   background-color: var(--danger-color) !important;
+            background-color: var(--danger-color) !important;
             color: white !important;
             border: none;
         }
@@ -182,7 +182,7 @@
             position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.6); display: none; justify-content: center;
             align-items: center; z-index: 9999; opacity: 0; transition: opacity 0.3s ease;
-        }
+</i>     }
         .modal-overlay.ativo { display: flex; opacity: 1; }
         .modal-card {
             background: white; padding: 30px; border-radius: 12px;
@@ -218,7 +218,7 @@
             </button>
             <button id="btn-agenda-semana" class="btn btn-outline">
                 <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
-      _     </button>
+            </button>
             <button id="btn-historico" class="btn btn-outline">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
@@ -235,7 +235,7 @@
                         <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
                             <i class="fa-solid fa-arrow-right"></i>
                         </button>
-                    </div>
+            _       </div>
                 </div>
                 <div class="filtro-item" id="filtro-profissional-item">
                     <label for="filtro-profissional">Profissional</label>
@@ -245,13 +245,13 @@
         </div>
                                 
         <div id="legenda-container" style="display: none;">
-            <small id="legenda-semana">
+</i>         <small id="legenda-semana">
                 Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
             </small>
         </div>
         <div id="filtros-historico">
             <div class="filtro-item">
-                <label for="data-inicial">De:</label>
+  s           <label for="data-inicial">De:</label>
                 <input type="date" id="data-inicial" class="filtro-input">
             </div>
             <div class="filtro-item">
@@ -272,7 +272,6 @@
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-card">
             <h3 id="modal-titulo">Confirmar Ação</h3>
-section: 2
             <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
             <div class="modal-botoes">
                 <button id="btn-modal-cancelar" class="btn">Cancelar</button>
@@ -291,7 +290,7 @@ section: 2
         async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
-          _     if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 // ✅ O ID foi padronizado para 'menu-container'
                 document.getElementById('menu-container').innerHTML = await response.text();
                 
@@ -301,7 +300,7 @@ section: 2
                     await menuModule.ativarMenuLateral(papelUsuario);
                 }
             } catch (error) {
-  D             console.error("Falha ao carregar o menu lateral:", error);
+                console.error("Falha ao carregar o menu lateral:", error);
             }
         }
 
@@ -330,15 +329,15 @@ section: 2
                 // 4. A lógica de negócio (carregar agenda) já é iniciada pelos
                 // scripts importados abaixo, então não precisamos fazer mais nada aqui.
 
-      _     } catch (error) {
+            } catch (error) {
                 console.error("Erro crítico ao inicializar a página da agenda:", error);
-                document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
+D               document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
             }
         }
 
         // Inicia todo o processo de inicialização da página.
         inicializarPagina();
-  _ </script>
+    </script>
     
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script type="module" src="agenda.js"></script>
