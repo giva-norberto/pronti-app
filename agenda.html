@@ -182,7 +182,7 @@
         .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
         .btn-remove { background-color: #ef4444; color: white; border: none; }
-        /* NOVO CSS para agenda livre (SEM ALTERAR O LAYOUT!) */
+        /* CSS para agenda livre (SEM ALTERAR O LAYOUT!) */
         #agenda-livre-container {
             margin-top: 16px;
         }
@@ -243,7 +243,6 @@
             <button id="btn-historico" class="btn btn-outline">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
-            <!-- ADICIONADO: botão da nova aba Agenda Livre -->
             <button id="btn-agenda-livre" class="btn btn-outline">
                 <i class="fa-regular fa-calendar-check"></i> Agenda Livre
             </button>
@@ -287,7 +286,6 @@
         <div id="lista-agendamentos" class="dashboard-cards">
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
-        <!-- NOVO CONTAINER PARA AGENDA LIVRE, mas SEM ALTERAR layout -->
         <div id="agenda-livre-container" style="display:none;"></div>
     </main>
     <div id="modal-confirmacao" class="modal-overlay">
@@ -301,7 +299,7 @@
         </div>
     </div>
     <script type="module">
-        import { verificarAcesso } from './userService.js'; 
+        import { verificarAcesso } from './userService.js';
         import { getProfissionaisDaEmpresa, getHorariosDoProfissional } from './vitrini-profissionais.js';
         import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 
@@ -379,7 +377,6 @@
             exibirAbaAgendaDia();
         }
 
-        // NOVA FUNCIONALIDADE DA ABA "AGENDA LIVRE" - identica ao cliente
         async function carregarAgendaLivre() {
             const container = document.getElementById('agenda-livre-container');
             container.innerHTML = '<p style="padding:18px;">Carregando horários livres...</p>';
@@ -401,7 +398,6 @@
                 for (const prof of profissionais) {
                     const horariosTrabalho = await getHorariosDoProfissional(empresaId, prof.id);
                     if (!horariosTrabalho) continue;
-                    // Usa a mesma regra do cliente/agendamento
                     let proxData = await encontrarPrimeiraDataComSlots(
                         empresaId,
                         { ...prof, horarios: horariosTrabalho },
