@@ -1,360 +1,335 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Minha Agenda</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    
-    <style>
-        :root {
-            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
-            --primary-color: #4f46e5;
-            --danger-color: #ef4444;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+/**
+ * agenda-livre.js - Módulo NÃO DESTRUTIVO para a Agenda Livre.
+ * Este script é carregado DEPOIS do agenda.js principal e 
+ * "ouve" os botões e filtros existentes sem modificar a lógica original.
+ * * Ele usa exatamente a lógica do 'vitrini-agendamento.js' que você forneceu.
+ */
+
+// Importa as funções do Firebase que você já usa
+import { db } from "./firebase-config.js";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+// Pega a empresaId do localStorage, assim como seu script principal
+let empresaId = localStorage.getItem("empresaAtivaId");
+
+// Cache local de profissionais (para evitar buscar toda hora)
+let allProfissionaisCache = null;
+
+// ======================================================================
+// 1. FUNÇÕES DE LÓGICA (Exatamente como você pediu, do vitrini-agendamento.js)
+// ======================================================================
+
+function timeStringToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+function minutesToTimeString(totalMinutes) {
+    const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+    const minutes = (totalMinutes % 60).toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+function getLocalYYYYMMDD(dateObj = new Date()) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+async function profissionalTemAusencia(empresaId, profissionalId, dataYYYYMMDD) {
+    try {
+        if (!empresaId || !profissionalId || !dataYYYYMMDD) return false;
+        const ausRef = collection(db, 'empresarios', empresaId, 'profissionais', profissionalId, 'ausencias');
+        const q = query(ausRef, where('data', '==', dataYYYYMMDD));
+        const snap = await getDocs(q);
+        return !snap.empty;
+    } catch (err) {
+        console.warn('Erro ao verificar ausência do profissional:', err);
+        return false;
+    }
+}
+
+async function buscarAgendamentosDoDia(empresaId, data) {
+    try {
+        const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
+        const q = query(
+            agendamentosRef,
+            where("data", "==", data),
+            where("status", "==", "ativo")
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Erro ao buscar agendamentos do dia:", error);
+        return [];
+    }
+}
+
+function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoSlot) {
+    const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const [year, month, day] = data.split('-').map(Number);
+    const dataObj = new Date(year, month - 1, day); 
+    const nomeDia = diaDaSemana[dataObj.getDay()];
+
+    const diaDeTrabalho = horariosTrabalho?.[nomeDia];
+    if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos || diaDeTrabalho.blocos.length === 0) {
+        return [];
+    }
+
+    // Garante que o intervalo seja um número e tenha um padrão
+    const intervaloEntreSessoes = Number(horariosTrabalho.intervalo) || Number(duracaoSlot) || 30;
+    const slotsDisponiveis = [];
+
+    const horariosOcupados = agendamentosDoDia.map(ag => {
+        const inicio = timeStringToMinutes(ag.horario);
+        const fim = inicio + (Number(ag.servicoDuracao) || 30); // Padrão de 30min se duração não estiver definida
+        return { inicio, fim };
+    });
+
+    const hoje = new Date();
+    const ehHoje = getLocalYYYYMMDD(hoje) === data;
+    const minutosAgora = timeStringToMinutes(
+        `${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`
+    );
+
+    for (const bloco of diaDeTrabalho.blocos) {
+        let slotAtualEmMinutos = timeStringToMinutes(bloco.inicio);
+        const fimDoBlocoEmMinutos = timeStringToMinutes(bloco.fim);
+
+        // A "duração" do slot é o próprio intervalo do profissional
+        const duracaoSlotReal = intervaloEntreSessoes;
+
+        while (slotAtualEmMinutos + duracaoSlotReal <= fimDoBlocoEmMinutos) {
+            const fimDoSlotProposto = slotAtualEmMinutos + duracaoSlotReal;
+            
+            let temConflito = horariosOcupados.some(ocupado =>
+                (slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio)
+            );
+
+            if (!temConflito && (!ehHoje || slotAtualEmMinutos > minutosAgora)) {
+                slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
+            }
+            slotAtualEmMinutos += intervaloEntreSessoes;
         }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--gradient-primary);
-            color: var(--text-main);
-            display: flex;
+    }
+    return slotsDisponiveis;
+}
+
+// ======================================================================
+// 2. FUNÇÕES DA "AGENDA LIVRE"
+// ======================================================================
+
+/**
+ * Pega os 7 dias da semana a partir da data de início.
+ */
+function getWeekDays(startDate) {
+    const dates = [];
+    const [year, month, day] = startDate.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
+
+    for (let i = 0; i < 7; i++) {
+        const newDate = new Date(start);
+        newDate.setDate(start.getDate() + i);
+        dates.push(getLocalYYYYMMDD(newDate));
+    }
+    return dates;
+}
+
+/**
+ * Busca e armazena em cache os profissionais (evita rodar a lógica do agenda.js)
+ */
+async function getAllProfissionais() {
+    if (allProfissionaisCache) {
+        return allProfissionaisCache;
+    }
+    
+    // Seu agenda.js já popula o select, este script vai apenas ler os dados
+    // Esta é uma forma mais segura de pegar os dados sem re-buscar
+    const filtroProfissionalEl = document.getElementById("filtro-profissional");
+    if (!filtroProfissionalEl || filtroProfissionalEl.options.length <= 1) {
+        // Se o agenda.js ainda não populou, esperamos e tentamos de novo
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+        // Se ainda assim não houver, buscamos manualmente
+        if (filtroProfissionalEl.options.length <= 1) {
+             console.warn("agenda-livre.js: Buscando profissionais manualmente...");
+             const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+             allProfissionaisCache = await Promise.all(snapshot.docs.map(async (docSnap) => {
+                const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docSnap.id, "configuracoes", "horarios");
+                const horariosSnap = await getDoc(horariosRef);
+                return { id: docSnap.id, ...docSnap.data(), horarios: horariosSnap.exists() ? horariosSnap.data() : null };
+             }));
+             return allProfissionaisCache;
+        }
+    }
+
+    // Se o agenda.js JÁ populou, lemos do <select> e buscamos os horários
+    allProfissionaisCache = [];
+    for (const option of filtroProfissionalEl.options) {
+        if (option.value && option.value !== 'todos') {
+             const profId = option.value;
+             const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profId, "configuracoes", "horarios");
+             const horariosSnap = await getDoc(horariosRef);
+             allProfissionaisCache.push({
+                id: profId,
+                nome: option.text,
+                horarios: horariosSnap.exists() ? horariosSnap.data() : null
+             });
+        }
+    }
+    return allProfissionaisCache;
+}
+
+/**
+ * Renderiza o HTML para um único dia de horários livres.
+ */
+function renderizarDiaLivre(data, slots, estaAusente) {
+    const [year, month, day] = data.split('-').map(Number);
+    const dataObj = new Date(year, month - 1, day);
+    const diaSemana = dataObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+    const diaMes = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+    let slotsHtml = '';
+    if (estaAusente) {
+        slotsHtml = '<span class="slot-ausente">Ausente</span>';
+    } else if (slots && slots.length > 0) {
+        slotsHtml = slots.map(slot => `<span class="slot-livre">${slot}</span>`).join('');
+    } else {
+        slotsHtml = '<span class="slot-ocupado">Sem horários livres</span>';
+    }
+
+    return `
+        <div class="dia-livre-card"> 
+            <div class="dia-header">
+                <h3>${diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1)}</h3>
+                <span>${diaMes}</span>
+            </div>
+            <div class="slots-container">
+                ${slotsHtml}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Função principal para buscar e exibir a agenda livre.
+ */
+async function carregarAgendaLivre(filtroProfissionalEl, dataSemanaInput, listaAgendamentosDiv) {
+    const profissionalId = filtroProfissionalEl.value;
+    const dataSelecionada = dataSemanaInput.value;
+    
+    if (!empresaId) {
+        console.error("Agenda Livre: ID da empresa não encontrado.");
+        listaAgendamentosDiv.innerHTML = '<p id="agendamentos-placeholder">Erro: ID da empresa não encontrado.</p>';
+        return;
+    }
+    
+    if (!profissionalId || profissionalId === 'todos') {
+        listaAgendamentosDiv.innerHTML = '<p id="agendamentos-placeholder">Por favor, selecione um profissional específico para ver os horários livres.</p>';
+        return;
+    }
+
+    // Busca os profissionais (do cache ou do FB)
+    const allProfissionais = await getAllProfissionais();
+    const profissional = allProfissionais.find(p => p.id === profissionalId);
+
+    if (!profissional || !profissional.horarios) {
+        listaAgendamentosDiv.innerHTML = '<p id="agendamentos-placeholder">Não foi possível carregar os horários deste profissional (horários não configurados).</p>';
+        return;
+    }
+
+    listaAgendamentosDiv.innerHTML = '<p id="agendamentos-placeholder">Buscando horários disponíveis...</p>';
+    
+    const datasDaSemana = getWeekDays(dataSelecionada);
+    let htmlOutput = '';
+    const duracaoSlot = Number(profissional.horarios.intervalo) || 30;
+
+    for (const dataString of datasDaSemana) {
+        const estaAusente = await profissionalTemAusencia(empresaId, profissionalId, dataString);
+        
+        if (estaAusente) {
+            htmlOutput += renderizarDiaLivre(dataString, null, true);
+            continue;
         }
-        .main-content {
-            margin-left: 270px;
-            padding: 32px;
-            flex-grow: 1;
-            min-height: 100vh;
-        }
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--card-bg);
-            padding: 16px 24px;
-            border-radius: 14px;
-            box-shadow: var(--shadow);
-            margin-bottom: 24px;
-        }
-        .page-header h1 {
-            font-size: 1.9rem;
-            font-weight: 800;
-            color: var(--text-main);
-        }
-        .btn-pronti {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .btn-pronti:hover {
-            background-color: #4338ca;
-        }
-        .btn-ausencia {
-            background-color: var(--danger-color) !important;
-            color: white !important;
-          	 border: none;
-      	 }
-      	 .btn-ausencia:hover {
-          	 background-color: #dc2626 !important;
-      	 }
-      	 .filtros-agenda {
-          	 display: flex;
-          	 gap: 10px;
-          	 align-items: center;
-          	 flex-wrap: wrap;
-          	 background-color: var(--card-bg);
-          	 padding: 16px;
-          	 border-radius: 12px;
-          	 box-shadow: var(--shadow);
-          	 margin-bottom: 16px;
-      	 }
-      	 .btn-outline {
-          	 background-color: transparent;
-          	 color: var(--text-secondary);
-          	 border: 1.5px solid var(--border-color);
-          	 padding: 8px 14px;
-          	 border-radius: 8px;
-          	 font-weight: 600;
-          	 cursor: pointer;
-          	 transition: all 0.2s;
-      	 }
-      	 .btn-outline:hover {
-          	 background-color: #f8fafc;
-          	 color: var(--primary-color);
-          	 border-color: var(--primary-color);
-      	 }
-      	 .btn-outline.active {
-          	 background-color: var(--primary-color);
-          	 color: white;
-          	 border-color: var(--primary-color);
-      	 }
-      	 .filtro-item { display: flex; flex-direction: column; gap: 4px; }
-      	 .filtro-item label { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); }
-      	 .filtro-input, .filtro-select {
-          	 padding: 8px 12px;
-          	 border-radius: 8px;
-          	 border: 1.5px solid var(--border-color);
-          	 background-color: #f8fafc;
-      	 }
-      	 .btn-light {
-          	 background-color: #f1f5f9;
-          	 color: var(--text-secondary);
-          	 border: none;
-          	 padding: 8px 12px;
-          	 border-radius: 8px;
-          	 cursor: pointer;
-      	 }
-      	 .btn-secondary {
-          	 background-color: #334155;
-          	 color: white;
-          	 border: none;
-          	 padding: 8px 14px;
-          	 border-radius: 8px;
-          	 cursor: pointer;
-      	 }
-      	 #legenda-container {
-          	 margin: 16px 0;
-          	 padding: 10px 16px;
-          	 font-size: 0.95em;
-          	 color: #fff;
-          	 background-color: rgba(0,0,0,0.1);
-          	 border-radius: 8px;
-          	 text-align: center;
-      	 }
-      	 #filtros-historico {
-          	 display: none;
-          	 background-color: var(--card-bg);
-          	 padding: 16px;
-          	 border-radius: 12px;
-          	 box-shadow: var(--shadow);
-          	 margin-bottom: 16px;
-          	 gap: 15px;
-          	 flex-wrap: wrap;
-          	 align-items: flex-end;
-      	 }
-      	 #lista-agendamentos {
-          	 display: flex;
-          	 flex-direction: column;
-          	 gap: 16px;
-      	 }
-      	 #agendamentos-placeholder {
-          	 color: #fff;
-          	 font-weight: 500;
-          	 text-align: center;
-          	 padding: 40px;
-      	 }
-      	 .agendamento-card {
-          	 background-color: var(--card-bg);
-          	 border-radius: 12px;
-          	 box-shadow: var(--shadow);
-          	 padding: 20px;
-      	 }
-      	 .modal-overlay {
-          	 position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
-          	 background: rgba(0,0,0,0.6); display: none; justify-content: center;
-          	 align-items: center; z-index: 9999; opacity: 0; transition: opacity 0.3s ease;
-      	 }
-      	 .modal-overlay.ativo { display: flex; opacity: 1; }
-      	 .modal-card {
-          	 background: white; padding: 30px; border-radius: 12px;
-          	 box-shadow: 0 5px 20px rgba(0,0,0,0.25); text-align: center;
-          	 max-width: 420px; width: 90%;
-      	 }
-      	 .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-      	 .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
-      	 .btn-remove { background-color: #ef4444; color: white; border: none; }
-      	 @media (max-width: 900px) {
-          	 body { flex-direction: column; }
-          	 .main-content { margin-left: 0; padding: 16px; }
-          	 .page-header, .filtros-agenda { flex-direction: column; align-items: stretch; }
-      	 }
 
-      	 /* ESTILOS PARA A NOVA AGENDA LIVRE (OPCIONAL, MAS RECOMENDADO) */
-      	 .dia-livre-card {
-          	 background-color: #fff;
-          	 border-radius: 12px;
-          	 padding: 20px;
-      	 }
-      	 .slots-container {
-          	 display: flex; 
-          	 flex-wrap: wrap; 
-          	 gap: 8px;
-      	 }
-      	 .slot-livre, .slot-ausente, .slot-ocupado {
-          	 padding: 6px 12px;
-          	 border-radius: 6px;
-          	 font-weight: 500;
-          	 font-size: 0.9rem;
-      	 }
-      	 .slot-livre {
-          	 background-color: #e0f2fe; /* Azul claro */
-          	 color: #075985;
-      	 }
-      	 .slot-ausente {
-          	 background-color: #fee2e2; /* Vermelho claro */
-          	 color: #b91c1c;
-      	 }
-      	 .slot-ocupado {
-          	 background-color: #f1f5f9; /* Cinza claro */
-          	 color: #64748b;
-      	 }
-      	 .dia-header {
-          	 display: flex;
-          	 justify-content: space-between;
-          	 align-items: center;
-          	 padding-bottom: 12px; 
-          	 border-bottom: 1px solid var(--border-color); 
-          	 margin-bottom: 12px;
-      	 }
-      	 .dia-header h3 {
-          	 margin: 0;
-          	 color: var(--text-main);
-      	 }
-      	 .dia-header span {
-          	 color: var(--primary-color);
-          	 font-weight: 600;
-      	 }
-    </style>
-</head>
-<body>
-    <div id="menu-container"></div>
+        const agendamentos = await buscarAgendamentosDoDia(empresaId, dataString);
+        const agendamentosProfissional = agendamentos.filter(ag => ag.profissionalId === profissionalId);
+        
+        const slots = calcularSlotsDisponiveis(
+            dataString,
+            agendamentosProfissional,
+            profissional.horarios,
+            duracaoSlot
+        );
+        
+        htmlOutput += renderizarDiaLivre(dataString, slots, false);
+    }
+    
+    listaAgendamentosDiv.innerHTML = htmlOutput || '<p id="agendamentos-placeholder">Nenhum horário encontrado para esta semana.</p>';
+}
 
-    <main class="main-content">
-        <div class="page-header">
-            <h1>Minha Agenda</h1>
-            <a href="novo-agendamento.html" class="btn btn-pronti" id="btn-novo-agendamento">
-                <i class="fa-solid fa-plus"></i>
-                Novo Agendamento
-            </a>
-      	 </div>
-      	 <div class="filtros-agenda" id="filtros-agenda">
-            <button id="btn-agenda-dia" class="btn btn-outline active">
-                <i class="fa-solid fa-calendar-day"></i> Agenda do Dia
-            </button>
-            <button id="btn-agenda-semana" class="btn btn-outline">
-                <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
-            </button>
-            <button id="btn-historico" class="btn btn-outline">
-                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
-            </button>
-            
-                        <button id="btn-agenda-livre" class="btn btn-outline">
-                <i class="fa-solid fa-calendar-check"></i> Agenda Livre
-            </button>
-                        
-            <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-                <div class="filtro-item">
-                    <label for="data-semana">Data</label>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <input type="date" id="data-semana" class="filtro-input">
-                        <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                  	 </div>
-              	 </div>
-              	 <div class="filtro-item" id="filtro-profissional-item">
-                  	 <label for="filtro-profissional">Profissional</label>
-                  	 <select id="filtro-profissional" class="filtro-select"></select>
-              	 </div>
-          	 </div>
-      	 </div>
-      	 <div id="legenda-container" style="display: none;">
-          	 <small id="legenda-semana">
-            	 	 Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
-          	 </small>
-      	 </div>
-      	 <div id="filtros-historico">
-          	 <div class="filtro-item">
-            	 	 <label for="data-inicial">De:</label>
-            	 	 <input type="date" id="data-inicial" class="filtro-input">
-          	 </div>
-          	 <div class="filtro-item">
-            	 	 <label for="data-final">Até:</label>
-            	 	 <input type="date" id="data-final" class="filtro-input">
-          	 </div>
-          	 <button id="btn-aplicar-historico" class="btn btn-secondary">
-            	 	 <i class="fa-solid fa-filter"></i> Aplicar
-          	 </button>
-          	 <button id="btn-mes-atual" class="btn btn-light">
-            	 	 <i class="fa-solid fa-calendar"></i> Mês Atual
-          	 </button>
-      	 </div>
-      	 <div id="lista-agendamentos" class="dashboard-cards">
-          	 <p id="agendamentos-placeholder">A carregar agendamentos...</p>
-      	 </div>
-    </main>
-    <div id="modal-confirmacao" class="modal-overlay">
-      	 <div class="modal-card">
-        	 	 <h3 id="modal-titulo">Confirmar Ação</h3>
-          	 <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
-          	 <div class="modal-botoes">
-            	 	 <button id="btn-modal-cancelar" class="btn">Cancelar</button>
-            	 	 <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
-          	 </div>
-      	 </div>
-    </div>
+// ======================================================================
+// 3. EVENT LISTENERS (Conecta-se à página sem alterar agenda.js)
+// ======================================================================
 
-  	 <script type="module">
-      	 import { verificarAcesso } from './userService.js'; 
+// Espera o DOM estar pronto (garante que agenda.js já rodou)
+document.addEventListener("DOMContentLoaded", () => {
+    // Pega os elementos que o agenda.js já usa
+    const btnAgendaDia = document.getElementById("btn-agenda-dia");
+    const btnAgendaSemana = document.getElementById("btn-agenda-semana");
+    const btnHistorico = document.getElementById("btn-historico");
+    const btnAgendaLivre = document.getElementById("btn-agenda-livre");
+    
+    const filtroProfissionalEl = document.getElementById("filtro-profissional");
+    const dataSemanaInput = document.getElementById("data-semana");
+    const listaAgendamentosDiv = document.getElementById("lista-agendamentos");
+    const filtrosSemana = document.getElementById("filtros-semana-container");
+    const filtrosHistoricoDiv = document.getElementById("filtros-historico");
+    const legendaContainer = document.getElementById("legenda-container");
 
-      	 async function carregarMenu(papelUsuario) {
-        	 	 try {
-            	 	 const response = await fetch('menu-lateral.html');
-            	 	 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
-            	 	 document.getElementById('menu-container').innerHTML = await response.text();
-            	 	 
-            	 	 const menuModule = await import('./menu-lateral.js');
-            	 	 if (menuModule.ativarMenuLateral) {
-                	 	 await menuModule.ativarMenuLateral(papelUsuario);
-            	 	 }
-        	 	 } catch (error) {
-            	 	 console.error("Falha ao carregar o menu lateral:", error);
-        	 	 }
-      	 }
+    if (!btnAgendaLivre) return; // Sai se o botão não existir
 
-      	 async function inicializarPagina() {
-        	 	 try {
-            	 	 const sessao = await verificarAcesso();
-            	 	 if (!sessao || !sessao.user) {
-                	 	 return; 
-            	 	 }
+    const allBtns = [btnAgendaDia, btnAgendaSemana, btnHistorico, btnAgendaLivre];
 
-            	 	 let papelUsuario = sessao.papeis || [];
-            	 	 if (papelUsuario.length === 0) {
-                	 	 if(sessao.isAdmin) papelUsuario.push('admin');
-                	 	 if(sessao.isOwner) papelUsuario.push('dono');
-                	 	 if(papelUsuario.length === 0) papelUsuario.push('funcionario');
-            	 	 }
+    // Adiciona o clique ao NOVO botão
+    btnAgendaLivre.addEventListener('click', (e) => {
+        // 1. Ativa o botão
+        allBtns.forEach(btn => btn?.classList.remove('active'));
+        btnAgendaLivre.classList.add('active');
+        
+        // 2. Mostra os filtros corretos (os mesmos da "Agenda da Semana")
+        if (filtrosHistoricoDiv) filtrosHistoricoDiv.style.display = 'none';
+        if (filtrosSemana) filtrosSemana.style.display = 'flex';
+        if (legendaContainer) legendaContainer.style.display = 'block';
+        
+        // 3. Chama a nova função
+        carregarAgendaLivre(filtroProfissionalEl, dataSemanaInput, listaAgendamentosDiv);
+    });
 
-            	 	 await carregarMenu(papelUsuario);
+    // Adiciona "ouvintes" aos filtros, que SÓ rodam se a aba "Agenda Livre" estiver ativa
+    filtroProfissionalEl?.addEventListener('change', () => {
+        if (btnAgendaLivre.classList.contains('active')) {
+            carregarAgendaLivre(filtroProfissionalEl, dataSemanaInput, listaAgendamentosDiv);
+        }
+    });
 
-        	 	 } catch (error) {
-            	 	 console.error("Erro crítico ao inicializar a página da agenda:", error);
-            	 	 document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
-        	 	 }
-      	 }
-      	 inicializarPagina();
-  	 </script>
-  	 
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script type="module" src="agenda.js"></script>
-    
-</body>
-</html>
+    dataSemanaInput?.addEventListener('change', () => {
+        if (btnAgendaLivre.classList.contains('active')) {
+            carregarAgendaLivre(filtroProfissionalEl, dataSemanaInput, listaAgendamentosDiv);
+        }
+    });
+
+    // Faz os botões ORIGINAIS desativarem o botão "Agenda Livre"
+    // Isso garante que o estado do seu agenda.js original comande
+    btnAgendaDia?.addEventListener('click', () => btnAgendaLivre.classList.remove('active'));
+    btnAgendaSemana?.addEventListener('click', () => btnAgendaLivre.classList.remove('active'));
+    btnHistorico?.addEventListener('click', () => btnAgendaLivre.classList.remove('active'));
+});
