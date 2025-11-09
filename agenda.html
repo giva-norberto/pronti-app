@@ -9,11 +9,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSS do Pronti -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    
+
     <style>
+        /* ... seu CSS original mantido ... */
         :root {
             --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             --primary-color: #4f46e5;
@@ -24,21 +24,18 @@
             --border-color: #e2e8f0;
             --shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
-
         body {
             font-family: 'Inter', sans-serif;
             background: var(--gradient-primary);
             color: var(--text-main);
             display: flex;
         }
-
         .main-content {
             margin-left: 270px;
             padding: 32px;
             flex-grow: 1;
             min-height: 100vh;
         }
-
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -71,7 +68,6 @@
         .btn-pronti:hover {
             background-color: #4338ca;
         }
-
         .btn-ausencia {
             background-color: var(--danger-color) !important;
             color: white !important;
@@ -80,7 +76,6 @@
         .btn-ausencia:hover {
             background-color: #dc2626 !important;
         }
-
         .filtros-agenda {
             display: flex;
             gap: 10px;
@@ -136,7 +131,6 @@
             border-radius: 8px;
             cursor: pointer;
         }
-
         #legenda-container {
             margin: 16px 0;
             padding: 10px 16px;
@@ -157,7 +151,6 @@
             flex-wrap: wrap;
             align-items: flex-end;
         }
-
         #lista-agendamentos {
             display: flex;
             flex-direction: column;
@@ -175,7 +168,6 @@
             box-shadow: var(--shadow);
             padding: 20px;
         }
-
         .modal-overlay {
             position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.6); display: none; justify-content: center;
@@ -190,8 +182,7 @@
         .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
         .btn-remove { background-color: #ef4444; color: white; border: none; }
-
-        /* === CSS para agenda livre === */
+        /* NOVO CSS para agenda livre (SEM ALTERAR O LAYOUT!) */
         #agenda-livre-container {
             margin-top: 16px;
         }
@@ -223,7 +214,6 @@
             font-size: 0.98em;
             margin-bottom: 6px;
         }
-
         @media (max-width: 900px) {
             body { flex-direction: column; }
             .main-content { margin-left: 0; padding: 16px; }
@@ -235,7 +225,6 @@
 </head>
 <body>
     <div id="menu-container"></div>
-
     <main class="main-content">
         <div class="page-header">
             <h1>Minha Agenda</h1>
@@ -254,7 +243,7 @@
             <button id="btn-historico" class="btn btn-outline">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
-            <!-- Nova aba: Agenda Livre -->
+            <!-- ADICIONADO: botão da nova aba Agenda Livre -->
             <button id="btn-agenda-livre" class="btn btn-outline">
                 <i class="fa-regular fa-calendar-check"></i> Agenda Livre
             </button>
@@ -298,7 +287,7 @@
         <div id="lista-agendamentos" class="dashboard-cards">
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
-        <!-- NOVO CONTAINER PARA AGENDA LIVRE ABA -->
+        <!-- NOVO CONTAINER PARA AGENDA LIVRE, mas SEM ALTERAR layout -->
         <div id="agenda-livre-container" style="display:none;"></div>
     </main>
     <div id="modal-confirmacao" class="modal-overlay">
@@ -311,7 +300,6 @@
             </div>
         </div>
     </div>
-
     <script type="module">
         import { verificarAcesso } from './userService.js'; 
         import { getProfissionaisDaEmpresa, getHorariosDoProfissional } from './vitrini-profissionais.js';
@@ -349,17 +337,16 @@
         }
         inicializarPagina();
 
-        // Mantém lógica e layout: não altera a experiência ou estrutura
-        function setActiveAba(btnId) {
-            document.querySelectorAll('.filtros-agenda .btn-outline').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(btnId).classList.add('active');
-        }
         function ocultarTodasAbasAgenda() {
             document.getElementById('lista-agendamentos').style.display = 'none';
             document.getElementById('filtros-semana-container').style.display = 'none';
             document.getElementById('filtros-historico').style.display = 'none';
             document.getElementById('legenda-container').style.display = 'none';
             document.getElementById('agenda-livre-container').style.display = 'none';
+        }
+        function setActiveAba(btnId) {
+            document.querySelectorAll('.filtros-agenda .btn-outline').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(btnId).classList.add('active');
         }
         function exibirAbaAgendaDia() {
             ocultarTodasAbasAgenda();
@@ -389,10 +376,10 @@
                 document.getElementById('filtros-historico').style.display = '';
             });
             document.getElementById('btn-agenda-livre').addEventListener('click', exibirAbaAgendaLivre);
-            exibirAbaAgendaDia(); // Padrão ao entrar
+            exibirAbaAgendaDia();
         }
 
-        // ABA "Agenda Livre": lógica idêntica ao agendamento, apenas visual
+        // NOVA FUNCIONALIDADE DA ABA "AGENDA LIVRE" - identica ao cliente
         async function carregarAgendaLivre() {
             const container = document.getElementById('agenda-livre-container');
             container.innerHTML = '<p style="padding:18px;">Carregando horários livres...</p>';
@@ -409,23 +396,18 @@
                     container.innerHTML = '<p style="color:red;">Nenhum profissional disponível.</p>';
                     return;
                 }
-                let hoje = new Date();
-                let dataISO = hoje.toISOString().slice(0,10);
                 let html = '';
-                // Mesma lógica: para cada profissional, busca o PRIMEIRO DIA com slots livres (igual agendamento/vitrine)
+                let duracaoSlot = 30;
                 for (const prof of profissionais) {
                     const horariosTrabalho = await getHorariosDoProfissional(empresaId, prof.id);
                     if (!horariosTrabalho) continue;
-                    let duracaoSlot = 30;
-
-                    // Regra de próximo dia com horário livre
-                    // Utiliza encontrarPrimeiraDataComSlots do próprio agendamento/vitrine!
-                    let dataDisponivel = await encontrarPrimeiraDataComSlots(
+                    // Usa a mesma regra do cliente/agendamento
+                    let proxData = await encontrarPrimeiraDataComSlots(
                         empresaId,
                         { ...prof, horarios: horariosTrabalho },
                         duracaoSlot
                     );
-                    if (!dataDisponivel) {
+                    if (!proxData) {
                         html += `
                         <div class="agenda-livre-prof-card">
                             <div class="agenda-livre-prof-titulo">${prof.nome}</div>
@@ -434,13 +416,14 @@
                                     Nenhum horário livre nos próximos dias
                                 </div>
                             </div>
-                        </div>`;
+                        </div>
+                        `;
                         continue;
                     }
-                    const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataDisponivel);
+                    const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, proxData);
                     const agendamentosProfissional = agendamentosDoDia.filter(agd => agd.profissionalId === prof.id);
                     const slotsDisponiveis = calcularSlotsDisponiveis(
-                        dataDisponivel,
+                        proxData,
                         agendamentosProfissional,
                         horariosTrabalho,
                         duracaoSlot
@@ -448,10 +431,11 @@
                     html += `
                         <div class="agenda-livre-prof-card">
                             <div class="agenda-livre-prof-titulo">
-                                ${prof.nome} &ndash; <span style="font-size:0.95em;font-weight:normal;">${dataDisponivel.split('-').reverse().join('/')}</span>
+                                ${prof.nome} &ndash; <span style="font-size:0.95em;font-weight:normal;">${proxData.split('-').reverse().join('/')}</span>
                             </div>
                             <div class="agenda-livre-horario-lista">
-                                ${slotsDisponiveis.length > 0 ?
+                                ${
+                                    slotsDisponiveis.length > 0 ?
                                     slotsDisponiveis.map(h => `<div class="agenda-livre-horario">${h}</div>`).join('')
                                     : '<div class="agenda-livre-horario" style="background:#fee2e2;color:#991b1b;">Nenhum horário livre</div>'
                                 }
