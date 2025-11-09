@@ -191,7 +191,7 @@
         .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
         .btn-remove { background-color: #ef4444; color: white; border: none; }
 
-        /* === NOVO CSS PARA TABELA DE AGENDA LIVRE === */
+        /* === CSS para agenda livre === */
         #agenda-livre-container {
             margin-top: 16px;
         }
@@ -315,7 +315,7 @@
     <script type="module">
         import { verificarAcesso } from './userService.js'; 
         import { getProfissionaisDaEmpresa, getHorariosDoProfissional } from './vitrini-profissionais.js';
-        import { buscarAgendamentosDoDia, calcularSlotsDisponiveis } from './vitrini-agendamento.js';
+        import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 
         async function carregarMenu(papelUsuario) {
             try {
@@ -334,10 +334,7 @@
         async function inicializarPagina() {
             try {
                 const sessao = await verificarAcesso();
-                if (!sessao || !sessao.user) {
-                    return;
-                }
-
+                if (!sessao || !sessao.user) return;
                 let papelUsuario = sessao.papeis || [];
                 if (papelUsuario.length === 0) {
                     if(sessao.isAdmin) papelUsuario.push('admin');
@@ -347,13 +344,16 @@
                 await carregarMenu(papelUsuario);
                 configurarAbasAgendaLivre(sessao.empresaId);
             } catch (error) {
-                console.error("Erro crítico ao inicializar a página da agenda:", error);
                 document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
             }
         }
         inicializarPagina();
 
-        // NOVA FUNCIONALIDADE DA ABA "AGENDA LIVRE"
+        // Mantém lógica e layout: não altera a experiência ou estrutura
+        function setActiveAba(btnId) {
+            document.querySelectorAll('.filtros-agenda .btn-outline').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(btnId).classList.add('active');
+        }
         function ocultarTodasAbasAgenda() {
             document.getElementById('lista-agendamentos').style.display = 'none';
             document.getElementById('filtros-semana-container').style.display = 'none';
@@ -363,42 +363,41 @@
         }
         function exibirAbaAgendaDia() {
             ocultarTodasAbasAgenda();
+            setActiveAba('btn-agenda-dia');
             document.getElementById('lista-agendamentos').style.display = 'flex';
             document.getElementById('filtros-semana-container').style.display = '';
             document.getElementById('legenda-container').style.display = '';
         }
         function exibirAbaAgendaLivre() {
             ocultarTodasAbasAgenda();
+            setActiveAba('btn-agenda-livre');
             document.getElementById('agenda-livre-container').style.display = '';
             carregarAgendaLivre();
         }
-        // Configuração das abas
         function configurarAbasAgendaLivre(empresaId) {
             document.getElementById('btn-agenda-dia').addEventListener('click', exibirAbaAgendaDia);
             document.getElementById('btn-agenda-semana').addEventListener('click', function () {
                 ocultarTodasAbasAgenda();
+                setActiveAba('btn-agenda-semana');
                 document.getElementById('lista-agendamentos').style.display = 'flex';
                 document.getElementById('filtros-semana-container').style.display = '';
                 document.getElementById('legenda-container').style.display = '';
             });
             document.getElementById('btn-historico').addEventListener('click', function () {
                 ocultarTodasAbasAgenda();
+                setActiveAba('btn-historico');
                 document.getElementById('filtros-historico').style.display = '';
             });
             document.getElementById('btn-agenda-livre').addEventListener('click', exibirAbaAgendaLivre);
-            // Mostra aba padrão
-            exibirAbaAgendaDia();
+            exibirAbaAgendaDia(); // Padrão ao entrar
         }
 
-        // Função para carregar agenda livre dos funcionários
+        // ABA "Agenda Livre": lógica idêntica ao agendamento, apenas visual
         async function carregarAgendaLivre() {
             const container = document.getElementById('agenda-livre-container');
             container.innerHTML = '<p style="padding:18px;">Carregando horários livres...</p>';
-
-            // -- Busca todos profissionais --
             let empresaId = null;
             try {
-                // Recupera empresaId do main (pode mudar se sua função do userService devolve clinicaId ou empresaId)
                 const sessao = await verificarAcesso();
                 empresaId = sessao.empresaId || sessao.clinicaId;
                 if (!empresaId) {
@@ -410,36 +409,47 @@
                     container.innerHTML = '<p style="color:red;">Nenhum profissional disponível.</p>';
                     return;
                 }
-                // --- Para cada profissional, traz os horários livres do dia selecionado ---
-                const hoje = new Date();
-                const dataISO = hoje.toISOString().split('T')[0];
-
-                // Renderização
+                let hoje = new Date();
+                let dataISO = hoje.toISOString().slice(0,10);
                 let html = '';
+                // Mesma lógica: para cada profissional, busca o PRIMEIRO DIA com slots livres (igual agendamento/vitrine)
                 for (const prof of profissionais) {
-                    // Busca horários de trabalho configurados
                     const horariosTrabalho = await getHorariosDoProfissional(empresaId, prof.id);
                     if (!horariosTrabalho) continue;
+                    let duracaoSlot = 30;
 
-                    // Traz todos agendamentos do dia
-                    const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
-
-                    // Filtra para esse profissional
+                    // Regra de próximo dia com horário livre
+                    // Utiliza encontrarPrimeiraDataComSlots do próprio agendamento/vitrine!
+                    let dataDisponivel = await encontrarPrimeiraDataComSlots(
+                        empresaId,
+                        { ...prof, horarios: horariosTrabalho },
+                        duracaoSlot
+                    );
+                    if (!dataDisponivel) {
+                        html += `
+                        <div class="agenda-livre-prof-card">
+                            <div class="agenda-livre-prof-titulo">${prof.nome}</div>
+                            <div class="agenda-livre-horario-lista">
+                                <div class="agenda-livre-horario" style="background:#fee2e2;color:#991b1b;">
+                                    Nenhum horário livre nos próximos dias
+                                </div>
+                            </div>
+                        </div>`;
+                        continue;
+                    }
+                    const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataDisponivel);
                     const agendamentosProfissional = agendamentosDoDia.filter(agd => agd.profissionalId === prof.id);
-
-                    // Duração mínima (poderia ser ajustável; aqui assume 30 min)
-                    const duracaoSlot = 30; // Em minutos
-
                     const slotsDisponiveis = calcularSlotsDisponiveis(
-                        dataISO,
+                        dataDisponivel,
                         agendamentosProfissional,
                         horariosTrabalho,
                         duracaoSlot
                     );
-
                     html += `
                         <div class="agenda-livre-prof-card">
-                            <div class="agenda-livre-prof-titulo">${prof.nome}</div>
+                            <div class="agenda-livre-prof-titulo">
+                                ${prof.nome} &ndash; <span style="font-size:0.95em;font-weight:normal;">${dataDisponivel.split('-').reverse().join('/')}</span>
+                            </div>
                             <div class="agenda-livre-horario-lista">
                                 ${slotsDisponiveis.length > 0 ?
                                     slotsDisponiveis.map(h => `<div class="agenda-livre-horario">${h}</div>`).join('')
@@ -449,7 +459,7 @@
                         </div>
                     `;
                 }
-                container.innerHTML = html || '<p style="padding:18px;">Nenhum horário livre encontrado.</p>';
+                container.innerHTML = html || '<p style="padding:18px;">Nenhum horário livre encontrado nos próximos 90 dias.</p>';
             } catch (err) {
                 container.innerHTML = `<p style="padding:12px;color:red;">Erro ao carregar agenda livre: ${err.message||err}</p>`;
             }
