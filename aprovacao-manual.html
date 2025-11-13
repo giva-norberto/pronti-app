@@ -32,6 +32,46 @@
         .btn-aprovar:hover:not(:disabled) { background-color: #0f9e70; }
         .btn-aprovar:disabled { background-color: #9ca3af; cursor: not-allowed; }
         #loading-message, #empty-message { text-align: center; padding: 40px; color: #64748b; background: #fff; border-radius: 8px; }
+
+        /* ================================== */
+        /* NOVO: Estilos para Celular (Responsivo) */
+        /* ================================== */
+        @media (max-width: 768px) {
+            /* Seu 'style.css' (que não vejo) deve cuidar de esconder/recolher o menu */
+            /* Esta regra ajusta o conteúdo principal */
+            main.content {
+                padding: 20px 15px; /* Reduz o padding da página */
+            }
+
+            .header-pagina h1 {
+                font-size: 1.6rem; /* Reduz o título principal */
+            }
+            .header-pagina p {
+                font-size: 1rem;
+            }
+
+            .item {
+                flex-direction: column; /* Empilha as informações e o botão */
+                align-items: stretch; /* Estica os itens para largura total */
+                gap: 20px; /* Aumenta o espaço entre a info e o botão */
+            }
+
+            .info .doc-id {
+                 /* Quebra de linha para IDs longos */
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+
+            .acoes {
+                width: 100%; /* Faz a div do botão ocupar 100% */
+            }
+            
+            .acoes button {
+                width: 100%; /* Faz o botão "Aprovar" ocupar 100% */
+                padding: 12px 16px; /* Botão maior e mais fácil de tocar */
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -62,9 +102,6 @@
             updateDoc,
             getDocs,
             getDoc,
-            // ==================================================
-            // ADICIONADO deleteDoc PARA LIMPEZA (OPCIONAL, VAMOS USAR updateDoc)
-            // ==================================================
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -98,9 +135,6 @@
 
             unsubscribePagamentos = onSnapshot(qPagamentos, async (snapshot) => {
                 try {
-                    // ==================================================
-                    // ALTERADO: map para 'docsPromises' e adicionado .filter(Boolean)
-                    // ==================================================
                     const docsPromises = snapshot.docs.map(async d => {
                         const data = d.data() || {};
                         const id = d.id;
@@ -113,18 +147,12 @@
                         let donoNome = null;
                         let donoId = null;
                         
-                        // ==================================================
-                        // NOVO: Flag para verificar se a empresa existe
-                        // ==================================================
                         let empresaExiste = false;
 
                         if (empresaId) {
                             try {
                                 const empSnap = await getDoc(doc(db, "empresarios", empresaId));
                                 if (empSnap.exists()) {
-                                    // ==================================================
-                                    // NOVO: Marcar que a empresa foi encontrada
-                                    // ==================================================
                                     empresaExiste = true; 
                                     const empData = empSnap.data() || {};
                                     empresaNome = empData.nomeFantasia || empData.nome || null;
@@ -136,15 +164,9 @@
                             }
                         }
 
-                        // ==================================================
-                        // NOVO: LÓGICA DE ELIMINAÇÃO AUTOMÁTICA
-                        // Se o pagamento tem um ID de empresa, mas a empresa não existe,
-                        // ele é "órfão". Atualizamos o status para removê-lo da lista.
-                        // ==================================================
                         if (empresaId && !empresaExiste) {
                             console.warn(`Pagamento órfão detectado (Empresa ${empresaId} não existe). Removendo pagamento ${id}...`);
                             try {
-                                // Atualiza o status para que ele não apareça mais nesta query
                                 await updateDoc(d.ref, { 
                                     status: "rejeitado_orfao",
                                     motivoRejeicao: "Empresa não encontrada (provavelmente deletada)."
@@ -181,9 +203,6 @@
                     });
                     
                     const docsResult = await Promise.all(docsPromises);
-                    // ==================================================
-                    // NOVO: .filter(Boolean) remove os pagamentos órfãos (null)
-                    // ==================================================
                     pendenciasDaColecao = docsResult.filter(Boolean); 
                     renderizarListaCombinada();
 
