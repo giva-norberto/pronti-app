@@ -135,7 +135,7 @@
             background: #00bdae;
             box-shadow: 0 4px 15px rgba(0, 189, 174, 0.3);
         }
-         .btn-pagar-opcao.confirmar-pix { /* MANTIDO O NOME DA CLASSE POR CONSISTÊNCIA */
+         .btn-pagar-opcao.confirmar-pix { /* CLASSE USADA EM AMBOS OS BOTÕES DE CONFIRMAÇÃO */
             background: #10b981;
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
         }
@@ -490,6 +490,7 @@
         }
 
         // Função de confirmação do PIX
+        // LÓGICA ORIGINAL RESTAURADA: Mostra modal de sucesso, não redireciona
         async function confirmarPagamentoPix() {
             document.getElementById('pix-modal').style.display = 'none';
             botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Enviando confirmação...</button>`;
@@ -556,8 +557,8 @@
                 // criar documento /mail para notificar o ADMIN (você)
                 try {
                     await addDoc(collection(db, "mail"), {
-                        to: "giva.norberto@gmail.com", // SEU EMAIL
-                        subject: `PIX Confirmado: Plano ${planoSelecionado}`,
+                        to: "giva.norberto@gmail.com",
+                        subject: `PIX Confirmado: Plano ${planoSelecionado}`, // <-- MUDANÇA NO ASSUNTO
                         body: `O usuário ${user.displayName || user.email} (UID: ${user.uid}) confirmou pagamento por PIX.
 Empresa: ${empresaId}
 Plano: ${planoSelecionado}
@@ -572,14 +573,14 @@ Verifique no painel administrativo para liberar a assinatura.`,
                     console.log('[mail] Documento para admin criado em /mail');
                 } catch (mailErr) {
                     console.warn('[mail] Falha ao criar documento /mail para admin (não crítico):', mailErr);
+                    // não bloquear o fluxo principal; exibir nota para o usuário/admin
                     avisoSelecao.textContent = "Confirmação registrada. Aviso: não foi possível criar a notificação por e-mail automaticamente.";
                 }
 
                 // ==================================================
-                // ALTERAÇÃO SOLICITADA: Redirecionar para pagamentos pendentes
+                // LÓGICA ORIGINAL RESTAURADA: MOSTRAR MODAL DE SUCESSO
                 // ==================================================
-                // document.getElementById('sucesso-modal').style.display = 'flex';
-                window.location.href = 'pagamentos-pendentes.html'; // <-- MUDANÇA
+                document.getElementById('sucesso-modal').style.display = 'flex';
                 
             } catch (error) {
                 console.error("Erro ao registrar confirmação de pagamento:", error);
@@ -679,10 +680,9 @@ Verifique no painel administrativo para liberar a assinatura.`, // <-- MUDANÇA
                 }
 
                 // ==================================================
-                // ALTERAÇÃO SOLICITADA: Redirecionar para pagamentos pendentes
+                // LÓGICA ORIGINAL RESTAURADA: MOSTRAR MODAL DE SUCESSO
                 // ==================================================
-                // document.getElementById('sucesso-modal').style.display = 'flex';
-                window.location.href = 'pagamentos-pendentes.html'; // <-- MUDANÇA
+                document.getElementById('sucesso-modal').style.display = 'flex';
                 
             } catch (error) {
                 console.error("Erro ao registrar confirmação de pagamento:", error);
