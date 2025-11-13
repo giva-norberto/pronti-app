@@ -61,7 +61,10 @@
             Timestamp,
             updateDoc,
             getDocs,
-            getDoc
+            getDoc,
+            // ==================================================
+            // ADICIONADO deleteDoc PARA LIMPEZA (OPCIONAL, VAMOS USAR updateDoc)
+            // ==================================================
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -95,29 +98,37 @@
 
             unsubscribePagamentos = onSnapshot(qPagamentos, async (snapshot) => {
                 try {
-                    const docs = await Promise.all(snapshot.docs.map(async d => {
+                    // ==================================================
+                    // ALTERADO: map para 'docsPromises' e adicionado .filter(Boolean)
+                    // ==================================================
+                    const docsPromises = snapshot.docs.map(async d => {
                         const data = d.data() || {};
                         const id = d.id;
                         const empresaId = data.empresaId || null;
 
-                        // monta dataCriacao a partir dos campos possíveis
                         const dataCriacao = data.dataCriacao || data.dataSolicitacao || data.createdAt || data.created_at || null;
 
-                        // prioridade para clienteNome já presente no documento
                         let clienteNome = data.clienteNome || data.nome || data.nomeFantasia || null;
                         let empresaNome = null;
                         let donoNome = null;
                         let donoId = null;
+                        
+                        // ==================================================
+                        // NOVO: Flag para verificar se a empresa existe
+                        // ==================================================
+                        let empresaExiste = false;
 
                         if (empresaId) {
                             try {
                                 const empSnap = await getDoc(doc(db, "empresarios", empresaId));
                                 if (empSnap.exists()) {
+                                    // ==================================================
+                                    // NOVO: Marcar que a empresa foi encontrada
+                                    // ==================================================
+                                    empresaExiste = true; 
                                     const empData = empSnap.data() || {};
                                     empresaNome = empData.nomeFantasia || empData.nome || null;
-                                    // tente pegar donoId do documento da empresa
                                     donoId = empData.donoId || null;
-                                    // se clienteNome ainda estiver vazio, use o nomeFantasia da empresa
                                     clienteNome = clienteNome || empresaNome;
                                 }
                             } catch (err) {
@@ -125,7 +136,26 @@
                             }
                         }
 
-                        // se temos donoId, tenta pegar nome do dono (na coleção usuarios)
+                        // ==================================================
+                        // NOVO: LÓGICA DE ELIMINAÇÃO AUTOMÁTICA
+                        // Se o pagamento tem um ID de empresa, mas a empresa não existe,
+                        // ele é "órfão". Atualizamos o status para removê-lo da lista.
+                        // ==================================================
+                        if (empresaId && !empresaExiste) {
+                            console.warn(`Pagamento órfão detectado (Empresa ${empresaId} não existe). Removendo pagamento ${id}...`);
+                            try {
+                                // Atualiza o status para que ele não apareça mais nesta query
+                                await updateDoc(d.ref, { 
+                                    status: "rejeitado_orfao",
+                                    motivoRejeicao: "Empresa não encontrada (provavelmente deletada)."
+                                });
+                            } catch (cleanErr) {
+                                console.error(`Falha ao limpar pagamento órfão ${id}:`, cleanErr);
+                            }
+                            return null; // Não renderiza este item
+                        }
+
+
                         if (!donoNome && donoId) {
                             try {
                                 const userSnap = await getDoc(doc(db, "usuarios", donoId));
@@ -148,10 +178,15 @@
                             dataCriacao,
                             ...data
                         };
-                    }));
-
-                    pendenciasDaColecao = docs;
+                    });
+                    
+                    const docsResult = await Promise.all(docsPromises);
+                    // ==================================================
+                    // NOVO: .filter(Boolean) remove os pagamentos órfãos (null)
+                    // ==================================================
+                    pendenciasDaColecao = docsResult.filter(Boolean); 
                     renderizarListaCombinada();
+
                 } catch (err) {
                     console.error('Erro processando pagamentosPendentes:', err);
                 }
@@ -169,7 +204,7 @@
                         tipo: 'campo',
                         clienteNome: empresaData.nomeFantasia || pagamentoPendente.nome || 'Cliente desconhecido',
                         empresaNome: empresaData.nomeFantasia || empresaData.nome || null,
-                        donoNome: null, // podemos preencher via consulta adicional se necessário
+                        donoNome: null, 
                         planoNome: pagamentoPendente.plano ? `Plano para ${pagamentoPendente.plano} usuários` : 'Plano',
                         valor: pagamentoPendente.valor ?? 0,
                         metodo: pagamentoPendente.metodo || 'pix',
@@ -215,7 +250,6 @@
                             if (!snapPag.empty) {
                                 const pdoc = snapPag.docs[0];
                                 const pdata = pdoc.data() || {};
-                                // tenta enriquecer com nomeFantasia da empresa
                                 return {
                                     id: pdoc.id,
                                     tipo: 'colecao',
@@ -253,7 +287,7 @@
                 })().catch(err => console.error('Erro ao processar empresas (plano aguardando):', err));
             }, (err) => console.error('Erro ao ouvir empresas (plano aguardando):', err));
 
-            // utilitárias
+            // utilitárias (sem mudanças)
             function normalizeDate(value) {
                 if (!value) return null;
                 if (typeof value.toDate === 'function') return value.toDate();
@@ -350,9 +384,8 @@
                     const dataFormatada = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'Data indisponível';
                     const valorFormatado = formatValor(pagamento.valor ?? 0);
 
-                    // preferir mostrar nome fantasia da empresa; se não houver, mostra clienteNome
                     const empresaNomeExibir = pagamento.empresaNome || pagamento.clienteNome || 'Cliente desconhecido';
-                    const donoNomeExibir = pagamento.donoNome || pagamento.donoId || ''; // exibe donoNome se disponível
+                    const donoNomeExibir = pagamento.donoNome || pagamento.donoId || ''; 
 
                     const docIdDisplay = pagamento.empresaId || pagamento.empresaId || pagamento.id || 'ID indisponível';
                     const planoNome = pagamento.planoNome || pagamento.plano || 'Plano';
@@ -389,7 +422,6 @@
             const previousText = btn.textContent;
             btn.textContent = 'Aprovando...';
 
-            // validade padrão: +30 dias
             const dataFim = new Date();
             dataFim.setDate(dataFim.getDate() + 30);
             const proximoPagamentoTimestamp = Timestamp.fromDate(dataFim);
@@ -408,6 +440,22 @@
 
                         const empresaRef = doc(db, "empresarios", idEmpresaOriginal);
 
+                        // ==================================================
+                        // NOVO: VERIFICAÇÃO ANTI-TRAVA
+                        // Antes de atualizar a empresa, verifica se ela existe
+                        // ==================================================
+                        const empresaDoc = await transaction.get(empresaRef);
+                        if (!empresaDoc.exists()) {
+                            // A empresa não existe! A "trava" está aqui.
+                            // Solução: Atualize o pagamento para "rejeitado" e saia.
+                            transaction.update(pagRef, { 
+                                status: "rejeitado_orfao",
+                                motivoRejeicao: "Empresa não encontrada (aprovacao manual)."
+                            });
+                            throw new Error(`A empresa (ID: ${idEmpresaOriginal}) não foi encontrada. O pagamento não pode ser aprovado e foi marcado como órfão.`);
+                        }
+                        
+                        // Se a empresa existe, continua normalmente:
                         transaction.update(empresaRef, {
                             plano: "pago",
                             status: "ativo",
@@ -430,6 +478,14 @@
 
                 // tipo 'campo' (empresa com pagamentoPendente ou plano aguardando)
                 const empresaRef = doc(db, "empresarios", empresaId);
+
+                // ==================================================
+                // NOVO: VERIFICAÇÃO ANTI-TRAVA (também para tipo 'campo')
+                // ==================================================
+                const empSnap = await getDoc(empresaRef); // Faz a leitura fora da transação
+                if (!empSnap.exists()) {
+                     throw new Error(`A empresa (ID: ${empresaId}) não foi encontrada. O pagamento não pode ser aprovado.`);
+                }
 
                 await updateDoc(empresaRef, {
                     plano: "pago",
