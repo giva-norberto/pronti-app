@@ -135,7 +135,7 @@
             background: #00bdae;
             box-shadow: 0 4px 15px rgba(0, 189, 174, 0.3);
         }
-         .btn-pagar-opcao.confirmar-pix {
+         .btn-pagar-opcao.confirmar-pix { /* MANTIDO O NOME DA CLASSE POR CONSISTÊNCIA */
             background: #10b981;
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
         }
@@ -206,6 +206,7 @@
             <button id="btn-confirmar-pix" class="btn-pagar-opcao confirmar-pix" style="margin-top:20px;">
                 <i class="fa-solid fa-check"></i> Já Realizei o Pagamento
             </button>
+            <button id="btn-fechar-pix-modal" style="background:none; border:none; color:#666; margin-top:15px; cursor:pointer; font-family: 'Poppins', sans-serif; font-size: 1rem;">Cancelar</button>
         </div>
     </div>
 
@@ -216,6 +217,24 @@
             <p>Recebemos sua confirmação. Sua assinatura será liberada manualmente em breve após a verificação do pagamento.</p>
         </div>
     </div>
+
+    <div id="mp-modal" class="modal-overlay">
+      <div id="mp-modal-content" style="background: #fff; color: #333; padding: 30px; border-radius: 16px; text-align: center; max-width: 400px; width: 90%;">
+        <h2>Pagar com Mercado Pago</h2>
+        <p>Clique no botão abaixo para abrir a página de pagamento em uma nova aba. Após pagar, volte aqui e confirme.</p>
+        
+        <a href="#" id="btn-abrir-link-mp" target="_blank" class="btn-pagar-opcao mercadopago" style="margin-top:20px; text-decoration: none;">
+            <i class="fa-solid fa-external-link-alt"></i> Abrir Página de Pagamento
+        </a>
+        
+        <button id="btn-confirmar-mp" class="btn-pagar-opcao confirmar-pix" style="margin-top:20px;">
+          <i class="fa-solid fa-check"></i> Já Realizei o Pagamento
+        </button>
+
+        <button id="btn-fechar-mp-modal" style="background:none; border:none; color:#666; margin-top:15px; cursor:pointer; font-family: 'Poppins', sans-serif; font-size: 1rem;">Cancelar</button>
+      </div>
+    </div>
+
 
     <script type="module" src="./firebase-config.js"></script>
 
@@ -247,7 +266,7 @@
         let configPagamento = null; 
 
         // =====================================================================
-        // SUAS FUNÇÕES ORIGINAIS, 100% INALTERADAS (BUSCAR DADOS, GERAR CARDS, ETC)
+        // FUNÇÕES ORIGINAIS (SEM MUDANÇAS)
         // =====================================================================
         async function buscarDadosEmpresa(empresaId) {
             if (!empresaId) {
@@ -341,23 +360,6 @@
             });
         }
         
-        function handleMercadoPago() {
-            if (!planoSelecionado) return;
-            botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Redirecionando...</button>`;
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const empresaId = urlParams.get("empresaId");
-            let linkDePagamento = linksDosPlanos[planoSelecionado];
-
-            if (linkDePagamento && empresaId) {
-                linkDePagamento += `&external_reference=${empresaId}`;
-                window.location.href = linkDePagamento;
-            } else {
-                avisoSelecao.textContent = "Erro ao processar pagamento. Tente novamente.";
-                document.querySelector('.card-plano.selecionado')?.click(); 
-            }
-        }
-        
         async function carregarConfiguracoesPagamento() {
             try {
                 const configRef = doc(db, "configuracoesGlobais", "pagamentos");
@@ -371,10 +373,39 @@
                 console.error("Erro ao carregar configurações de pagamento:", error);
             }
         }
+
+        // ==================================================
+        // NOVO: handleMercadoPago MODIFICADO
+        // Não redireciona mais, apenas abre o modal
+        // ==================================================
+        function handleMercadoPago() {
+            if (!planoSelecionado) return;
+
+            // Não desabilita mais os botões, pois o modal vai abrir
+            // botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Redirecionando...</button>`;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const empresaId = urlParams.get("empresaId");
+            let linkDePagamento = linksDosPlanos[planoSelecionado];
+
+            if (linkDePagamento && empresaId) {
+                // Adiciona a referência da empresa ao link
+                linkDePagamento += `&external_reference=${empresaId}`;
+                
+                // 1. Define o link no botão "Abrir Página" do modal
+                document.getElementById('btn-abrir-link-mp').href = linkDePagamento;
+
+                // 2. Exibe o modal do Mercado Pago
+                document.getElementById('mp-modal').style.display = 'flex';
+
+            } else {
+                // Se falhar (nunca deve acontecer se o plano foi selecionado)
+                avisoSelecao.textContent = "Erro ao processar pagamento. Tente novamente.";
+                // Restaura os botões
+                document.querySelector('.card-plano.selecionado')?.click(); 
+            }
+        }
         
-        // =====================================================================
-        // ALTERAÇÃO MÍNIMA: criar registro em pagamentosPendentes e enviar e-mail para admin
-        // =====================================================================
         function handlePix() {
             if (!planoSelecionado || !configPagamento) {
                 alert("Selecione um plano e aguarde as configurações de pagamento carregarem.");
@@ -398,7 +429,6 @@
                 return `${id}${len}${valor}`;
             };
             
-            // --- INÍCIO DA CORREÇÃO ---
             let payload = "000201";
             
             const gui = formatarCampo("00", "BR.GOV.BCB.PIX");
@@ -425,7 +455,6 @@
             };
 
             const payloadComCRC = payload + "6304" + crc16(payload + "6304");
-            // --- FIM DA CORREÇÃO ---
 
             const qrcodeContainer = document.getElementById('pix-qrcode');
             qrcodeContainer.innerHTML = "";
@@ -460,7 +489,7 @@
             });
         }
 
-        // ALTERAÇÃO: agora também cria documento em pagamentosPendentes (com createdBy) e envia e‑mail para o administrator
+        // Função de confirmação do PIX
         async function confirmarPagamentoPix() {
             document.getElementById('pix-modal').style.display = 'none';
             botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Enviando confirmação...</button>`;
@@ -524,15 +553,14 @@
                     }
                 }
 
-                // ---------- NOVO: criar documento /mail para notificar o ADMIN (você) ----------
-                // O email do administrador corrigido: giva.norberto@gmail.com
+                // criar documento /mail para notificar o ADMIN (você)
                 try {
                     await addDoc(collection(db, "mail"), {
-                        to: "giva.norberto@gmail.com",
-                        subject: `Pagamento confirmado: ${planoSelecionado ? planoSelecionado.nome : ''}`,
-                        body: `O usuário ${user.displayName || user.email} confirmou pagamento por PIX.
+                        to: "giva.norberto@gmail.com", // SEU EMAIL
+                        subject: `PIX Confirmado: Plano ${planoSelecionado}`,
+                        body: `O usuário ${user.displayName || user.email} (UID: ${user.uid}) confirmou pagamento por PIX.
 Empresa: ${empresaId}
-Plano: ${planoSelecionado ? planoSelecionado.nome : ''}
+Plano: ${planoSelecionado}
 Valor: R$ ${Number(precoPlanoSelecionado ?? 0).toFixed(2)}
 Data: ${new Date().toLocaleString()}
 Verifique no painel administrativo para liberar a assinatura.`,
@@ -544,11 +572,14 @@ Verifique no painel administrativo para liberar a assinatura.`,
                     console.log('[mail] Documento para admin criado em /mail');
                 } catch (mailErr) {
                     console.warn('[mail] Falha ao criar documento /mail para admin (não crítico):', mailErr);
-                    // não bloquear o fluxo principal; exibir nota para o usuário/admin
                     avisoSelecao.textContent = "Confirmação registrada. Aviso: não foi possível criar a notificação por e-mail automaticamente.";
                 }
 
-                document.getElementById('sucesso-modal').style.display = 'flex';
+                // ==================================================
+                // ALTERAÇÃO SOLICITADA: Redirecionar para pagamentos pendentes
+                // ==================================================
+                // document.getElementById('sucesso-modal').style.display = 'flex';
+                window.location.href = 'pagamentos-pendentes.html'; // <-- MUDANÇA
                 
             } catch (error) {
                 console.error("Erro ao registrar confirmação de pagamento:", error);
@@ -557,6 +588,110 @@ Verifique no painel administrativo para liberar a assinatura.`,
                 document.querySelector('.card-plano.selecionado')?.click();
             }
         }
+
+        // ==================================================
+        // NOVO: FUNÇÃO DE CONFIRMAÇÃO MANUAL DO MERCADO PAGO
+        // (Lógica idêntica ao PIX, mudando apenas o método)
+        // ==================================================
+        async function confirmarPagamentoMP() {
+            document.getElementById('mp-modal').style.display = 'none'; // Esconde o modal do MP
+            botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Enviando confirmação...</button>`;
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const empresaId = urlParams.get("empresaId");
+
+            if (!empresaId) {
+                avisoSelecao.textContent = "Erro crítico: ID da empresa não encontrado.";
+                return;
+            }
+
+            // Pega o usuário logado
+            const user = await getCurrentUserOnce();
+            if (!user) {
+                avisoSelecao.textContent = "Você precisa estar logado para confirmar pagamento. Faça login e tente novamente.";
+                // Restaura os botões para o usuário tentar novamente
+                document.querySelector('.card-plano.selecionado')?.click();
+                return;
+            }
+
+            try {
+                const empresaRef = doc(db, "empresarios", empresaId);
+
+                // NOVO: Objeto de pagamento pendente para MERCADO PAGO
+                const pagamentoPendente = {
+                    valor: precoPlanoSelecionado ?? 0,
+                    metodo: "mercadopago", // <-- MUDANÇA
+                    dataSolicitacao: serverTimestamp(),
+                    plano: String(planoSelecionado ?? ""),
+                    nome: "MercadoPago - confirmação pelo app", // <-- MUDANÇA
+                    createdBy: user.uid,
+                    clienteId: user.uid
+                };
+
+                // 1. Atualiza o documento da empresa
+                await updateDoc(empresaRef, {
+                    plano: "aguardando_liberacao",
+                    pagamentoPendente, // Salva os detalhes do pagamento pendente
+                    updatedAt: serverTimestamp()
+                });
+
+                // 2. Cria o registro em 'pagamentosPendentes'
+                try {
+                    await addDoc(collection(db, "pagamentosPendentes"), {
+                        empresaId,
+                        valor: precoPlanoSelecionado ?? 0,
+                        metodo: "mercadopago", // <-- MUDANÇA
+                        status: "aguardando_liberacao",
+                        plano: String(planoSelecionado ?? ""),
+                        nome: pagamentoPendente.nome,
+                        dataSolicitacao: serverTimestamp(),
+                        createdAt: serverTimestamp(),
+                        createdBy: user.uid,
+                        clienteId: user.uid
+                    });
+                } catch (err) {
+                    console.warn("Falha ao criar documento em pagamentosPendentes (não crítico):", err);
+                    if (err && (err.code === 'permission-denied' || String(err).toLowerCase().includes('permission'))) {
+                        avisoSelecao.textContent = "Confirmação enviada, porém não foi possível registrar na coleção pagamentosPendentes devido a permissões. O admin verá a pendência no documento da empresa.";
+                    }
+                }
+
+                // 3. Envia o email para você (o admin)
+                try {
+                    await addDoc(collection(db, "mail"), {
+                        to: "giva.norberto@gmail.com", // SEU EMAIL
+                        subject: `MP Confirmado: Plano ${planoSelecionado}`, // <-- MUDANÇA
+                        body: `O usuário ${user.displayName || user.email} (UID: ${user.uid}) confirmou pagamento por MERCADO PAGO.
+Empresa: ${empresaId}
+Plano: ${planoSelecionado}
+Valor: R$ ${Number(precoPlanoSelecionado ?? 0).toFixed(2)}
+Data: ${new Date().toLocaleString()}
+Verifique no painel administrativo para liberar a assinatura.`, // <-- MUDANÇA
+                        dataCriacao: serverTimestamp(),
+                        createdBy: user.uid,
+                        empresaId: empresaId,
+                        tipo: 'PAGAMENTO_CONFIRMADO_ADMIN'
+                    });
+                    console.log('[mail] Documento para admin criado em /mail');
+                } catch (mailErr) {
+                    console.warn('[mail] Falha ao criar documento /mail para admin (não crítico):', mailErr);
+                    avisoSelecao.textContent = "Confirmação registrada. Aviso: não foi possível criar a notificação por e-mail automaticamente.";
+                }
+
+                // ==================================================
+                // ALTERAÇÃO SOLICITADA: Redirecionar para pagamentos pendentes
+                // ==================================================
+                // document.getElementById('sucesso-modal').style.display = 'flex';
+                window.location.href = 'pagamentos-pendentes.html'; // <-- MUDANÇA
+                
+            } catch (error) {
+                console.error("Erro ao registrar confirmação de pagamento:", error);
+                avisoSelecao.textContent = "Ocorreu um erro ao enviar sua notificação. Tente novamente.";
+                // Restaura os botões
+                document.querySelector('.card-plano.selecionado')?.click();
+            }
+        }
+
 
         // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         document.addEventListener('DOMContentLoaded', async () => {
@@ -569,6 +704,17 @@ Verifique no painel administrativo para liberar a assinatura.`,
             ]);
             
             gerarCardsDePlano();
+
+            // ==================================================
+            // NOVO: LISTENERS PARA OS MODAIS PIX E MP
+            // ==================================================
+            document.getElementById('btn-fechar-pix-modal').addEventListener('click', () => {
+                document.getElementById('pix-modal').style.display = 'none';
+            });
+            document.getElementById('btn-confirmar-mp').addEventListener('click', confirmarPagamentoMP);
+            document.getElementById('btn-fechar-mp-modal').addEventListener('click', () => {
+                document.getElementById('mp-modal').style.display = 'none';
+            });
         });
     </script>
 </body>
