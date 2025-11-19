@@ -1,18 +1,17 @@
 // ======================================================================
-//          DASHBOARD.JS (VERSÃO FINAL, COMPLETA E CORRIGIDA)
+//          DASHBOARD.JS (FINAL, CORRIGIDO E ALINHADO AO MÊS ATUAL)
 // =====================================================================
 
 // ✅ ALTERAÇÃO: A importação de 'verificarAcesso' foi REMOVIDA daqui.
-// O HTML agora é responsável por chamar essa função.
 import { db } from "./firebase-config.js";
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-// --- VARIÁVEIS GLOBAIS E CONSTANTES (NENHUMA LÓGICA ALTERADA ) ---
+// --- VARIÁVEIS GLOBAIS E CONSTANTES ---
 let servicosChart;
 const STATUS_VALIDOS = ["ativo", "realizado"];
 
-// --- FUNÇÕES DE UTILIDADE (NENHUMA LÓGICA ALTERADA) ---
+// --- FUNÇÕES DE UTILIDADE ---
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
     const [h, m] = timeStr.split(":").map(Number);
@@ -27,7 +26,7 @@ function debounce(fn, delay) {
     };
 }
 
-// --- FUNÇÕES DE RENDERIZAÇÃO E UI (NENHUMA LÓGICA ALTERADA) ---
+// --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
 
 function resetDashboardUI() {
     console.log("[DEBUG] Resetando a UI do Dashboard para estado de carregamento.");
@@ -54,7 +53,7 @@ function resetDashboardUI() {
     }
 }
 
-function preencherPainel(resumoDia, resumoMes, servicosSemana) {
+function preencherPainel(resumoDia, resumoMes, servicosContagem) {
     // Preenche dados do dia
     document.getElementById('faturamento-realizado').textContent = resumoDia.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     document.getElementById('faturamento-previsto').textContent = resumoDia.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -75,15 +74,14 @@ function preencherPainel(resumoDia, resumoMes, servicosSemana) {
         document.getElementById('resumo-inteligente').innerHTML = "<ul><li>Nenhum agendamento no dia para resumir.</li></ul>";
     }
 
-    // Preenche Gráfico
+    // Preenche Gráfico (Serviços mais vendidos do Mês)
     const graficoContainer = document.getElementById('grafico-container');
     graficoContainer.innerHTML = '<canvas id="servicos-mais-vendidos"></canvas>';
     const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
     
     if (servicosChart) servicosChart.destroy();
 
-    // Corrigido: Gráfico usa dados do mês corrente, nunca da semana
-    const servicosArray = Object.entries(servicosSemana).sort((a, b) => b[1] - a[1]);
+    const servicosArray = Object.entries(servicosContagem).sort((a, b) => b[1] - a[1]);
     servicosChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -104,7 +102,7 @@ function preencherPainel(resumoDia, resumoMes, servicosSemana) {
     });
 }
 
-// --- FUNÇÕES DE BUSCA DE DADOS (NENHUMA LÓGICA ALTERADA) ---
+// --- FUNÇÕES DE BUSCA DE DADOS ---
 
 async function buscarDadosDoDia(empresaId, data) {
     const agRef = collection(db, "empresarios", empresaId, "agendamentos");
@@ -142,6 +140,7 @@ async function buscarDadosDoDia(empresaId, data) {
 
 async function buscarDadosDoMes(empresaId) {
     const hoje = new Date();
+    // 🔑 O cálculo abaixo garante que a busca seja sempre pelo mês atual, independentemente do filtro de dia do Dashboard.
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
 
@@ -170,17 +169,12 @@ async function carregarDashboard(empresaId, data) {
     console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
     resetDashboardUI();
     try {
-        // Agora o gráfico SEMPRE é do mês corrente:
         const [resumoDoDia, resumoDoMes] = await Promise.all([
             buscarDadosDoDia(empresaId, data),
             buscarDadosDoMes(empresaId)
         ]);
         
-        // ----------------------------------------------------------------------------------
-        // ✅ CORREÇÃO APLICADA: 
-        // Removida a sintaxe de atribuição (resumoMes = resumoDoMes) que causava o ReferenceError.
-        // Os argumentos agora são passados diretamente: (resumoDia, resumoMes, servicosContagem)
-        // ----------------------------------------------------------------------------------
+        // CORREÇÃO APLICADA: Passa resumoDoMes e resumoDoMes.servicosContagem diretamente.
         preencherPainel(resumoDoDia, resumoDoMes, resumoDoMes.servicosContagem);
         
     } catch (error) {
@@ -200,6 +194,9 @@ export async function inicializarDashboard(sessao) {
     try {
         const empresaId = sessao.empresaId;
         const filtroDataEl = document.getElementById('filtro-data');
+        
+        // 🔑 GARANTIA DE "MÊS ATUAL": O filtro de data é sempre inicializado para o dia de HOJE.
+        // A lógica de busca do mês (buscarDadosDoMes) se encarrega de filtrar o MÊS INTEIRO.
         filtroDataEl.value = new Date().toISOString().split('T')[0];
         
         await carregarDashboard(empresaId, filtroDataEl.value);
@@ -223,5 +220,3 @@ export async function inicializarDashboard(sessao) {
 // ==================================================================
 // ✅ FIM DA CORREÇÃO DEFINITIVA
 // ==================================================================
-
-// A função 'inicializarPagina' e o 'addEventListener' foram removidos para evitar duplicidade.
