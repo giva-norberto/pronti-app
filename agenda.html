@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
     <style>
         :root {
             --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
@@ -368,10 +369,25 @@
             document.getElementById('btn-historico').addEventListener('click', function () {
                 ocultarTodasAbasAgenda();
                 setActiveAba('btn-historico');
-                document.getElementById('filtros-historico').style.display = 'flex'; // CORREÇÃO NA LINHA!
+                document.getElementById('filtros-historico').style.display = 'flex'; // <----- CORRIGIDO!
             });
             document.getElementById('btn-agenda-livre').addEventListener('click', exibirAbaAgendaLivre);
             exibirAbaAgendaDia();
+
+            // CORREÇÃO 2: Mês Atual sempre preenche os campos e dispara o filtro
+            document.getElementById('btn-mes-atual').addEventListener('click', function () {
+                var hoje = new Date();
+                var primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                var ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+                document.getElementById('data-inicial').value = primeiroDia.toISOString().slice(0,10);
+                document.getElementById('data-final').value = ultimoDia.toISOString().slice(0,10);
+                document.getElementById('btn-aplicar-historico').click();
+            });
+
+            // CORREÇÃO 3: Botão aplicar histórico dispara o evento [requisito de UX]
+            document.getElementById('btn-aplicar-historico').addEventListener('click', function () {
+                // Aqui só dispara evento e espera a função do backend (agenda.js)
+            });
         }
 
         async function carregarAgendaLivre() {
