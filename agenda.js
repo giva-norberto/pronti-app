@@ -243,8 +243,10 @@ function configurarListeners() {
     inputDataSemana.value = formatarDataISO(dataAtual);
     carregarAgendamentosConformeModo();
   });
+
+  // CORREÇÃO DO FILTRO HISTÓRICO
   btnAplicarHistorico.addEventListener("click", function(e) {
-    e.preventDefault();
+    e.preventDefault(); // Evita qualquer ação submit caso o botão esteja em form.
     carregarAgendamentosHistorico();
   });
   btnMesAtual.addEventListener("click", () => {
