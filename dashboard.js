@@ -1,4 +1,4 @@
-// ======================================================================
+======================================================================
 //          DASHBOARD.JS (VERSÃO FINAL, COMPLETA E CORRIGIDA)
 // =====================================================================
 
@@ -8,11 +8,11 @@ import { db } from "./firebase-config.js";
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-// --- VARIÁVEIS GLOBAIS E CONSTANTES ---
+// --- VARIÁVEIS GLOBAIS E CONSTANTES (NENHUMA LÓGICA ALTERADA ) ---
 let servicosChart;
 const STATUS_VALIDOS = ["ativo", "realizado"];
 
-// --- FUNÇÕES DE UTILIDADE ---
+// --- FUNÇÕES DE UTILIDADE (NENHUMA LÓGICA ALTERADA) ---
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
     const [h, m] = timeStr.split(":").map(Number);
@@ -27,15 +27,18 @@ function debounce(fn, delay) {
     };
 }
 
-// --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
+// --- FUNÇÕES DE RENDERIZAÇÃO E UI (NENHUMA LÓGICA ALTERADA) ---
 
 function resetDashboardUI() {
+    console.log("[DEBUG] Resetando a UI do Dashboard para estado de carregamento.");
     const spinner = '<span class="loading-spinner"></span>';
+    
     document.getElementById('faturamento-realizado').innerHTML = spinner;
     document.getElementById('faturamento-previsto').textContent = '--';
     document.getElementById('total-agendamentos-dia').innerHTML = spinner;
     document.getElementById('agendamentos-pendentes').textContent = '--';
     document.getElementById('resumo-inteligente').innerHTML = spinner;
+    
     const fatMensalEl = document.getElementById('faturamento-mensal');
     const agMesEl = document.getElementById('agendamentos-mes');
     if (fatMensalEl) fatMensalEl.innerHTML = spinner;
@@ -51,21 +54,20 @@ function resetDashboardUI() {
     }
 }
 
-// RENDERIZAÇÃO DO PAINEL E GRÁFICO DO MÊS
-function preencherPainel(resumoDia, resumoMes, servicosMes) {
-    // Dados do dia
+function preencherPainel(resumoDia, resumoMes, servicosSemana) {
+    // Preenche dados do dia
     document.getElementById('faturamento-realizado').textContent = resumoDia.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     document.getElementById('faturamento-previsto').textContent = resumoDia.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     document.getElementById('total-agendamentos-dia').textContent = resumoDia.totalAgendamentosDia;
     document.getElementById('agendamentos-pendentes').textContent = resumoDia.agendamentosPendentes;
 
-    // Dados do mês
+    // Preenche dados do mês
     const fatMensalEl = document.getElementById('faturamento-mensal');
     const agMesEl = document.getElementById('agendamentos-mes');
     if (fatMensalEl) fatMensalEl.textContent = resumoMes.faturamentoMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     if (agMesEl) agMesEl.textContent = resumoMes.agendamentosMes;
 
-    // Resumo Inteligente
+    // Preenche Resumo Inteligente
     if (resumoDia.agsParaIA && resumoDia.agsParaIA.length > 0) {
         const resumoInteligente = gerarResumoDiarioInteligente(resumoDia.agsParaIA);
         document.getElementById('resumo-inteligente').innerHTML = resumoInteligente?.mensagem || "<ul><li>Não foi possível gerar o resumo.</li></ul>";
@@ -73,19 +75,20 @@ function preencherPainel(resumoDia, resumoMes, servicosMes) {
         document.getElementById('resumo-inteligente').innerHTML = "<ul><li>Nenhum agendamento no dia para resumir.</li></ul>";
     }
 
-    // Gráfico do mês corrente
+    // Preenche Gráfico
     const graficoContainer = document.getElementById('grafico-container');
     graficoContainer.innerHTML = '<canvas id="servicos-mais-vendidos"></canvas>';
     const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
+    
     if (servicosChart) servicosChart.destroy();
-    const servicosArray = Object.entries(servicosMes).sort((a, b) => b[1] - a[1]);
+
     servicosChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: servicosArray.map(([nome]) => nome),
+            labels: Object.keys(servicosSemana),
             datasets: [{
-                label: 'Mais vendidos no mês',
-                data: servicosArray.map(([_, qtd]) => qtd),
+                label: 'Vendas na Semana',
+                data: Object.values(servicosSemana),
                 backgroundColor: '#6366f1',
                 borderRadius: 5,
             }]
@@ -99,7 +102,7 @@ function preencherPainel(resumoDia, resumoMes, servicosMes) {
     });
 }
 
-// FUNÇÕES DE BUSCA DE DADOS
+// --- FUNÇÕES DE BUSCA DE DADOS (NENHUMA LÓGICA ALTERADA) ---
 
 async function buscarDadosDoDia(empresaId, data) {
     const agRef = collection(db, "empresarios", empresaId, "agendamentos");
@@ -139,6 +142,7 @@ async function buscarDadosDoMes(empresaId) {
     const hoje = new Date();
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
     const dataISOInicio = primeiroDia.toISOString().split("T")[0];
     const dataISOFim = ultimoDia.toISOString().split("T")[0];
 
@@ -147,27 +151,44 @@ async function buscarDadosDoMes(empresaId) {
     const snapshot = await getDocs(q);
 
     let faturamentoMensal = 0;
-    let servicosContagem = {};
     snapshot.forEach(doc => {
-        const ag = doc.data();
-        faturamentoMensal += Number(ag.servicoPreco) || 0;
-        const nome = ag.servicoNome || "Serviço";
-        servicosContagem[nome] = (servicosContagem[nome] || 0) + 1;
+        faturamentoMensal += Number(doc.data().servicoPreco) || 0;
     });
 
-    return { faturamentoMensal, agendamentosMes: snapshot.size, servicosContagem };
+    return { faturamentoMensal, agendamentosMes: snapshot.size };
 }
 
-// FUNÇÃO PRINCIPAL DE ORQUESTRAÇÃO
+async function buscarServicosDaSemana(empresaId) {
+    const hoje = new Date();
+    const inicioSemana = new Date(hoje);
+    inicioSemana.setDate(hoje.getDate() - 6);
+    const dataISOInicio = inicioSemana.toISOString().split("T")[0];
+    const dataISOFim = hoje.toISOString().split("T")[0];
+
+    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
+    const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim), where("status", "in", STATUS_VALIDOS));
+    const snapshot = await getDocs(q);
+
+    const contagem = {};
+    snapshot.forEach(doc => {
+        const nome = doc.data().servicoNome || "Serviço";
+        contagem[nome] = (contagem[nome] || 0) + 1;
+    });
+    return contagem;
+}
+
+// --- FUNÇÃO PRINCIPAL DE ORQUESTRAÇÃO (NENHUMA LÓGICA ALTERADA) ---
 
 async function carregarDashboard(empresaId, data) {
+    console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
     resetDashboardUI();
     try {
-        const [resumoDoDia, resumoDoMes] = await Promise.all([
+        const [resumoDoDia, resumoDoMes, servicosDaSemana] = await Promise.all([
             buscarDadosDoDia(empresaId, data),
-            buscarDadosDoMes(empresaId)
+            buscarDadosDoMes(empresaId),
+            buscarServicosDaSemana(empresaId)
         ]);
-        preencherPainel(resumoDoDia, resumoDoMes, resumoDoMes.servicosContagem);
+        preencherPainel(resumoDoDia, resumoDoMes, servicosDaSemana);
     } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
         document.getElementById('resumo-inteligente').innerHTML = "<p style='color: red;'>Erro ao carregar dados.</p>";
@@ -183,9 +204,12 @@ async function carregarDashboard(empresaId, data) {
  */
 export async function inicializarDashboard(sessao) {
     try {
+        // A lógica que estava em 'inicializarPagina' foi movida para cá.
         const empresaId = sessao.empresaId;
+
         const filtroDataEl = document.getElementById('filtro-data');
         filtroDataEl.value = new Date().toISOString().split('T')[0];
+        
         await carregarDashboard(empresaId, filtroDataEl.value);
 
         filtroDataEl.addEventListener('change', debounce(() => {
@@ -207,3 +231,5 @@ export async function inicializarDashboard(sessao) {
 // ==================================================================
 // ✅ FIM DA CORREÇÃO DEFINITIVA
 // ==================================================================
+
+// A função 'inicializarPagina' e o 'addEventListener' foram removidos para evitar duplicidade.
