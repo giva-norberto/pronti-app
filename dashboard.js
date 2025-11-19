@@ -1,4 +1,4 @@
-======================================================================
+// ======================================================================
 //          DASHBOARD.JS (VERSÃO FINAL, COMPLETA E CORRIGIDA)
 // =====================================================================
 
@@ -82,13 +82,15 @@ function preencherPainel(resumoDia, resumoMes, servicosSemana) {
     
     if (servicosChart) servicosChart.destroy();
 
+    // Corrigido: Gráfico usa dados do mês corrente, nunca da semana
+    const servicosArray = Object.entries(servicosSemana).sort((a, b) => b[1] - a[1]);
     servicosChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: Object.keys(servicosSemana),
+            labels: servicosArray.map(([nome]) => nome),
             datasets: [{
-                label: 'Vendas na Semana',
-                data: Object.values(servicosSemana),
+                label: 'Mais vendidos no mês',
+                data: servicosArray.map(([_, qtd]) => qtd),
                 backgroundColor: '#6366f1',
                 borderRadius: 5,
             }]
@@ -151,30 +153,15 @@ async function buscarDadosDoMes(empresaId) {
     const snapshot = await getDocs(q);
 
     let faturamentoMensal = 0;
+    let servicosContagem = {};
     snapshot.forEach(doc => {
-        faturamentoMensal += Number(doc.data().servicoPreco) || 0;
+        const ag = doc.data();
+        faturamentoMensal += Number(ag.servicoPreco) || 0;
+        const nome = ag.servicoNome || "Serviço";
+        servicosContagem[nome] = (servicosContagem[nome] || 0) + 1;
     });
 
-    return { faturamentoMensal, agendamentosMes: snapshot.size };
-}
-
-async function buscarServicosDaSemana(empresaId) {
-    const hoje = new Date();
-    const inicioSemana = new Date(hoje);
-    inicioSemana.setDate(hoje.getDate() - 6);
-    const dataISOInicio = inicioSemana.toISOString().split("T")[0];
-    const dataISOFim = hoje.toISOString().split("T")[0];
-
-    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-    const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim), where("status", "in", STATUS_VALIDOS));
-    const snapshot = await getDocs(q);
-
-    const contagem = {};
-    snapshot.forEach(doc => {
-        const nome = doc.data().servicoNome || "Serviço";
-        contagem[nome] = (contagem[nome] || 0) + 1;
-    });
-    return contagem;
+    return { faturamentoMensal, agendamentosMes: snapshot.size, servicosContagem };
 }
 
 // --- FUNÇÃO PRINCIPAL DE ORQUESTRAÇÃO (NENHUMA LÓGICA ALTERADA) ---
@@ -183,12 +170,12 @@ async function carregarDashboard(empresaId, data) {
     console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
     resetDashboardUI();
     try {
-        const [resumoDoDia, resumoDoMes, servicosDaSemana] = await Promise.all([
+        // Agora o gráfico SEMPRE é do mês corrente:
+        const [resumoDoDia, resumoDoMes] = await Promise.all([
             buscarDadosDoDia(empresaId, data),
-            buscarDadosDoMes(empresaId),
-            buscarServicosDaSemana(empresaId)
+            buscarDadosDoMes(empresaId)
         ]);
-        preencherPainel(resumoDoDia, resumoDoMes, servicosDaSemana);
+        preencherPainel(resumoDoDia, resumoMes = resumoDoMes, servicosSemana = resumoDoMes.servicosContagem);
     } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
         document.getElementById('resumo-inteligente').innerHTML = "<p style='color: red;'>Erro ao carregar dados.</p>";
@@ -204,9 +191,7 @@ async function carregarDashboard(empresaId, data) {
  */
 export async function inicializarDashboard(sessao) {
     try {
-        // A lógica que estava em 'inicializarPagina' foi movida para cá.
         const empresaId = sessao.empresaId;
-
         const filtroDataEl = document.getElementById('filtro-data');
         filtroDataEl.value = new Date().toISOString().split('T')[0];
         
