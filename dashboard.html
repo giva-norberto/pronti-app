@@ -151,7 +151,6 @@
     <div id="menu-container"></div>
 
     <main class="dashboard-main">
-        <!-- Conteúdo do dashboard -->
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
             <div class="dashboard-actions">
@@ -233,13 +232,26 @@
                     return; 
                 }
 
-                // 2. Define os papéis do usuário a partir da sessão.
+                // 2. Define os papéis do usuário a partir da sessão (Lógica Refinada).
                 let papelUsuario = sessao.papeis || [];
-                if (papelUsuario.length === 0) { // Fallback para garantir que sempre haja um papel
-                    if(sessao.isAdmin) papelUsuario.push('admin');
-                    if(sessao.isOwner) papelUsuario.push('dono');
-                    if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+                
+                if (papelUsuario.length === 0) {
+                    // Se não há papéis explícitos, define o papel de maior nível.
+                    if (sessao.isOwner) {
+                        papelUsuario.push('dono');
+                    } else if (sessao.isAdmin) {
+                        papelUsuario.push('admin');
+                    } else {
+                        // Assume funcionário se nenhuma das verificações anteriores for verdadeira.
+                        papelUsuario.push('funcionario'); 
+                    }
                 }
+                
+                // Garantir que é um array para carregarMenu
+                if (!Array.isArray(papelUsuario)) {
+                     papelUsuario = [papelUsuario];
+                }
+
 
                 // 3. Carrega o menu lateral com os papéis corretos.
                 await carregarMenu(papelUsuario);
