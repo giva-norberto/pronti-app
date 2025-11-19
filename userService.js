@@ -1,10 +1,8 @@
 // ======================================================================
 //  userService.js (REVISÃO FINAL)
-// ✅ REMOVIDA A CHAMADA PARA A FUNÇÃO DE OUVINTE ANTIGA E DESNECESSÁRIA
-// ✨ ADICIONADO EVENTO PARA ATUALIZAÇÃO DE TELA E PROTEÇÃO DE ROTA
-// ✨ PATCH CIRÚRGICO: prevenção de loop index <-> assinatura com flags de sessão
-// ✨ ATUALIZAÇÃO CIRÚRGICA: checkUserStatus agora considera campos da empresa
-// =====================================================================
+//  Patch aplicado: parsing unificado de datas, correções anti-loop,
+//  cálculo de trial via trialEndDate (patch cirúrgico solicitado).
+// ======================================================================
 
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
@@ -15,21 +13,46 @@ import { db, auth } from './firebase-config.js';
 let cachedSessionProfile = null;
 let isProcessing = false;
 
-// --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc() {
-    // Nenhuma alteração nesta função
+/**
+ * Helper utilitário: converte vários formatos possíveis para epoch ms (number).
+ * Aceita:
+ * - Firestore Timestamp (obj.toDate())
+ * - Objetos { seconds: number }
+ * - number (ms)
+ * - ISO/string
+ * Retorna NaN se não for convertível.
+ */
+function toMillis(value) {
+    if (value === null || value === undefined) return NaN;
     try {
-        const user = auth.currentUser;
-        if (!user) return;
-        const userRef = doc(db, "usuarios", user.uid);
+        if (typeof value === 'number') return value;
+        if (typeof value.toDate === 'function') {
+            const d = value.toDate();
+            return d instanceof Date && !isNaN(d.getTime()) ? d.getTime() : NaN;
+        }
+        if (value && typeof value.seconds === 'number') return value.seconds * 1000;
+        const d = new Date(value);
+        return isNaN(d.getTime()) ? NaN : d.getTime();
+    } catch (e) {
+        return NaN;
+    }
+}
+
+// --- Função: Garante doc do usuário e trial, sempre com nome/email ---
+// Agora aceita user opcional (falha para auth.currentUser se omisso)
+export async function ensureUserAndTrialDoc(user = null) {
+    try {
+        const u = user || auth.currentUser;
+        if (!u) return;
+        const userRef = doc(db, "usuarios", u.uid);
         let userSnap = await getDoc(userRef);
 
         console.log("[DEBUG] Documento do usuário antes:", userSnap.exists() ? userSnap.data() : "não existe");
 
         if (!userSnap.exists()) {
             await setDoc(userRef, {
-                nome: user.displayName || user.email || 'Usuário',
-                email: user.email || '',
+                nome: u.displayName || u.email || 'Usuário',
+                email: u.email || '',
                 trialStart: serverTimestamp(),
                 isPremium: false,
             });
@@ -37,8 +60,8 @@ export async function ensureUserAndTrialDoc() {
         } else {
             const userData = userSnap.data();
             let updateObj = {};
-            if (!userData.nome) updateObj.nome = user.displayName || user.email || 'Usuário';
-            if (!userData.email) updateObj.email = user.email || '';
+            if (!userData.nome) updateObj.nome = u.displayName || u.email || 'Usuário';
+            if (!userData.email) updateObj.email = u.email || '';
             if (!userData.trialStart) updateObj.trialStart = serverTimestamp();
             if (Object.keys(updateObj).length) {
                 await updateDoc(userRef, updateObj);
@@ -53,7 +76,7 @@ export async function ensureUserAndTrialDoc() {
 }
 
 // --- Função: Checa status de plano/trial corretamente ---
-// ALTERAÇÃO CIRÚRGICA: agora também considera campos do documento da empresa
+// ALTERAÇÃO: agora também considera campos do documento da empresa e usa toMillis
 async function checkUserStatus(user, empresaData) {
     try {
         if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
@@ -66,20 +89,6 @@ async function checkUserStatus(user, empresaData) {
         const userData = userSnap.data();
         if (!userData) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
-
-        // 2) Verificações adicionais usando dados da empresa (ADICIONADAS)
-        // Suporta Firestore Timestamp (has toDate()), objeto { seconds }, Date ou ISO string.
-        const toMillis = (value) => {
-            if (!value) return NaN;
-            try {
-                if (typeof value.toDate === 'function') return value.toDate().getTime();
-                if (value && typeof value.seconds === 'number') return value.seconds * 1000;
-                const d = new Date(value);
-                return isNaN(d.getTime()) ? NaN : d.getTime();
-            } catch (e) {
-                return NaN;
-            }
-        };
 
         const now = Date.now();
 
@@ -104,37 +113,49 @@ async function checkUserStatus(user, empresaData) {
                 }
             }
 
-            // 2c) opcional: se campo plano === 'pago' mas sem datas, NÃO considerar automaticamente ativo
-            // (evita falsos positivos). Se quiser forçar, descomente a linha abaixo.
-            // if (String(empresaData?.plano || '').toLowerCase() === 'pago') return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
+            // 2c) Não forçar 'pago' sem datas
         } catch (e) {
             console.warn("[DEBUG] Erro durante checagens por empresa em checkUserStatus:", e);
             // não interrompe a verificação do trial abaixo
         }
 
-        // 3) Checagem de trial do usuário (mantida)
-        let trialDurationDays = empresaData?.freeEmDias ?? 15;
-        let trialDaysRemaining = 0;
+        // ---------------------------------------------------------
+        // 3) TRIAL — PALAVRA FINAL = trialEndDate  (PATCH CIRÚRGICO)
+        // ---------------------------------------------------------
         let isTrialActive = false;
+        let trialDaysRemaining = 0;
 
-        if (userData.trialStart?.seconds) {
-            const startDate = new Date(userData.trialStart.seconds * 1000);
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + trialDurationDays);
+        const rawTrialEnd = empresaData?.trialEndDate;
+        const trialEndMs = toMillis(rawTrialEnd);
+
+        if (!isNaN(trialEndMs)) {
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
-            if (endDate >= hoje) {
+
+            if (trialEndMs >= hoje.getTime()) {
                 isTrialActive = true;
-                trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
+                trialDaysRemaining = Math.ceil((trialEndMs - hoje.getTime()) / (1000 * 60 * 60 * 24));
             }
-            console.log(`[DEBUG] Trial: start ${startDate}, end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
+
+            console.log("[DEBUG] Trial FINAL via trialEndDate:", {
+                trialEnd: new Date(trialEndMs),
+                hoje,
+                isTrialActive,
+                trialDaysRemaining
+            });
+
         } else {
+            // fallback: se empresa não tiver trialEndDate
             isTrialActive = true;
-            trialDaysRemaining = trialDurationDays;
-            console.log(`[DEBUG] Trial: trialStart ausente, usando padrão: diasRestantes ${trialDaysRemaining}`);
+            trialDaysRemaining = empresaData?.freeEmDias ?? 15;
+            console.log("[DEBUG] trialEndDate ausente — usando fallback freeEmDias.", { trialDaysRemaining });
         }
 
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
+        // ---------------------------------------------------------
+        //  FIM do patch de TRIAL
+        // ---------------------------------------------------------
+
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
         return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
@@ -143,7 +164,6 @@ async function checkUserStatus(user, empresaData) {
 
 // --- Função robusta: busca empresas ATIVAS do usuário ---
 export async function getEmpresasDoUsuario(user) {
-    // Nenhuma alteração nesta função
     if (!user) return [];
     const empresasUnicas = new Map();
     try {
@@ -203,13 +223,10 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
-                // ✨ NOVO: Adicionada a página 'vitrine.html' à lista de páginas públicas
-                // para que a lógica de redirecionamento funcione corretamente.
                 const paginasDeVitrine = ['vitrine.html'];
 
                 if (!user) {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
-                    // ✨ LÓGICA MANTIDA: Se a página não for pública (nem de vitrine), redireciona para login.
                     if (!paginasPublicas.includes(currentPage) && !paginasDeVitrine.includes(currentPage)) {
                         window.location.replace('login.html');
                     }
@@ -217,7 +234,8 @@ export async function verificarAcesso() {
                     return reject(new Error("Utilizador não autenticado."));
                 }
                 
-                await ensureUserAndTrialDoc();
+                // passar user explicitamente
+                await ensureUserAndTrialDoc(user);
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 const isAdmin = user.uid === ADMIN_UID;
                 let empresaAtivaId = localStorage.getItem('empresaAtivaId');
@@ -227,7 +245,11 @@ export async function verificarAcesso() {
                 console.log("[DEBUG] Empresa ativaId localStorage:", empresaAtivaId);
                 console.log("[DEBUG] Empresas retornadas:", empresas.map(e => e.id));
 
-                if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) { empresaAtivaId = null; }
+                if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) {
+                    // limpa se a empresaAtivaId atual não pertence mais à lista permitida
+                    localStorage.removeItem('empresaAtivaId');
+                    empresaAtivaId = null;
+                }
 
                 if (empresaAtivaId) {
                     empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
@@ -343,7 +365,6 @@ export async function verificarAcesso() {
                 console.log("[DEBUG] SessionProfile FINAL:", sessionProfile);
 
                 // --- INÍCIO: PATCH CIRÚRGICO ANTI-LOOP ---
-                // lê flags de sessão que previnem loops entre index <-> assinatura
                 let assinaturaVerifiedTs = 0;
                 let assinaturaRedirectTs = 0;
                 try {
@@ -353,14 +374,16 @@ export async function verificarAcesso() {
                     assinaturaVerifiedTs = 0;
                     assinaturaRedirectTs = 0;
                 }
-                const now = Date.now();
+                const nowTs = Date.now();
                 const ASSINATURA_SKIP_WINDOW_MS = 15000; // 15s tolerância
 
                 // se a empresa tem plano ativo, grava flag de verificação para evitar loop
                 try {
                     if (sessionProfile?.statusAssinatura?.hasActivePlan) {
                         try {
-                            sessionStorage.setItem('assinatura_verified_ts', String(now));
+                            sessionStorage.setItem('assinatura_verified_ts', String(nowTs));
+                            // atualiza a variável local para uso imediato
+                            assinaturaVerifiedTs = nowTs;
                             console.log("[DEBUG] assinatura_verified_ts setado para evitar loop.");
                         } catch (e) { /* ignore */ }
                     }
@@ -370,8 +393,8 @@ export async function verificarAcesso() {
 
                 // calcula skip se qualquer flag recente indicar que devemos pular redirect
                 const skipRedirectToAssinatura = (
-                    (assinaturaVerifiedTs && (now - assinaturaVerifiedTs) < ASSINATURA_SKIP_WINDOW_MS) ||
-                    (assinaturaRedirectTs && (now - assinaturaRedirectTs) < ASSINATURA_SKIP_WINDOW_MS)
+                    (assinaturaVerifiedTs && (nowTs - assinaturaVerifiedTs) < ASSINATURA_SKIP_WINDOW_MS) ||
+                    (assinaturaRedirectTs && (nowTs - assinaturaRedirectTs) < ASSINATURA_SKIP_WINDOW_MS)
                 );
                 // --- FIM: PATCH CIRÚRGICO ANTI-LOOP ---
 
@@ -380,7 +403,9 @@ export async function verificarAcesso() {
                     try {
                         // marca que estamos prestes a redirecionar — ajuda a evitar loop imediato
                         try {
-                            sessionStorage.setItem('assinatura_redirect_ts', String(Date.now()));
+                            const ts = Date.now();
+                            sessionStorage.setItem('assinatura_redirect_ts', String(ts));
+                            assinaturaRedirectTs = ts; // atualiza a variável local
                         } catch (e) { /* ignore */ }
                     } catch (e) {
                         console.warn("[DEBUG] Falha ao setar assinatura_redirect_ts:", e);
@@ -391,29 +416,15 @@ export async function verificarAcesso() {
                     return reject(new Error("Assinatura expirada."));
                 }
 
-                // ✨ NOVO: Adição 1 - Impedir que Dono/Admin fique na vitrine.
-                // Se o usuário for dono ou admin e estiver na página de vitrine,
-                // ele será redirecionado para o painel principal.
-                // Altere 'painel.html' para a página principal do seu sistema.
+                // Impedir que Dono/Admin fique na vitrine.
                 if ((sessionProfile.isOwner || sessionProfile.isAdmin) && paginasDeVitrine.includes(currentPage)) {
                     console.log(`[DEBUG] Dono/Admin na página de vitrine. Redirecionando para o painel...`);
-                    window.location.replace('painel.html'); 
-                    // A linha acima causa um redirecionamento, então o código abaixo pode não ser executado.
-                    // Isso é intencional para evitar que a página de vitrine seja renderizada.
+                    window.location.replace('painel.html');
                 }
 
                 cachedSessionProfile = sessionProfile;
                 
-                // ✨ NOVO: Adição 2 - Mecanismo para atualizar a tela.
-                // Dispara um evento global com os dados da sessão. Outras partes do seu
-                // app podem "ouvir" este evento e se atualizar sem precisar chamar
-                // verificarAcesso() novamente.
-                // Exemplo de como usar em outro arquivo:
-                // window.addEventListener('sessionProfileReady', (event) => {
-                //   const profile = event.detail;
-                //   console.log('Sessão pronta, atualizando UI!', profile);
-                //   document.getElementById('userName').textContent = profile.perfil.nome;
-                // });
+                // Dispara evento global para atualização UI
                 window.dispatchEvent(new CustomEvent('sessionProfileReady', { detail: sessionProfile }));
 
                 isProcessing = false;
@@ -429,13 +440,11 @@ export async function verificarAcesso() {
 }
 
 export function clearCache() {
-    // Nenhuma alteração nesta função
     cachedSessionProfile = null;
     isProcessing = false;
 }
 
 export async function getTodasEmpresas() {
-    // Nenhuma alteração nesta função
     const empresasCol = collection(db, "empresarios");
     const snap = await getDocs(empresasCol);
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
