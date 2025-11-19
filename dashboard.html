@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Estilos CSS permanecem os mesmos */
         :root {
             --primary: #6366f1; 
             --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  ); 
@@ -22,6 +23,7 @@
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             color: var(--text-main); 
             display: flex;
+            /* Efeito para evitar piscar da página inteira */
             visibility: hidden; 
             opacity: 0; 
             transition: opacity 0.3s ease-in-out;
@@ -62,11 +64,6 @@
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
             margin: 0;
-        }
-        .date-filter {
-            display: flex;
-            gap: 8px;
-            align-items: center;
         }
         .date-filter input[type="date"] {
             padding: 10px 14px; 
@@ -158,15 +155,9 @@
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
             <div class="dashboard-actions">
-                <form id="dashboard-filtro">
-                    <div class="date-filter">
-                        <label for="dashboard-inicio">Início:</label>
-                        <input type="date" id="dashboard-inicio" name="dashboard-inicio">
-                        <label for="dashboard-fim">Fim:</label>
-                        <input type="date" id="dashboard-fim" name="dashboard-fim">
-                        <button type="submit" id="dashboard-aplicar" style="padding:6px 18px;border-radius:7px;border:none;background:var(--primary);color:#fff;font-weight:700;"><i class="fa fa-filter"></i> Aplicar</button>
-                    </div>
-                </form>
+                <div class="date-filter">
+                    <input type="date" id="filtro-data">
+                </div>
             </div>
         </div>
         <div class="dashboard-grid">
@@ -183,13 +174,13 @@
                         <div class="card-sub-value"><span id="agendamentos-pendentes">--</span> pendentes</div>
                     </div>
                     <div class="card">
-                        <div class="card-title"><i class="fa-solid fa-chart-line"></i> Faturamento (Período)</div>
-                        <div class="card-main-value" id="faturamento-periodo"><span class="loading-spinner"></span></div>
-                        <div class="card-sub-value"><span id="agendamentos-periodo">--</span> agendamentos</div>
+                        <div class="card-title"><i class="fa-solid fa-chart-line"></i> Faturamento (Mês)</div>
+                        <div class="card-main-value" id="faturamento-mensal"><span class="loading-spinner"></span></div>
+                        <div class="card-sub-value"><span id="agendamentos-mes">--</span> agendamentos</div>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos (Período)</div>
+                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos (Semana)</div>
                     <div id="grafico-container" style="position: relative; min-height: 320px;">
                         <canvas id="servicos-mais-vendidos"></canvas>
                     </div>
@@ -208,96 +199,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
+        // Importações necessárias
         import { verificarAcesso } from './userService.js'; 
-        import { buscarAgendamentos } from './relatorios.js'; // CORREÇÃO: buscarAgendamentos deve ser EXPORTADO
+        import { inicializarDashboard } from './dashboard.js';
 
-        const fmtBRL = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
-
-        async function carregarDashboardDados(dataInicio, dataFim) {
-            const statusFiltro = ["realizado"];
-            const ags = await buscarAgendamentos({
-                inicio: dataInicio,
-                fim: dataFim,
-                profissionalId: "todos",
-                statusFiltro,
-            });
-
-            const totalFaturamentoPeriodo = ags.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
-            const totalAgendamentosPeriodo = ags.length;
-
-            const hojeStr = new Date().toISOString().split('T')[0];
-            const agsHoje = ags.filter(ag => ag.data && ag.data.startsWith(hojeStr));
-            const totalFaturamentoHoje = agsHoje.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
-            const totalAgendamentosHoje = agsHoje.length;
-
-            const agsPendentesHoje = agsHoje.filter(ag => ag.status !== 'realizado').length;
-
-            const servicos = {};
-            ags.forEach(ag => {
-                if (!ag.servicoNome) return;
-                if (!servicos[ag.servicoNome]) servicos[ag.servicoNome] = { qtd: 0, total: 0 };
-                servicos[ag.servicoNome].qtd += 1;
-                servicos[ag.servicoNome].total += parseFloat(ag.servicoPreco) || 0;
-            });
-            const servicosArray = Object.entries(servicos).sort((a, b) => b[1].qtd - a[1].qtd);
-
-            document.getElementById('faturamento-realizado').textContent = fmtBRL(totalFaturamentoHoje);
-            document.getElementById('faturamento-periodo').textContent = fmtBRL(totalFaturamentoPeriodo);
-            document.getElementById('agendamentos-periodo').textContent = totalAgendamentosPeriodo;
-            document.getElementById('total-agendamentos-dia').textContent = totalAgendamentosHoje;
-            document.getElementById('agendamentos-pendentes').textContent = agsPendentesHoje;
-
-            const canvas = document.getElementById('servicos-mais-vendidos');
-            const nomes = servicosArray.map(([n, v]) => n);
-            const qtds = servicosArray.map(([n, v]) => v.qtd);
-
-            if (window.servicosChart) window.servicosChart.destroy();
-            window.servicosChart = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: nomes,
-                    datasets: [{
-                        label: 'Qtde',
-                        data: qtds,
-                        backgroundColor: 'rgba(99, 102, 241, 0.55)'
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => `Qtd: ${ctx.parsed.x}` } },
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        }
-
-        function setDatasPadrao() {
-            const dtInicio = document.getElementById('dashboard-inicio');
-            const dtFim = document.getElementById('dashboard-fim');
-            let hoje = new Date();
-            let inicio = new Date();
-            // 30 dias atrás
-            inicio.setDate(hoje.getDate() - 30);
-            dtInicio.value = inicio.toISOString().split('T')[0];
-            dtFim.value = hoje.toISOString().split('T')[0];
-        }
-
-        async function inicializarDashboard(sessao) {
-            setDatasPadrao();
-            const dtInicio = document.getElementById('dashboard-inicio');
-            const dtFim = document.getElementById('dashboard-fim');
-            await carregarDashboardDados(dtInicio.value, dtFim.value);
-
-            const filtroForm = document.getElementById('dashboard-filtro');
-            filtroForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await carregarDashboardDados(dtInicio.value, dtFim.value);
-            });
-        }
-
+        /**
+         * Carrega o HTML do menu lateral e chama sua função de ativação.
+         */
         async function carregarMenu(papelUsuario ) {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -312,25 +220,44 @@
                 console.error("Falha ao carregar o menu lateral:", error);
             }
         }
+
+        /**
+         * Ponto de entrada único que orquestra a inicialização da página.
+         */
         async function inicializarPagina() {
             try {
+                // 1. Garante que o usuário está logado e obtém a sessão.
                 const sessao = await verificarAcesso();
-                if (!sessao || !sessao.user) return;
+                if (!sessao || !sessao.user) {
+                    // verificarAcesso já redireciona, mas paramos a execução aqui por segurança.
+                    return; 
+                }
+
+                // 2. Define os papéis do usuário a partir da sessão.
                 let papelUsuario = sessao.papeis || [];
-                if (papelUsuario.length === 0) {
+                if (papelUsuario.length === 0) { // Fallback para garantir que sempre haja um papel
                     if(sessao.isAdmin) papelUsuario.push('admin');
                     if(sessao.isOwner) papelUsuario.push('dono');
                     if(papelUsuario.length === 0) papelUsuario.push('funcionario');
                 }
+
+                // 3. Carrega o menu lateral com os papéis corretos.
                 await carregarMenu(papelUsuario);
+
+                // 4. Inicializa o conteúdo específico do dashboard.
                 await inicializarDashboard(sessao);
+
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página do dashboard:", error);
+                // Mostra uma mensagem de erro no corpo da página, se possível.
                 document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Ocorreu um erro crítico. Tente recarregar a página.</p>';
             } finally {
+                // 5. Torna a página visível após tudo estar carregado, evitando "pisca-pisca".
                 document.body.classList.add('loaded');
             }
         }
+
+        // Inicia todo o processo.
         inicializarPagina();
     </script>
 </body>
