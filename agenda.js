@@ -210,7 +210,6 @@ async function inicializarPaginaAgenda() {
   } else {
     document.getElementById("filtro-profissional-item").style.display = "none";
   }
-  // Filtro inteligente: já pula para o próximo expediente se o atual acabou
   let hojeISO = formatarDataISO(new Date());
   let acabou = await expedienteAcabou(empresaId, hojeISO);
   let dataFiltrar = hojeISO;
@@ -224,7 +223,6 @@ async function inicializarPaginaAgenda() {
 
 function configurarListeners() {
   btnAgendaDia.addEventListener("click", async () => {
-    // Filtro inteligente: pular para o próximo expediente se necessário
     let hojeISO = formatarDataISO(new Date());
     let acabou = await expedienteAcabou(empresaId, hojeISO);
     let dataFiltrar = hojeISO;
@@ -245,7 +243,10 @@ function configurarListeners() {
     inputDataSemana.value = formatarDataISO(dataAtual);
     carregarAgendamentosConformeModo();
   });
-  btnAplicarHistorico.addEventListener("click", carregarAgendamentosHistorico); // <-- Essencial para Aplicar funcionar!
+  btnAplicarHistorico.addEventListener("click", function(e) {
+    e.preventDefault();
+    carregarAgendamentosHistorico();
+  });
   btnMesAtual.addEventListener("click", () => {
     preencherCamposMesAtual();
     carregarAgendamentosHistorico();
@@ -283,7 +284,6 @@ async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
     const diasOrdenados = Object.keys(diasPendentes).sort();
     const dataPend = diasOrdenados[0];
     const docsPend = diasPendentes[dataPend];
-    // Só exibe fechamento se expediente daquele dia acabou e havia expediente ativo
     if (await expedienteAcabou(empresaId, dataPend) && await diaTemExpediente(empresaId, dataPend)) {
       exibirCardsAgendamento(docsPend, false);
       exibirModalFinalizarDia(docsPend, dataPend, async () => {
@@ -423,7 +423,6 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
         }
       });
 
-      // Só mostra fechamento do dia atual se expediente acabou e havia expediente ativo!
       if (
         docsVencidos.length > 0 &&
         ((dataReferencia &&
