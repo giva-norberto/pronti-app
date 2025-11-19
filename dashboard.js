@@ -164,7 +164,7 @@ async function buscarDadosDoMes(empresaId) {
     return { faturamentoMensal, agendamentosMes: snapshot.size, servicosContagem };
 }
 
-// --- FUNÇÃO PRINCIPAL DE ORQUESTRAÇÃO (NENHUMA LÓGICA ALTERADA) ---
+// --- FUNÇÃO PRINCIPAL DE ORQUESTRAÇÃO ---
 
 async function carregarDashboard(empresaId, data) {
     console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
@@ -175,7 +175,14 @@ async function carregarDashboard(empresaId, data) {
             buscarDadosDoDia(empresaId, data),
             buscarDadosDoMes(empresaId)
         ]);
-        preencherPainel(resumoDoDia, resumoMes = resumoDoMes, servicosSemana = resumoDoMes.servicosContagem);
+        
+        // ----------------------------------------------------------------------------------
+        // ✅ CORREÇÃO APLICADA: 
+        // Removida a sintaxe de atribuição (resumoMes = resumoDoMes) que causava o ReferenceError.
+        // Os argumentos agora são passados diretamente: (resumoDia, resumoMes, servicosContagem)
+        // ----------------------------------------------------------------------------------
+        preencherPainel(resumoDoDia, resumoDoMes, resumoDoMes.servicosContagem);
+        
     } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
         document.getElementById('resumo-inteligente').innerHTML = "<p style='color: red;'>Erro ao carregar dados.</p>";
