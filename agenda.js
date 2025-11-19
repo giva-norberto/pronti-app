@@ -245,7 +245,7 @@ function configurarListeners() {
     inputDataSemana.value = formatarDataISO(dataAtual);
     carregarAgendamentosConformeModo();
   });
-  btnAplicarHistorico.addEventListener("click", carregarAgendamentosHistorico);
+  btnAplicarHistorico.addEventListener("click", carregarAgendamentosHistorico); // <-- Essencial para Aplicar funcionar!
   btnMesAtual.addEventListener("click", () => {
     preencherCamposMesAtual();
     carregarAgendamentosHistorico();
