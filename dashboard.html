@@ -9,7 +9,7 @@
     <style>
         :root {
             --primary: #6366f1; 
-            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  ); 
+            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); 
             --card-bg: #fff; 
             --text-main: #21243d; 
             --text-secondary: #71717a; 
@@ -149,7 +149,6 @@
     <div id="menu-container"></div>
 
     <main class="dashboard-main">
-        <!-- Conteúdo do dashboard -->
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
             <div class="dashboard-actions">
@@ -200,7 +199,7 @@
         import { verificarAcesso } from './userService.js'; 
         import { inicializarDashboard } from './dashboard.js';
 
-        async function carregarMenu(papelUsuario ) {
+        async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
@@ -219,23 +218,36 @@
             try {
                 const sessao = await verificarAcesso();
                 if (!sessao || !sessao.user) {
+                    // Se não há sessão, verificarAcesso já deve ter redirecionado ou tratado.
                     return; 
                 }
 
+                // ✅ CORREÇÃO: Lógica simplificada para determinar o papel do usuário.
+                // Prioriza os papéis explícitos, caindo para 'funcionario' se nenhum for encontrado.
                 let papelUsuario = sessao.papeis || [];
-                if (papelUsuario.length === 0) { 
-                    if(sessao.isAdmin) papelUsuario.push('admin');
-                    if(sessao.isOwner) papelUsuario.push('dono');
-                    if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+
+                if (papelUsuario.length === 0) {
+                    if (sessao.isOwner) {
+                        papelUsuario.push('dono');
+                    } else if (sessao.isAdmin) {
+                        papelUsuario.push('admin');
+                    } else {
+                        // Se não é dono, nem admin, assume funcionário por padrão.
+                        papelUsuario.push('funcionario'); 
+                    }
                 }
 
+                // 1. Carrega e ativa o menu lateral
                 await carregarMenu(papelUsuario);
+                
+                // 2. Inicializa o conteúdo principal do dashboard
                 await inicializarDashboard(sessao);
 
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página do dashboard:", error);
                 document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Ocorreu um erro crítico. Tente recarregar a página.</p>';
             } finally {
+                // 3. Torna a página visível após todo o conteúdo principal ser carregado
                 document.body.classList.add('loaded');
             }
         }
