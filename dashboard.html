@@ -179,7 +179,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos (Semana)</div>
+                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos (Mês)</div>
                     <div id="grafico-container" style="position: relative; min-height: 320px;">
                         <canvas id="servicos-mais-vendidos"></canvas>
                     </div>
@@ -213,6 +213,7 @@
                 
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
+                    // Garantir que a função recebe a lista de papéis
                     await menuModule.ativarMenuLateral(papelUsuario);
                 }
             } catch (error) {
@@ -228,7 +229,7 @@
                 // 1. Garante que o usuário está logado e obtém a sessão.
                 const sessao = await verificarAcesso();
                 if (!sessao || !sessao.user) {
-                    // verificarAcesso já redireciona, mas paramos a execução aqui por segurança.
+                    // verificarAcesso já redireciona
                     return; 
                 }
 
@@ -247,7 +248,7 @@
                     }
                 }
                 
-                // Garantir que é um array para carregarMenu
+                // Garantir que é um array para carregarMenu (caso o 'papeis' não exista na sessão)
                 if (!Array.isArray(papelUsuario)) {
                      papelUsuario = [papelUsuario];
                 }
