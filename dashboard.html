@@ -209,16 +209,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
         import { verificarAcesso } from './userService.js'; 
-        import { buscarAgendamentos } from './relatorios.js'; // Use mesma função do relatório!
+        import { buscarAgendamentos } from './relatorios.js'; // CORREÇÃO: buscarAgendamentos deve ser EXPORTADO
+
         const fmtBRL = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
 
         async function carregarDashboardDados(dataInicio, dataFim) {
-            // Se desejar, pode pegar profissional selecionado se tiver esse filtro
-            // const profissionalId = document.getElementById('dashboard-profissional')?.value || "todos";
-            // Status padrão conforme relatório
             const statusFiltro = ["realizado"];
-
-            // Aguarda agendamentos do período
             const ags = await buscarAgendamentos({
                 inicio: dataInicio,
                 fim: dataFim,
@@ -226,20 +222,16 @@
                 statusFiltro,
             });
 
-            // Calcula faturamento período
             const totalFaturamentoPeriodo = ags.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
             const totalAgendamentosPeriodo = ags.length;
 
-            // Faturamento dia (hoje)
             const hojeStr = new Date().toISOString().split('T')[0];
             const agsHoje = ags.filter(ag => ag.data && ag.data.startsWith(hojeStr));
             const totalFaturamentoHoje = agsHoje.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
             const totalAgendamentosHoje = agsHoje.length;
 
-            // Quantidade pendente no dia (exemplo, não-realizado/personalize conforme usar!)
             const agsPendentesHoje = agsHoje.filter(ag => ag.status !== 'realizado').length;
 
-            // Serviços mais vendidos no período
             const servicos = {};
             ags.forEach(ag => {
                 if (!ag.servicoNome) return;
@@ -247,23 +239,18 @@
                 servicos[ag.servicoNome].qtd += 1;
                 servicos[ag.servicoNome].total += parseFloat(ag.servicoPreco) || 0;
             });
-            // Array para gráfico
             const servicosArray = Object.entries(servicos).sort((a, b) => b[1].qtd - a[1].qtd);
 
-            // Atualização dos valores do dashboard
             document.getElementById('faturamento-realizado').textContent = fmtBRL(totalFaturamentoHoje);
             document.getElementById('faturamento-periodo').textContent = fmtBRL(totalFaturamentoPeriodo);
             document.getElementById('agendamentos-periodo').textContent = totalAgendamentosPeriodo;
             document.getElementById('total-agendamentos-dia').textContent = totalAgendamentosHoje;
             document.getElementById('agendamentos-pendentes').textContent = agsPendentesHoje;
 
-            // Atualiza gráfico dos serviços mais vendidos (Chart.js)
             const canvas = document.getElementById('servicos-mais-vendidos');
             const nomes = servicosArray.map(([n, v]) => n);
             const qtds = servicosArray.map(([n, v]) => v.qtd);
-            const totais = servicosArray.map(([n, v]) => v.total);
 
-            // Chart.js: Bar chart, serviço x quantidade
             if (window.servicosChart) window.servicosChart.destroy();
             window.servicosChart = new Chart(canvas, {
                 type: 'bar',
@@ -287,7 +274,6 @@
             });
         }
 
-        // Seta datas como full por padrão (últimos 30 dias, ou todo histórico)
         function setDatasPadrao() {
             const dtInicio = document.getElementById('dashboard-inicio');
             const dtFim = document.getElementById('dashboard-fim');
@@ -299,9 +285,6 @@
             dtFim.value = hoje.toISOString().split('T')[0];
         }
 
-        /**
-         * Inicialização principal do dashboard
-         */
         async function inicializarDashboard(sessao) {
             setDatasPadrao();
             const dtInicio = document.getElementById('dashboard-inicio');
@@ -315,7 +298,6 @@
             });
         }
 
-        // Inicialização da página
         async function carregarMenu(papelUsuario ) {
             try {
                 const response = await fetch('menu-lateral.html');
