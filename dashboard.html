@@ -7,9 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Estilos CSS permanecem os mesmos */
         :root {
             --primary: #6366f1; 
-            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); 
+            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  ); 
             --card-bg: #fff; 
             --text-main: #21243d; 
             --text-secondary: #71717a; 
@@ -22,6 +23,7 @@
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             color: var(--text-main); 
             display: flex;
+            /* Efeito para evitar piscar da página inteira */
             visibility: hidden; 
             opacity: 0; 
             transition: opacity 0.3s ease-in-out;
@@ -149,6 +151,7 @@
     <div id="menu-container"></div>
 
     <main class="dashboard-main">
+        <!-- Conteúdo do dashboard -->
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
             <div class="dashboard-actions">
@@ -177,7 +180,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos (Mês)</div>
+                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos (Semana)</div>
                     <div id="grafico-container" style="position: relative; min-height: 320px;">
                         <canvas id="servicos-mais-vendidos"></canvas>
                     </div>
@@ -196,10 +199,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
+        // Importações necessárias
         import { verificarAcesso } from './userService.js'; 
         import { inicializarDashboard } from './dashboard.js';
 
-        async function carregarMenu(papelUsuario) {
+        /**
+         * Carrega o HTML do menu lateral e chama sua função de ativação.
+         */
+        async function carregarMenu(papelUsuario ) {
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
@@ -214,44 +221,43 @@
             }
         }
 
+        /**
+         * Ponto de entrada único que orquestra a inicialização da página.
+         */
         async function inicializarPagina() {
             try {
+                // 1. Garante que o usuário está logado e obtém a sessão.
                 const sessao = await verificarAcesso();
                 if (!sessao || !sessao.user) {
-                    // Se não há sessão, verificarAcesso já deve ter redirecionado ou tratado.
+                    // verificarAcesso já redireciona, mas paramos a execução aqui por segurança.
                     return; 
                 }
 
-                // ✅ CORREÇÃO: Lógica simplificada para determinar o papel do usuário.
-                // Prioriza os papéis explícitos, caindo para 'funcionario' se nenhum for encontrado.
+                // 2. Define os papéis do usuário a partir da sessão.
                 let papelUsuario = sessao.papeis || [];
-
-                if (papelUsuario.length === 0) {
-                    if (sessao.isOwner) {
-                        papelUsuario.push('dono');
-                    } else if (sessao.isAdmin) {
-                        papelUsuario.push('admin');
-                    } else {
-                        // Se não é dono, nem admin, assume funcionário por padrão.
-                        papelUsuario.push('funcionario'); 
-                    }
+                if (papelUsuario.length === 0) { // Fallback para garantir que sempre haja um papel
+                    if(sessao.isAdmin) papelUsuario.push('admin');
+                    if(sessao.isOwner) papelUsuario.push('dono');
+                    if(papelUsuario.length === 0) papelUsuario.push('funcionario');
                 }
 
-                // 1. Carrega e ativa o menu lateral
+                // 3. Carrega o menu lateral com os papéis corretos.
                 await carregarMenu(papelUsuario);
-                
-                // 2. Inicializa o conteúdo principal do dashboard
+
+                // 4. Inicializa o conteúdo específico do dashboard.
                 await inicializarDashboard(sessao);
 
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página do dashboard:", error);
+                // Mostra uma mensagem de erro no corpo da página, se possível.
                 document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Ocorreu um erro crítico. Tente recarregar a página.</p>';
             } finally {
-                // 3. Torna a página visível após todo o conteúdo principal ser carregado
+                // 5. Torna a página visível após tudo estar carregado, evitando "pisca-pisca".
                 document.body.classList.add('loaded');
             }
         }
 
+        // Inicia todo o processo.
         inicializarPagina();
     </script>
 </body>
