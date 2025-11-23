@@ -50,13 +50,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// ---- APLICA PROMOCÕES PETS (Reusando da vitrine normal, só adaptando se preciso) ----
+// ---- APLICA PROMOÇÕES PETS ----
 async function aplicarPromocoesPetsNaVitrine(listaServicos, empresaId) {
-    // Promocoes funcionam igual, só muda render se for por porte
-    // Aqui você pode adaptar para marcar promo para cada porte do serviço PET
-    // Ex: servico.precos.forEach(obj => obj.promocao = ...)
-    // Se preferir, use a mesma função do vitrine normal se a lógica for igual para todos (percentual, fixo, etc)
-    // (Opcional: implementar promoções dinâmicas por porte.)
+    // Reutiliza a lógica normal, mas pode ser adaptado para precos por porte.
+    // Se todos os serviços PET têm array de precos, pode ser necessário marcar promoções por porte
+    listaServicos.forEach(servico => {
+        if (Array.isArray(servico.precos)) {
+            servico.precos.forEach(obj => {
+                // Exemplo de promoção: coloque aqui sua lógica de promoção por porte
+                // obj.promocao = ...
+            });
+        }
+    });
+    // Se sua lógica de promoção é igual à do salão, chame a mesma função compartilhada
+    // Exemplo: await aplicarPromocoesNaVitrine(listaServicos, empresaId);
 }
 
 // ---- RENDERIZA PLANOS (Reaproveite quase tudo) ----
@@ -67,25 +74,28 @@ async function renderizarPlanosDeAssinaturaPets(empresaId) {
 // ---- CONFIGURAÇÃO DE EVENTOS DO MENU CARD/PETS ----
 function configurarEventosPets() {
     // Cards principais
-    document.getElementById('vitrine-cards-grid').addEventListener('click', async (e) => {
-        const card = e.target.closest('.vitrine-card');
-        if (!card) return;
-        const menuKey = card.dataset.menuCard;
-        switch (menuKey) {
-            case 'agendamento': UI.trocarAba('menu-agendamento'); break;
-            case 'pets': await renderizarMenuMeusPets(); break;
-            case 'visualizacao': UI.trocarAba('menu-visualizacao');
-                // Carrega agendamentos do cliente (pets)
-                await renderizarAgendamentosDoClientePets();
-                break;
-            case 'assinatura': UI.trocarAba('menu-assinatura'); break;
-            case 'informacoes': UI.trocarAba('menu-informacoes'); break;
-            case 'perfil':
-                if (!state.currentUser) { fazerLogin(); return; }
-                UI.trocarAba('menu-perfil');
-                break;
-        }
-    });
+    const grid = document.getElementById('vitrine-cards-grid');
+    if (grid) {
+        grid.addEventListener('click', async (e) => {
+            const card = e.target.closest('.vitrine-card');
+            if (!card) return;
+            const menuKey = card.dataset.menuCard;
+            switch (menuKey) {
+                case 'agendamento': UI.trocarAba('menu-agendamento'); break;
+                case 'pets': await renderizarMenuMeusPets(); break;
+                case 'visualizacao':
+                    UI.trocarAba('menu-visualizacao');
+                    await renderizarAgendamentosDoClientePets();
+                    break;
+                case 'assinatura': UI.trocarAba('menu-assinatura'); break;
+                case 'informacoes': UI.trocarAba('menu-informacoes'); break;
+                case 'perfil':
+                    if (!state.currentUser) { fazerLogin(); return; }
+                    UI.trocarAba('menu-perfil');
+                    break;
+            }
+        });
+    }
 
     // Botões de voltar para o menu principal
     document.querySelectorAll('.btn-voltar').forEach(b => {
@@ -94,36 +104,45 @@ function configurarEventosPets() {
         });
     });
 
-    // Menu "Meus Pets" - novo fluxo
-    document.getElementById('pets-list-container')?.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.btn-pet');
-        if (btn && btn.dataset.action === 'remover') {
-            const petId = btn.dataset.petId;
-            await UI.removerPetDoCliente(petId);
+    // Menu "Meus Pets" - remover pet
+    const petsListContainer = document.getElementById('pets-list-container');
+    if (petsListContainer) {
+        petsListContainer.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.btn-pet');
+            if (btn && btn.dataset.action === 'remover') {
+                const petId = btn.dataset.petId;
+                await UI.removerPetDoCliente(petId);
+                await renderizarMenuMeusPets();
+            }
+        });
+    }
+
+    // Botão de confirmar agendamento pet
+    const btnAgendarPet = document.getElementById('btn-confirmar-agendamento-pet');
+    if (btnAgendarPet) {
+        btnAgendarPet.addEventListener('click', async () => {
+            await handleConfirmarAgendamentoPet();
+        });
+    }
+
+    // Cadastro de pet no menu "Meus Pets"
+    const petsCadastroContainer = document.getElementById('pets-cadastro-container');
+    if (petsCadastroContainer) {
+        petsCadastroContainer.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dados = UI.coletarDadosCadastroPet();
+            await cadastrarPet(state.currentUser, dados);
             await renderizarMenuMeusPets();
-        }
-    });
-
-    // BOTÃO DE CONFIRMAR AGENDAMENTO PET
-    document.getElementById('btn-confirmar-agendamento-pet')?.addEventListener('click', async () => {
-        await handleConfirmarAgendamentoPet();
-    });
-
-    // Botão de cadastro de pet, etc. (exemplo)
-    document.getElementById('pets-cadastro-container')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const dados = UI.coletarDadosCadastroPet();
-        await cadastrarPet(state.currentUser, dados);
-        await renderizarMenuMeusPets();
-    });
+        });
+    }
 }
 
-// ---- LÓGICA DE AUTENTICAÇÃO (MANTIDA), SÓ ADAPTA UI POR PET ----
+// ---- LÓGICA DE AUTENTICAÇÃO ----
 function handleUserAuthStateChangePets(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
 
-    // Se usuário logado, recarrega pets e serviços inclusos no plano
+    // Se usuário logado, recarrega pets e serviços inclusos
     if (user && state.empresaId) {
         marcarServicosInclusosParaUsuario(state.todosOsServicos, state.empresaId);
         renderizarMenuMeusPets();
@@ -185,29 +204,28 @@ async function renderizarAgendamentosDoClientePets() {
 }
 
 // ---- CANCELAR AGENDAMENTO ----
-document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.btn-cancelar');
-    if (btn) {
-        const agendamentoId = btn.dataset.id;
-        const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento para seu pet?");
-        if (confirmou) {
-            btn.disabled = true;
-            btn.textContent = "Cancelando...";
-            try {
-                await cancelarAgendamentoPets(state.empresaId, agendamentoId);
-                await UI.mostrarAlerta("Sucesso", "Agendamento do pet cancelado!");
-                await renderizarAgendamentosDoClientePets();
-            } catch (error) {
-                await UI.mostrarAlerta("Erro", "Erro ao cancelar agendamento do pet.");
-                btn.disabled = false;
-                btn.textContent = "Cancelar";
+const agendamentosVisualizacao = document.getElementById('lista-agendamentos-visualizacao');
+if (agendamentosVisualizacao) {
+    agendamentosVisualizacao.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-cancelar');
+        if (btn) {
+            const agendamentoId = btn.dataset.id;
+            const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento para seu pet?");
+            if (confirmou) {
+                btn.disabled = true;
+                btn.textContent = "Cancelando...";
+                try {
+                    await cancelarAgendamentoPets(state.empresaId, agendamentoId);
+                    await UI.mostrarAlerta("Sucesso", "Agendamento do pet cancelado!");
+                    await renderizarAgendamentosDoClientePets();
+                } catch (error) {
+                    await UI.mostrarAlerta("Erro", "Erro ao cancelar agendamento do pet.");
+                    btn.disabled = false;
+                    btn.textContent = "Cancelar";
+                }
             }
         }
-    }
-});
-
-
-// ---- HANDLERS DE NAVEGAÇÃO DE ABA EXTRAS (opcional) ----
-// Adicione outros handlers/reaproveite os de vitrine normal conforme novos cards/menus PET
+    });
+}
 
 // ---- FINAL DO ARQUIVO ----
