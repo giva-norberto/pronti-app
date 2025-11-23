@@ -1,4 +1,4 @@
- // =====================================================================
+// =====================================================================
 // PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO + MANIFEST DINÂMICO PWA)
 // =====================================================================
 
@@ -13,6 +13,48 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
+
+// --- Adicione esse bloco HTML no final do <body> da sua página: ---
+// <div id="modal-confirmacao-pronti" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:3000;background:rgba(24,27,124,.35);align-items:center;justify-content:center;">
+//   <div style="background:#4f46e5;color:#fff;padding:30px 30px 22px 30px;border-radius:18px;max-width:340px;box-shadow:0 2px 20px #0005;margin:auto;position:relative;">
+//     <div id="modal-confirmacao-pronti-pergunta" style="font-size:1.16em;font-weight:500;text-align:center;margin-bottom:13px;"></div>
+//     <div style="display:flex;justify-content:center;gap:15px;padding-top:8px;">
+//       <button id="modal-confirmacao-pronti-ok" style="background:#2563eb;color:#fff;font-weight:600;padding:9px 30px;border-radius:7px;border:none;cursor:pointer;font-size:1em;box-shadow:0 2px 10px #0002;">OK</button>
+//       <button id="modal-confirmacao-pronti-cancelar" style="background:#4757d3;color:#fff;font-weight:500;padding:9px 30px;border-radius:7px;border:none;cursor:pointer;font-size:1em;box-shadow:0 2px 8px #0002;">Cancelar</button>
+//     </div>
+//   </div>
+// </div>
+
+// Função do modal personalizado padrão Pronti:
+async function showCustomConfirm(titulo, mensagem) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('modal-confirmacao-pronti');
+        const perguntaEl = document.getElementById('modal-confirmacao-pronti-pergunta');
+        const btnOk = document.getElementById('modal-confirmacao-pronti-ok');
+        const btnCancelar = document.getElementById('modal-confirmacao-pronti-cancelar');
+
+        perguntaEl.textContent = mensagem;
+        modal.style.display = 'flex';
+
+        function fechar(result){
+            modal.style.display = 'none';
+            btnOk.removeEventListener('click', acaoOk);
+            btnCancelar.removeEventListener('click', acaoCancela);
+            resolve(result);
+        }
+        function acaoOk(){ fechar(true); }
+        function acaoCancela(){ fechar(false); }
+
+        btnOk.addEventListener('click', acaoOk);
+        btnCancelar.addEventListener('click', acaoCancela);
+
+        // Esc permite fechar (cancelar)
+        modal.onkeydown = function(e){
+            if(e.key === "Escape") fechar(false);
+        }
+        btnOk.focus();
+    });
+}
 
 // Funções auxiliares para o slug (sem alterações)
 function criarSlug(texto) {
@@ -72,7 +114,9 @@ window.addEventListener('DOMContentLoaded', () => {
         msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
         btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
         empresaSelectorGroup: document.getElementById('empresa-selector-group'),
-        selectEmpresa: document.getElementById('selectEmpresa')
+        selectEmpresa: document.getElementById('selectEmpresa'),
+
+        tipoEmpresa: document.getElementById('tipoEmpresa') // ⭐ ADIÇÃO
     };
 
     let empresaId = null;
@@ -129,6 +173,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function handleFormSubmit(event) {
         event.preventDefault();
+
+        // Modal de confirmação customizado padrão Pronti
+        const confirmado = await showCustomConfirm(
+            "Confirmação de Cadastro",
+            "Tem certeza que deseja salvar as informações do perfil?"
+        );
+        if (!confirmado) return;
+
         elements.btnSalvar.disabled = true;
         elements.btnSalvar.textContent = 'A salvar...';
         try {
@@ -163,7 +215,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 status: "ativo",
                 updatedAt: serverTimestamp(),
                 trialDisponivel: trialDisponivel,
-                trialMotivoBloqueio: trialMotivoBloqueio
+                trialMotivoBloqueio: trialMotivoBloqueio,
+
+                tipoEmpresa: elements.tipoEmpresa?.value || "estetica"
             };
 
             const valorSlugInput = elements.slugInput.value.trim();
@@ -183,7 +237,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!empresaId) {
-                // garante doc de usuário (sem sobrescrever demais campos)
                 const userRef = doc(db, "usuarios", uid);
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) {
@@ -195,53 +248,37 @@ window.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                // ==================================================
-                // ✅ ALTERAÇÃO: Cria TODOS os campos relevantes da empresa de uma vez
-                // - Padroniza nomes/tipos: trialStart/trialEndDate como Timestamp,
-                //   assinaturaAtiva (false), assinaturaValidaAte (null), proximoPagamento (null)
-                // - freeEmDias configurado, createdAt como serverTimestamp()
-                // ==================================================
                 const agora = new Date();
                 const trialStartTs = Timestamp.fromDate(agora);
-                // Para totalizar 15 dias incluindo o dia inicial, somamos 14 dias e colocamos fim do dia
                 const fimTrial = new Date(agora);
                 fimTrial.setDate(fimTrial.getDate() + 14);
                 fimTrial.setHours(23, 59, 59, 999);
                 const trialEndTs = Timestamp.fromDate(fimTrial);
 
-                // Campos padrão/completos para nova empresa
                 const camposPadrao = {
-                    // trial
                     trialStart: trialStartTs,
                     trialEndDate: trialEndTs,
                     freeEmDias: 15,
                     trialDisponivel: true,
                     trialMotivoBloqueio: trialMotivoBloqueio || "",
-                    // assinatura (vazia inicialmente)
                     assinaturaAtiva: false,
                     assinaturaValidaAte: null,
                     proximoPagamento: null,
-                    // plano e estado
                     plano: "free",
                     status: "ativo",
-                    // pagamentos pendentes / flags
                     pagamentoPendente: null,
-                    // metadados
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
-                    // defaults
                     chavePix: dadosEmpresa.chavePix || "",
                     logoUrl: dadosEmpresa.logoUrl || "",
                     emailDeNotificacao: dadosEmpresa.emailDeNotificacao || currentUser.email || ""
                 };
 
                 Object.assign(dadosEmpresa, camposPadrao);
-                // ==================================================
 
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 const novoEmpresaId = novaEmpresaRef.id;
 
-                // atualiza mapaUsuarios (merge)
                 const mapaRef = doc(db, "mapaUsuarios", uid);
                 const mapaSnap = await getDoc(mapaRef);
                 let empresasAtuais = [];
@@ -253,7 +290,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 await setDoc(mapaRef, { empresas: empresasAtuais }, { merge: true });
 
-                // cria documento de profissional dono
                 await setDoc(doc(db, "empresarios", novoEmpresaId, "profissionais", uid), {
                     uid: uid,
                     nome: currentUser.displayName || nomeNegocio,
@@ -268,7 +304,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     elements.msgCadastroSucesso.style.display = "block";
                 }
 
-                // Recarrega lista de empresas do usuário (sem forçar logout)
                 await carregarEmpresasDoUsuario(uid);
 
                 setTimeout(() => {
@@ -277,7 +312,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }, 4000);
             } else {
-                // edição: merge para não sobrescrever campos que não foram informados no formulário
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 if (elements.msgCadastroSucesso) {
                     elements.msgCadastroSucesso.innerHTML = `Perfil atualizado com sucesso!`;
@@ -359,6 +393,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
         if (elements.chavePixInput) elements.chavePixInput.value = dadosEmpresa.chavePix || '';
         if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
+
+        if (elements.tipoEmpresa) elements.tipoEmpresa.value = dadosEmpresa.tipoEmpresa || "estetica";
+
         if (!empresaId) return;
 
         const slug = dadosEmpresa.slug;
@@ -370,14 +407,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
         if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
 
-        // ==========================================================
-        // ✅ ADIÇÃO DO MANIFEST PWA DINÂMICO (CORRIGIDO PARA URLS VÁLIDAS)
-        // ==========================================================
         const manifest = {
             name: dadosEmpresa.nomeFantasia || "Pronti Negócio",
             short_name: dadosEmpresa.nomeFantasia?.substring(0, 12) || "Negócio",
-            start_url: "/",    // URL relativa válida
-            scope: "/",        // URL relativa válida
+            start_url: "/",
+            scope: "/",
             display: "standalone",
             background_color: "#4f46e5",
             theme_color: "#4f46e5",
@@ -410,4 +444,4 @@ window.addEventListener('DOMContentLoaded', () => {
             alert("Falha ao copiar o link.");
         });
     }
-}); 
+});
