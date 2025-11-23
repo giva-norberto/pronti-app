@@ -311,6 +311,7 @@ async function carregarDadosProfissional(profissionalId) {
     }
 }
 
+// ----------- ÚNICA MODIFICAÇÃO: SOMENTE O TÍTULO DO SERVIÇO, SEM VALORES -----------
 function renderizarServicosNoPerfil(servicosSelecionados = []) {
     if(!elementos.servicosLista) return;
     elementos.servicosLista.innerHTML = "";
@@ -322,12 +323,14 @@ function renderizarServicosNoPerfil(servicosSelecionados = []) {
         const div = document.createElement("div");
         div.className = "servico-item";
         div.setAttribute('data-servico-id', servico.id);
-        div.innerHTML = `<div class="servico-nome">${servico.nome}</div><div class="servico-preco">R$ ${Number(servico.preco || 0).toFixed(2)}</div>`;
+        // SOMENTE NOME, sem valores!
+        div.innerHTML = `<div class="servico-nome">${servico.nome}</div>`;
         if (servicosSelecionados.includes(servico.id)) div.classList.add('selected');
         div.addEventListener('click', () => div.classList.toggle('selected'));
         elementos.servicosLista.appendChild(div);
     });
 }
+// ----------- FIM MODIFICAÇÃO -----------
 
 function renderizarHorarios(horariosDataCompleta = {}) {
     if(!elementos.horariosLista) return;
