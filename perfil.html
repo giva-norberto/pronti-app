@@ -136,7 +136,8 @@
     .form-group input[type="text"],
     .form-group textarea,
     #selectEmpresa,
-    .form-group input[type="number"] {
+    .form-group input[type="number"],
+    .form-group select {
       border: 1.5px solid var(--border-color);
       border-radius: 10px;
       padding: 12px 14px;
@@ -150,7 +151,8 @@
     .form-group input[type="text"]:focus,
     .form-group input[type="number"]:focus,
     .form-group textarea:focus,
-    #selectEmpresa:focus {
+    #selectEmpresa:focus,
+    .form-group select:focus {
       border-color: var(--primary-color);
       outline: none;
       box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
@@ -237,6 +239,16 @@
       <form id="form-perfil">
         <div class="form-section">
           <h3>Informações do Negócio</h3>
+          <!-- Campo tipo de empresa incluído conforme solicitado -->
+          <div class="form-group">
+            <label for="tipoEmpresa">Tipo do Negócio</label>
+            <select id="tipoEmpresa">
+              <option value="">Selecione...</option>
+              <option value="estetica">Estética / Salão / Barbearia</option>
+              <option value="pets">Pet Shop</option>
+              <option value="outros">Outros</option>
+            </select>
+          </div>
           <div class="form-group">
             <label for="nomeNegocio">Nome do Negócio</label>
             <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
@@ -296,6 +308,19 @@
     </div>
   </main>
   <div id="modal-add-profissional" class="modal-overlay" style="display: none;"></div>
+
+  <!-- Modal de confirmação padrão Pronti (CORRIGE O ERRO do botão SALVAR) -->
+  <div id="modal-confirmacao-pronti" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:3000;background:rgba(24,27,124,.35);align-items:center;justify-content:center;">
+    <div style="background:#4f46e5;color:#fff;padding:30px 30px 22px 30px;border-radius:18px;max-width:340px;box-shadow:0 2px 20px #0005;margin:auto;position:relative;">
+      <div id="modal-confirmacao-pronti-pergunta" style="font-size:1.16em;font-weight:500;text-align:center;margin-bottom:13px;"></div>
+      <div style="display:flex;justify-content:center;gap:15px;padding-top:8px;">
+        <button id="modal-confirmacao-pronti-ok" style="background:#2563eb;color:#fff;font-weight:600;padding:9px 30px;border-radius:7px;border:none;cursor:pointer;font-size:1em;box-shadow:0 2px 10px #0002;">OK</button>
+        <button id="modal-confirmacao-pronti-cancelar" style="background:#4757d3;color:#fff;font-weight:500;padding:9px 30px;border-radius:7px;border:none;cursor:pointer;font-size:1em;box-shadow:0 2px 8px #0002;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <!-- FIM modal confirmação padrão pronti -->
+
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
