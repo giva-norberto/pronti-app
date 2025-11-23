@@ -5,134 +5,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Novo Serviço</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     body {
-      background: #f6f8fa;
-      font-family: 'Inter', Arial, sans-serif;
-      color: #22223b;
+      background: linear-gradient(135deg, #4f7df7 0%, #6ea8ff 50%, #8fc9ff 100%);
+      font-family: 'Inter', sans-serif;
+      color: #1a1a2e;
     }
+
     .main-content {
       margin-left: 240px;
-      padding: 36px 40px;
+      padding: 40px;
       min-height: 100vh;
-      background: #f6f8fa;
       display: flex;
       align-items: flex-start;
       justify-content: center;
     }
+
     .form-card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 18px #6366f120;
-      padding: 32px 32px 24px 32px;
-      margin-top: 40px;
-      max-width: 430px;
+      background: rgba(255, 255, 255, 0.93);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 36px 34px;
       width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      animation: fadeUp 0.35s ease-out;
     }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
     .form-card h1 {
-      font-size: 2rem;
-      font-weight: bold;
-      margin-bottom: 30px;
+      font-size: 2.1rem;
+      font-weight: 700;
       text-align: center;
-      color: #22223b;
+      color: #1e1b4b;
+      margin-bottom: 28px;
+      letter-spacing: -0.5px;
     }
+
     .form-group {
-      margin-bottom: 18px;
+      margin-bottom: 22px;
       width: 100%;
       display: flex;
       flex-direction: column;
     }
+
     .form-group label {
-      font-size: 1.08rem;
-      font-weight: 500;
-      margin-bottom: 7px;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #1e1b4b;
     }
+
     .form-group input,
-    .form-group textarea {
-      font-size: 1.05rem;
-      padding: 12px 14px;
-      border: 1.5px solid #d7d6e0;
-      border-radius: 7px;
-      background: #f8f8fa;
-      transition: border 0.2s;
+    .form-group textarea,
+    .form-group select {
+      padding: 14px;
+      border: 1.7px solid #cfd1ff;
+      background: #ffffff;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.25s;
       outline: none;
-      width: 100%;
-      box-sizing: border-box; /* Adicionado para consistência */
-      resize: none;
-      margin-bottom: 0;
+      color: #1a1a2e;
     }
+
     .form-group input:focus,
-    .form-group textarea:focus {
+    .form-group textarea:focus,
+    .form-group select:focus {
       border-color: #6366f1;
-      background: #f6f3ff;
+      background: #f3f4ff;
+      box-shadow: 0 0 0 3px #6366f122;
     }
+
     .btn-submit {
-      background: #6366f1;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
       color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 14px 0;
-      font-weight: bold;
-      font-size: 1.15rem;
-      cursor: pointer;
-      box-shadow: 0 2px 8px #d6d2f8;
+      padding: 15px 0;
       width: 100%;
-      margin-top: 18px;
-      transition: background 0.2s;
-      display: block;
+      border-radius: 12px;
+      border: none;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: 0.25s;
+      box-shadow: 0 8px 20px rgba(99,102,241,0.25);
     }
+
     .btn-submit:hover {
-      background: #4f46e5;
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(99,102,241,0.35);
     }
-    @media (max-width: 900px) {
-      .main-content {
-        margin-left: 0;
-        padding: 24px 10px;
-        /* ✅ CORREÇÃO ADICIONADA AQUI */
-        width: 100%; /* Garante que o conteúdo ocupe a tela toda */
-        box-sizing: border-box; /* Evita que o padding cause overflow */
-      }
-      .form-card {
-        margin: 24px auto 0 auto;
-      }
-    }
-    @media (max-width: 600px) {
-      .form-card {
-        padding: 16px 8vw;
-      }
-      .main-content {
-        padding: 8px;
-      }
-    }
+
+    @media (max-width: 900px) { .main-content { margin-left: 0; padding: 22px; } }
+    @media (max-width: 600px) { .form-card { padding: 28px 22px; } }
   </style>
 </head>
+
 <body>
   <div id="sidebar-placeholder"></div>
 
   <div class="main-content">
     <div class="form-card">
       <h1>Novo Serviço</h1>
+
       <form id="form-servico">
-        <div class="form-group">
-          <label for="nome-servico">Nome do Serviço</label>
-          <input id="nome-servico" name="nome-servico" type="text" required />
-        </div>
-        <div class="form-group">
-          <label for="descricao-servico">Descrição</label>
-          <textarea id="descricao-servico" name="descricao-servico" rows="2" required></textarea>
-        </div>
-        <div class="form-group">
-          <label for="preco-servico">Preço</label>
-          <input id="preco-servico" name="preco-servico" type="number" min="0" step="0.01" required />
-        </div>
-        <div class="form-group">
-          <label for="duracao-servico">Duração (minutos)</label>
-          <input id="duracao-servico" name="duracao-servico" type="number" min="1" required />
-        </div>
-        <div class="form-group">
-          <label for="categoria-servico">Categoria (opcional)</label>
-          <input id="categoria-servico" name="categoria-servico" type="text" />
-        </div>
+        <!-- Container para campos dinâmicos (Salão ou Pet Shop) -->
+        <div id="campos-dinamicos"></div>
+
         <button type="submit" class="btn-submit">Salvar Serviço</button>
       </form>
     </div>
@@ -140,8 +128,8 @@
 
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="novo-servico.js"></script>
+
   <script>
-    // Inclui o menu-lateral.html dinamicamente
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
@@ -152,4 +140,3 @@
   </script>
 </body>
 </html>
-
