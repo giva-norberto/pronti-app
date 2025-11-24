@@ -1,7 +1,4 @@
 // selector-empresa.js
-// Este arquivo deve ser importado ANTES de carregar a vitrine.
-// Ele determina qual layout deve ser carregado com base no tipo de empresa
-// e redireciona para a vitrine correta sem alterar seus arquivos originais.
 
 import { db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -25,14 +22,19 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-
     }
 
     const data = snap.data();
-    const tipo = data.tipo || "padrao";
 
-    // Escolher tela correta
-    if (tipo === "pet") {
+    // Campo REAL usado no Firestore
+    const tipo = data.tipoEmpresa || "padrao";
+
+    console.log("TIPO DA EMPRESA:", tipo);
+
+    // Agora funciona corretamente
+    if (tipo === "pets") {
       window.location.href = `vitrine-pet.html?empresa=${empresaId}`;
     } else {
       window.location.href = `vitrine.html?empresa=${empresaId}`;
     }
+
   } catch (err) {
     console.error("Erro ao selecionar layout da empresa:", err);
   }
