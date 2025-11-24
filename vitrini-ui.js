@@ -11,7 +11,6 @@ export function toggleLoader(mostrar, mensagem = 'A carregar informações do ne
     if (loader) loader.style.display = mostrar ? 'block' : 'none';
     const content = document.getElementById('vitrine-content');
    if(content) content.style.display = mostrar ? 'none' : ''; // Apenas remove o 'display: none'
-
 }
 
 /**
@@ -33,6 +32,24 @@ export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
     
     // A lógica para preencher a descrição e o resto da função permanece 100% idêntica.
     document.getElementById('info-negocio').innerHTML = `<p>${dadosEmpresa.descricao || "Descrição não informada."}</p>`;
+
+    // ----------- SWITCH AUTOMÁTICO DE LAYOUT PET/SALÃO (CORREÇÃO) -----------
+    if (dadosEmpresa.tipoEmpresa === "pets") {
+        // Esconde navegação salão
+        const mainMenu = document.getElementById('main-navigation-container');
+        if (mainMenu) mainMenu.style.display = 'none';
+        // Mostra navegação PET
+        const petsMenu = document.getElementById('pets-navigation-container');
+        if (petsMenu) petsMenu.style.display = 'block';
+    } else {
+        // Mostra navegação salão
+        const mainMenu = document.getElementById('main-navigation-container');
+        if (mainMenu) mainMenu.style.display = 'block';
+        // Esconde navegação PET
+        const petsMenu = document.getElementById('pets-navigation-container');
+        if (petsMenu) petsMenu.style.display = 'none';
+    }
+    // ----------- FIM DO SWITCH AUTOMÁTICO DE LAYOUT -----------
 
     // ----------- SERVIÇOS AGRUPADOS POR CATEGORIA (LÓGICA 100% PRESERVADA) -----------
     const servicosContainer = document.getElementById('info-servicos');
