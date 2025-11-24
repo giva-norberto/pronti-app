@@ -233,7 +233,9 @@ async function excluirServico(servicoId, tipo) {
   if (!confirmado) return;
 
   try {
-    const caminho = tipo === 'pet' ? ["empresarios", empresaId, "servicos_pet", servicoId] : ["empresarios", empresaId, "servicos", servicoId];
+    const caminho = tipo === 'pet'
+      ? ["empresarios", empresaId, "servicos_pet", servicoId]
+      : ["empresarios", empresaId, "servicos", servicoId];
     const servicoRef = doc(db, ...caminho);
     await deleteDoc(servicoRef);
     await showAlert("Sucesso", "Serviço excluído com sucesso.");
