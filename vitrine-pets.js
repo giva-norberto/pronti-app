@@ -3,11 +3,15 @@
 //        Reaproveita quase toda lógica do vitrine.js, adaptando para PET
 // ======================================================================
 
-// ---- GARANTE QUE O ID DA EMPRESA ESTÁ NO LOCALSTORAGE ----
+// ---- GARANTE QUE O ID DA EMPRESA NO LOCALSTORAGE ESTÁ CORRETO ----
 (function() {
     const params = new URLSearchParams(window.location.search);
-    const empresaUrl = params.get("empresa");
+    let empresaUrl = params.get("empresa");
     if (empresaUrl) {
+        // REMOVE SUFIXO (:587 ou etc) se existir!
+        if (empresaUrl.includes(':')) {
+            empresaUrl = empresaUrl.split(':')[0];
+        }
         localStorage.setItem("empresaAtivaId", empresaUrl);
     }
 })();
@@ -26,14 +30,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
 
+        // Tenta obter da função utilitária, ou do localStorage
         let empresaId = getEmpresaIdFromURL();
-        // Fallback: também busca no localStorage se não veio por função
         if (!empresaId) {
             empresaId = localStorage.getItem("empresaAtivaId") || null;
         }
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL nem no localStorage.");
 
-        // Carrega dados essenciais em paralelo
+        // DEBUG: LOG para ver qual ID está sendo usado
+        console.log("ID da empresa utilizado:", empresaId);
+
         const [dadosEmpresa, profissionais, todosServicos] = await Promise.all([
             getDadosEmpresa(empresaId), getProfissionaisDaEmpresa(empresaId), getTodosServicosDaEmpresa(empresaId)
         ]);
@@ -65,28 +71,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ---- APLICA PROMOÇÕES PETS ----
 async function aplicarPromocoesPetsNaVitrine(listaServicos, empresaId) {
-    // Reutiliza a lógica normal, mas pode ser adaptado para precos por porte.
-    // Se todos os serviços PET têm array de precos, pode ser necessário marcar promoções por porte
     listaServicos.forEach(servico => {
         if (Array.isArray(servico.precos)) {
             servico.precos.forEach(obj => {
-                // Exemplo de promoção: coloque aqui sua lógica de promoção por porte
+                // Lógica para promoções específicas por porte pode ir aqui
                 // obj.promocao = ...
             });
         }
     });
-    // Se sua lógica de promoção é igual à do salão, chame a mesma função compartilhada
-    // Exemplo: await aplicarPromocoesNaVitrine(listaServicos, empresaId);
+    // Ou chame lógica padrão
 }
 
-// ---- RENDERIZA PLANOS (Reaproveite quase tudo) ----
+// ---- RENDERIZA PLANOS ----
 async function renderizarPlanosDeAssinaturaPets(empresaId) {
     await UI.renderizarPlanos(empresaId);
 }
 
 // ---- CONFIGURAÇÃO DE EVENTOS DO MENU CARD/PETS ----
 function configurarEventosPets() {
-    // Cards principais
     const grid = document.getElementById('vitrine-cards-grid');
     if (grid) {
         grid.addEventListener('click', async (e) => {
@@ -110,14 +112,12 @@ function configurarEventosPets() {
         });
     }
 
-    // Botões de voltar para o menu principal
     document.querySelectorAll('.btn-voltar').forEach(b => {
         b.addEventListener('click', () => {
             UI.trocarAba('main-navigation-container');
         });
     });
 
-    // Menu "Meus Pets" - remover pet
     const petsListContainer = document.getElementById('pets-list-container');
     if (petsListContainer) {
         petsListContainer.addEventListener('click', async (e) => {
@@ -130,7 +130,6 @@ function configurarEventosPets() {
         });
     }
 
-    // Botão de confirmar agendamento pet
     const btnAgendarPet = document.getElementById('btn-confirmar-agendamento-pet');
     if (btnAgendarPet) {
         btnAgendarPet.addEventListener('click', async () => {
@@ -138,7 +137,6 @@ function configurarEventosPets() {
         });
     }
 
-    // Cadastro de pet no menu "Meus Pets"
     const petsCadastroContainer = document.getElementById('pets-cadastro-container');
     if (petsCadastroContainer) {
         petsCadastroContainer.addEventListener('submit', async (e) => {
@@ -155,7 +153,6 @@ function handleUserAuthStateChangePets(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
 
-    // Se usuário logado, recarrega pets e serviços inclusos
     if (user && state.empresaId) {
         marcarServicosInclusosParaUsuario(state.todosOsServicos, state.empresaId);
         renderizarMenuMeusPets();
@@ -177,7 +174,6 @@ async function handleConfirmarAgendamentoPet() {
         return;
     }
 
-    // Pega pet selecionado, serviço, porte, data, horário
     const { petId, petNome, porte, profissional, servico, data, horario } = state.agendamento;
 
     if (!petId || !porte || !servico || !data || !horario) {
