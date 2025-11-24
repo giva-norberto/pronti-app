@@ -3,6 +3,15 @@
 //        Reaproveita quase toda lógica do vitrine.js, adaptando para PET
 // ======================================================================
 
+// ---- GARANTE QUE O ID DA EMPRESA ESTÁ NO LOCALSTORAGE ----
+(function() {
+    const params = new URLSearchParams(window.location.search);
+    const empresaUrl = params.get("empresa");
+    if (empresaUrl) {
+        localStorage.setItem("empresaAtivaId", empresaUrl);
+    }
+})();
+
 // -- MÓDULOS COMPARTILHADOS --
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
@@ -18,7 +27,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         UI.toggleLoader(true);
 
         let empresaId = getEmpresaIdFromURL();
-        if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
+        // Fallback: também busca no localStorage se não veio por função
+        if (!empresaId) {
+            empresaId = localStorage.getItem("empresaAtivaId") || null;
+        }
+        if (!empresaId) throw new Error("ID da Empresa não encontrado na URL nem no localStorage.");
 
         // Carrega dados essenciais em paralelo
         const [dadosEmpresa, profissionais, todosServicos] = await Promise.all([
