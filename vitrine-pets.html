@@ -76,13 +76,38 @@
                 </div>
             </div>
 
+            <!-- Bloco exclusivo do layout PET ativado pelo JS -->
+            <div id="pets-navigation-container" style="display: none;">
+                <div class="header-vitrine-card">
+                    <img id="logo-publico-pet" src="https://placehold.co/100x100/e0e7ff/6366f1?text=PET" alt="Logo PET">
+                    <h1 id="nome-negocio-publico-pet">PET SHOP</h1>
+                    <p class="boas-vindas-usuario">Bem-vindo(a) ao Pet!</p>
+                </div>
+                <div class="dashboard-grid-cards" id="vitrine-cards-grid-pet">
+                    <a href="#" class="vitrine-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #06d6a0, #ffd166);">
+                        <i class="fa-solid fa-dog"></i>
+                        <span>Agendar PET</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #ffd166, #ef476f);">
+                        <i class="fa-solid fa-paw"></i>
+                        <span>Minhas Reservas PET</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #4ecdc4, #118ab2);">
+                        <i class="fa-solid fa-info-circle"></i>
+                        <span>Sobre o Pet</span>
+                    </a>
+                    <!-- Adicione mais cards PET conforme necessidade -->
+                </div>
+            </div>
+            <!-- Fim do Bloco PET -->
+
             <div id="menu-pets" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <h2><i class="fa-solid fa-dog"></i> Meus Pets</h2>
                 <div id="pets-list-container"></div>
                 <div id="pets-cadastro-container" style="display: none;"></div>
             </div>
-            
+
             <div id="menu-assinatura" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <h2>Planos de Assinatura</h2> 
@@ -90,7 +115,7 @@
                     <p class="info" style="color: #fff;">A carregar planos disponíveis...</p>
                 </div>
             </div>
-            
+
             <div id="menu-agendamento" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card"> 
@@ -166,8 +191,16 @@
     </div>
 
     <!-- Modais de confirmação, autenticação etc. MANTIDOS IGUAIS -->
-
-    <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p>
+            <div class="modal-botoes">
+                <button id="modal-btn-cancelar">Cancelar</button>
+                <button id="modal-btn-confirmar">Confirmar</button>
+            </div>
+        </div>
+    </div>
     <div id="modal-auth-janela" class="modal-overlay">
         <div class="modal-auth-container">
             <button id="modal-auth-close-btn" title="Fechar">&times;</button>
