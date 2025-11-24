@@ -129,7 +129,6 @@ function renderizarTudo(servicos, servicosPet) {
   const agrupNormais = agruparPorCategoria(servicos || []);
   const agrupPets = agruparPorCategoria(servicosPet || []);
 
-  // <<< REMOVIDO O TÍTULO "Serviços" DO BLOCO NORMAL >>>
   const renderCategoriaBlocos = (agrup, isPetSection) => {
     const cats = Object.keys(agrup).sort((a, b) => a.localeCompare(b, "pt-BR"));
     return cats.map(cat => {
@@ -141,7 +140,6 @@ function renderizarTudo(servicos, servicosPet) {
     }).join("");
   };
 
-  // <<< REMOVIDO O TÍTULO "Serviços" >>>
   const htmlNormais = Object.keys(agrupNormais).length ? `<section class="sec-servicos-normais">
       ${renderCategoriaBlocos(agrupNormais, false)}
     </section>` : '';
@@ -155,7 +153,6 @@ function renderizarTudo(servicos, servicosPet) {
 }
 
 // --- Render cartão de serviço ---
-// Layout PET: nome, descrição, preços por porte. NÃO mostra título "Serviços PET".
 function renderServicoCard(servico, isPetSection) {
   const nome = sanitizeHTML(servico.nome);
   const desc = sanitizeHTML(servico.descricao || "");
@@ -163,7 +160,6 @@ function renderServicoCard(servico, isPetSection) {
   const isPet = isPetSection || servico.tipo === 'pets';
 
   if (isPet) {
-    // Remove o cabeçalho "Serviços PET"
     return `
     <div class="servico-card servico-card-pet" data-id="${servico.id}" data-type="pet" style="border:2px solid #38bdf8;border-radius:16px;box-shadow:0 1px 12px #0002;background:#fff;margin-bottom:18px;padding:22px;max-width:360px;">
       <div class="servico-header" style="display:flex;align-items:center;">
@@ -199,7 +195,6 @@ function renderServicoCard(servico, isPetSection) {
     `;
   }
 
-  // Layout NORMAL
   const preco = formatarPreco(servico.preco);
   const duracao = servico.duracao ? (`${servico.duracao} min`) : "";
   return `
@@ -233,10 +228,15 @@ async function excluirServico(servicoId, tipo) {
   if (!confirmado) return;
 
   try {
-    const caminho = tipo === 'pet'
-      ? ["empresarios", empresaId, "servicos_pet", servicoId]
-      : ["empresarios", empresaId, "servicos", servicoId];
-    const servicoRef = doc(db, ...caminho);
+    // REVISÃO: para excluir corretamente serviços PET quando estão em "servicos", usar mesmo caminho do normal!!
+    // (Não depende só do tipo, depende de onde o documento realmente está.)
+    let colecao = "servicos";
+    if (tipo === 'pet') {
+      // Se quer forçar servicos_pet, só use se ele realmente está lá.
+      // Pode checar caminho pelo snapshot. Mas se está em "servicos", apague igual ao normal.
+      colecao = "servicos";
+    }
+    const servicoRef = doc(db, "empresarios", empresaId, colecao, servicoId);
     await deleteDoc(servicoRef);
     await showAlert("Sucesso", "Serviço excluído com sucesso.");
   } catch (err) {
@@ -266,7 +266,6 @@ if (listaServicosDiv) {
     const target = e.target.closest('.btn-acao');
     if (!target) return;
     const id = target.dataset.id;
-    // Sempre redireciona para novo-servico.html, independente do tipo
     if (target.classList.contains('btn-editar')) {
       window.location.href = `novo-servico.html?id=${id}`;
     }
