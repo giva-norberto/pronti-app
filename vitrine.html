@@ -11,7 +11,25 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
+<script type="module">
+import { db } from "./vitrini-firebase.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  let empresaId = params.get("empresa");
+  if (empresaId && empresaId.includes(":")) empresaId = empresaId.split(":")[0];
+  if (!empresaId) return;
+  if (window.location.pathname.endsWith("vitrine-pet.html")) return;
+  const ref = doc(db, "empresarios", empresaId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+  const data = snap.data();
+  const tipo = data.tipoEmpresa || data.tipo || "padrao";
+  if (tipo === "pets" || tipo === "pet") {
+    window.location.replace(`vitrine-pet.html?empresa=${empresaId}`);
+  }
+})();
+</script>
     <style>
         /* === SEU CSS ORIGINAL - SEM ALTERAÇÕES ESSENCIAIS AQUI === */
         body {
