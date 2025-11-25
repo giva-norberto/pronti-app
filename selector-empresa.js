@@ -1,41 +1,28 @@
 // selector-empresa.js
-
 import { db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 (async () => {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const empresaId = params.get("empresa");
+  console.log("Selector iniciado");
 
-    if (!empresaId) {
-      console.error("Nenhum ID de empresa foi fornecido na URL.");
-      return;
-    }
+  const params = new URLSearchParams(window.location.search);
+  const empresaId = params.get("empresa");
 
-    const ref = doc(db, "empresarios", empresaId);
-    const snap = await getDoc(ref);
+  if (!empresaId) return;
 
-    if (!snap.exists()) {
-      console.error("Empresa não encontrada no Firestore.");
-      return;
-    }
+  const ref = doc(db, "empresarios", empresaId);
+  const snap = await getDoc(ref);
 
-    const data = snap.data();
+  if (!snap.exists()) return;
 
-    // Campo REAL usado no Firestore
-    const tipo = data.tipoEmpresa || "padrao";
+  const data = snap.data();
+  const tipo = data.tipoEmpresa || data.tipo || "padrao"; // ← CORREÇÃO IMPORTANTE
 
-    console.log("TIPO DA EMPRESA:", tipo);
+  console.log("Tipo de empresa:", tipo);
 
-    // Agora funciona corretamente
-    if (tipo === "pets") {
-      window.location.href = `vitrine-pet.html?empresa=${empresaId}`;
-    } else {
-      window.location.href = `vitrine.html?empresa=${empresaId}`;
-    }
-
-  } catch (err) {
-    console.error("Erro ao selecionar layout da empresa:", err);
+  if (tipo === "pets" || tipo === "pet") {
+    window.location.replace(`vitrine-pet.html?empresa=${empresaId}`);
+  } else {
+    window.location.replace(`vitrine.html?empresa=${empresaId}`);
   }
 })();
