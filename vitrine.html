@@ -19,12 +19,17 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
   let empresaId = params.get("empresa");
   if (empresaId && empresaId.includes(":")) empresaId = empresaId.split(":")[0];
   if (!empresaId) return;
-  if (window.location.pathname.endsWith("vitrine-pet.html")) return;
+  
+  // Se já estamos na página PET, paramos o redirecionamento
+  if (window.location.pathname.endsWith("vitrine-pet.html")) return; 
+  
   const ref = doc(db, "empresarios", empresaId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
   const data = snap.data();
   const tipo = data.tipoEmpresa || data.tipo || "padrao";
+  
+  // Se for PET, redireciona para a página PET
   if (tipo === "pets" || tipo === "pet") {
     window.location.replace(`vitrine-pet.html?empresa=${empresaId}`);
   }
@@ -582,14 +587,15 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
                 nomeUsuarioEl.textContent = '';
             }
         }
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO DA PÁGINA, 100% INALTERADA
+        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO DA PÁGINA, COM A CORREÇÃO
         async function inicializarPagina() {
             const loader = document.getElementById('vitrine-loader');
             const content = document.getElementById('vitrine-content');
-            // CORREÇÃO APLICADA AQUI: Adiciona a verificação de URL
+            
+            // 🛑 CORREÇÃO APLICADA AQUI: Se a URL já aponta para PET, pare o carregamento deste layout.
             if (window.location.pathname.endsWith("vitrine-pet.html")) {
                 loader.style.display = 'none';
-                return; // Para a execução se a página for a de Pets
+                return; // Para a execução do layout SALÃO.
             }
             // FIM DA CORREÇÃO
 
