@@ -110,7 +110,6 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
             padding: 4px 14px;
             border-radius: 12px;
             font-weight: 600;
-            margin-top: 8px;
             display: none;
         }
 
@@ -592,7 +591,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
             const loader = document.getElementById('vitrine-loader');
             const content = document.getElementById('vitrine-content');
             
-            // 🛑 CORREÇÃO APLICADA AQUI: Se a URL já aponta para PET, pare o carregamento deste layout.
+            // 🛑 CORREÇÃO APLICADA: Se a URL já aponta para PET, pare o carregamento deste layout.
             if (window.location.pathname.endsWith("vitrine-pet.html")) {
                 loader.style.display = 'none';
                 return; // Para a execução do layout SALÃO.
