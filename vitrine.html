@@ -20,7 +20,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
   if (empresaId && empresaId.includes(":")) empresaId = empresaId.split(":")[0];
   if (!empresaId) return;
   
-  // Se já estamos na página PET, paramos o redirecionamento
+  // O redirecionamento está correto aqui
   if (window.location.pathname.endsWith("vitrine-pet.html")) return; 
   
   const ref = doc(db, "empresarios", empresaId);
@@ -29,7 +29,6 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
   const data = snap.data();
   const tipo = data.tipoEmpresa || data.tipo || "padrao";
   
-  // Se for PET, redireciona para a página PET
   if (tipo === "pets" || tipo === "pet") {
     window.location.replace(`vitrine-pet.html?empresa=${empresaId}`);
   }
@@ -290,391 +289,367 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
             </div>
         </main>
     </div>
+    
+        <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
+    <div id="modal-auth-janela" class="modal-overlay">        
+        <div class="modal-auth-container">
+            <button id="modal-auth-close-btn" title="Fechar">&times;</button>
+            <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>            
+            <div id="modal-auth-login" class="modal-auth-step">                
+                <h2>Faça seu Login</h2>                
+                <p style="text-align:center; margin-top: -15px; margin-bottom: 24px; color: #64748b;">para continuar com o agendamento.</p>                
+                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google">                    
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" style="width: 18px; height: 18px;">                    
+                    <span>Entrar com Google</span>                
+                </button>                
+                <div style="text-align:center;color:#9ca3af;margin:16px 0;">ou</div>                
+                <form id="modal-auth-form-login">                    
+                    <input id="modal-auth-login-email" type="email" placeholder="E-mail" required>                    
+                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>                    
+                    <button class="modal-auth-btn modal-auth-btn-submit">Entrar</button>                
+                </form>                
+                <div style="text-align:center;margin-top:16px;">                    
+                    <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>                
+                </div>            
+            </div>            
+            <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">                
+                <h2>Crie sua Conta</h2>                
+                <form id="modal-auth-form-cadastro">                    
+                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>                    
+                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>                    
+                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>                    
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>                    
+                    <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>                
+                </form>                
+                <div style="text-align:center;margin-top:16px;">                    
+                    <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>                
+                </div>            
+            </div>        
+        </div>    
+    </div>        
+    <script type="module" src="./vitrine.js"></script>        
+    <script type="module">        
+        import { db, auth } from './vitrini-firebase.js';        
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";        
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";        
+        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
+        
+        // FUNÇÃO PARA RENDERIZAR PLANOS (Não alterada)
+        async function renderizarPlanosVitrine(empresaId) {
+            const container = document.getElementById('cards-planos-vitrine');
+            if (!container) return;
+            container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>';
+            try {
+                const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
+                const snapshot = await getDocs(planosRef);
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="color: #fff;">Nenhum plano disponível no momento.</p>';
+                    return;
+                }
+                container.innerHTML = '';
+                snapshot.docs.forEach(doc => {
+                    const plano = { id: doc.id, ...doc.data() };
+                    if (plano.ativo) {
+                        const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        const servicosHTML = Array.isArray(plano.servicosInclusos)
+                            ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
+                            : '';
+                        const card = document.createElement('div');
+                        card.className = 'card-plano-vitrine';
+                        card.innerHTML = `
+                            <h3>${plano.nome}</h3>
+                            <p class="preco">${precoFormatado} / mês</p>
+                            <p>${plano.descricao || ''}</p>
+                            <ul>${servicosHTML}</ul>
+                            <button class="btn-assinar-plano">Assinar</button>
+                        `;
+                        card.querySelector('.btn-assinar-plano').addEventListener('click', () => {
+                            if (plano.id && empresaId) {
+                                window.location.href = `vitrine-assinatura.html?planoId=${plano.id}&empresaId=${empresaId}`;
+                            } else {
+                                console.error('ID do plano ou da empresa não encontrado.');
+                                alert('Ocorreu um erro ao selecionar o plano.');
+                            }
+                        });
+                        container.appendChild(card);
+                    }
+                });
+            } catch (err) {
+                console.error("Erro ao carregar planos:", err);
+                container.innerHTML = '<p style="color: #fff;">Ocorreu um erro ao carregar os planos.</p>';
+            }
+        }
+        
+        // Lógica de Navegação (Não alterada)
+        document.addEventListener('DOMContentLoaded', () => {
+            const cardsGrid = document.getElementById('vitrine-cards-grid');
+            const menuAssinatura = document.getElementById('menu-assinatura');
+            const mainNavigationContainer = document.getElementById('main-navigation-container');
+            const empresaId = localStorage.getItem("empresaAtivaId");
 
-    <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
-    <div id="modal-auth-janela" class="modal-overlay">
-        <div class="modal-auth-container">
-            <button id="modal-auth-close-btn" title="Fechar">&times;</button>
-            <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
-            <div id="modal-auth-login" class="modal-auth-step">
-                <h2>Faça seu Login</h2>
-                <p style="text-align:center; margin-top: -15px; margin-bottom: 24px; color: #64748b;">para continuar com o agendamento.</p>
-                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" style="width: 18px; height: 18px;">
-                    <span>Entrar com Google</span>
-                </button>
-                <div style="text-align:center;color:#9ca3af;margin:16px 0;">ou</div>
-                <form id="modal-auth-form-login">
-                    <input id="modal-auth-login-email" type="email" placeholder="E-mail" required>
-                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>
-                    <button class="modal-auth-btn modal-auth-btn-submit">Entrar</button>
-                </form>
-                <div style="text-align:center;margin-top:16px;">
-                    <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
-                </div>
-            </div>
-            <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
-                <h2>Crie sua Conta</h2>
-                <form id="modal-auth-form-cadastro">
-                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
-                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
-                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
-                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>
-                    <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
-                </form>
-                <div style="text-align:center;margin-top:16px;">
-                    <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script type="module" src="./vitrine.js"></script>
-    
-    <script type="module">
-        import { db, auth } from './vitrini-firebase.js';
-        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
+            if (cardsGrid && menuAssinatura) {
+                cardsGrid.addEventListener('click', (e) => {
+                    const card = e.target.closest('.vitrine-card');
+                    if (!card) return;
+                    if (card.dataset.menuCard === 'assinatura') {
+                        e.preventDefault();
+                        mainNavigationContainer.style.display = 'none';
+                        menuAssinatura.style.display = 'block';
+                        if (empresaId) {
+                            renderizarPlanosVitrine(empresaId);
+                        } else {
+                            document.getElementById('cards-planos-vitrine').innerHTML = '<p style="color: #fff;">Erro: ID da empresa não encontrado.</p>';
+                        }
+                    }
+                });
+            }
 
-        // =====================================================================
-        // ✅ FUNÇÃO ALTERADA PARA USAR OS NOVOS ESTILOS
-        // =====================================================================
-        async function renderizarPlanosVitrine(empresaId) {
-            const container = document.getElementById('cards-planos-vitrine');
-            if (!container) return;
-            container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>'; // Corrigi a cor
-            try {
-                const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
-                const snapshot = await getDocs(planosRef);
-                if (snapshot.empty) {
-                    container.innerHTML = '<p style="color: #fff;">Nenhum plano disponível no momento.</p>'; // Corrigi a cor
-                    return;
-                }
-                container.innerHTML = '';
-                snapshot.docs.forEach(doc => {
-                    const plano = { id: doc.id, ...doc.data() };
-                    if (plano.ativo) {
-                        const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        const servicosHTML = Array.isArray(plano.servicosInclusos)
-                            ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
-                            : '';
-                        const card = document.createElement('div');
-                        card.className = 'card-plano-vitrine'; // Usa a nova classe CSS
+            if (menuAssinatura) {
+                const btnVoltarAssinatura = menuAssinatura.querySelector('.btn-voltar');
+                btnVoltarAssinatura.addEventListener('click', () => {
+                    menuAssinatura.style.display = 'none';
+                    mainNavigationContainer.style.display = 'block';
+                });
+            }
+        });
+    </script>
+    <script type="module">
+        import { auth } from './vitrini-firebase.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        
+        // Lógica de Autenticação no Agendamento (Não alterada)
+        document.addEventListener('DOMContentLoaded', ( ) => {
+            const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
+            const modalAuth = document.getElementById('modal-auth-janela');
+            const btnCloseModal = document.getElementById('modal-auth-close-btn');
+            if (btnConfirmarAgendamento && modalAuth && btnCloseModal) {
+                const fecharModal = () => { modalAuth.style.display = 'none'; };
+                btnConfirmarAgendamento.addEventListener('click', (event) => {
+                    if (!auth.currentUser) {
+                        event.preventDefault(); event.stopImmediatePropagation();
+                        modalAuth.style.display = 'flex';
+                        const unsubscribe = onAuthStateChanged(auth, (user) => {
+                            if (user) {
+                                unsubscribe(); fecharModal();
+                                setTimeout(() => { btnConfirmarAgendamento.click(); }, 150);
+                            }
+                        });
+                    }
+                }, true);
+                btnCloseModal.addEventListener('click', fecharModal);
+                modalAuth.addEventListener('click', (event) => { if (event.target === modalAuth) { fecharModal(); } });
+            }
+        });
+    </script>
+    <script type="module">
+        import { db } from './vitrini-firebase.js';
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
 
-                        // Não usa mais 'style=' inline, usa a folha de estilo
-                        card.innerHTML = `
-                            <h3>${plano.nome}</h3>
-                            <p class="preco">${precoFormatado} / mês</p>
-                            <p>${plano.descricao || ''}</p>
-                            <ul>${servicosHTML}</ul>
-                            <button class="btn-assinar-plano">Assinar</button>
-                        `;
+        function getHojeDiaSemana( ) { return new Date().getDay(); }
+        
+        // Aplicação de Promoções (Não alterada)
+        async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
+            if (!empresaId) return;
+            const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
+            const snapshot = await getDocs(promocoesRef);
+            const promocoesAtivas = []; const hoje = getHojeDiaSemana();
+            snapshot.forEach(doc => { const promo = doc.data(); if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) { promocoesAtivas.push({ id: doc.id, ...promo }); } });
+            listaServicos.forEach(servico => {
+                let melhorPromocao = null;
+                for (let promo of promocoesAtivas) { if (promo.servicoIds && promo.servicoIds.includes(servico.id)) { melhorPromocao = promo; break; } }
+                if (!melhorPromocao) { melhorPromocao = promocoesAtivas.find(promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)); }
+                if (melhorPromocao) {
+                    let precoAntigo = servico.preco; let precoNovo = precoAntigo;
+                    if (melhorPromocao.tipoDesconto === "percentual") { precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100); } else if (melhorPromocao.tipoDesconto === "valorFixo") { precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0); }
+                    servico.promocao = { nome: melhorPromocao.nome, precoOriginal: precoAntigo, precoComDesconto: precoNovo, tipoDesconto: melhorPromocao.tipoDesconto, valorDesconto: melhorPromocao.valor };
+                }
+            });
+        }
+        
+        // Renderização de Serviços (Não alterada)
+        async function renderizarServicosVitrine(empresaId) {
+            const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+            const snapshot = await getDocs(servicosRef);
+            const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
+            
+            await aplicarPromocoesNaVitrine(listaServicos, empresaId); 
+            
+            try {                
+                await marcarServicosInclusosParaUsuario(listaServicos, empresaId); 
+            } catch (err) {
+                console.info('Não foi possível ler assinaturas do cliente (permissão?). Serviços exibidos normalmente.');
+            }
 
-                        card.querySelector('.btn-assinar-plano').addEventListener('click', () => {
-                            if (plano.id && empresaId) {
-                                window.location.href = `vitrine-assinatura.html?planoId=${plano.id}&empresaId=${empresaId}`;
-                            } else {
-                                console.error('ID do plano ou da empresa não encontrado.');
-                                alert('Ocorreu um erro ao selecionar o plano.');
-                            }
-                        });
-                        container.appendChild(card);
-                    }
-                });
-            } catch (err) {
-                console.error("Erro ao carregar planos:", err);
-                container.innerHTML = '<p style="color: #fff;">Ocorreu um erro ao carregar os planos.</p>'; // Corrigi a cor
-            }
-        }
+            const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
+            listaServicosDiv.innerHTML = "";
+            
+            listaServicos.forEach(servico => {
+                const div = document.createElement("div"); div.classList.add("servico-card"); 
+                let precoHtml = "";
 
-        // SUA LÓGICA ORIGINAL DE NAVEGAÇÃO, 100% INALTERADA
-        document.addEventListener('DOMContentLoaded', () => {
-            const cardsGrid = document.getElementById('vitrine-cards-grid');
-            const menuAssinatura = document.getElementById('menu-assinatura');
-            const mainNavigationContainer = document.getElementById('main-navigation-container');
-            const empresaId = localStorage.getItem("empresaAtivaId");
+                if (servico.precoCobrado === 0) { 
+                    const precoZeroFormatado = Number(0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    precoHtml = `<span class="preco-promocional">${precoZeroFormatado}</span> <span class="badge-incluso">Incluso no plano</span>`;
+                } else if (servico.promocao) {
+                    const precoOriginalFmt = (servico.promocao.precoOriginal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const precoPromoFmt = (servico.promocao.precoComDesconto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    precoHtml = `<span class="preco-original">${precoOriginalFmt}</span> <span class="preco-promocional">${precoPromoFmt}</span> <span class="badge-promocao">PROMO</span>`;
+                } else { 
+                    const precoNormalFmt = (servico.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    precoHtml = `<span class="preco-promocional">${precoNormalFmt}</span>`;
+                }
 
-            if (cardsGrid && menuAssinatura) {
-                cardsGrid.addEventListener('click', (e) => {
-                    const card = e.target.closest('.vitrine-card');
-                    if (!card) return;
-                    if (card.dataset.menuCard === 'assinatura') {
-                        e.preventDefault();
-                        mainNavigationContainer.style.display = 'none';
-                        menuAssinatura.style.display = 'block';
-                        if (empresaId) {
-                            renderizarPlanosVitrine(empresaId);
-                        } else {
-                            document.getElementById('cards-planos-vitrine').innerHTML = '<p style="color: #fff;">Erro: ID da empresa não encontrado.</p>';
-                        }
-                    }
-                });
-            }
+                div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
+                listaServicosDiv.appendChild(div);
+            });
+        }
+        
+        // Lógica de Inicialização (Não alterada)
+        let empresaId = localStorage.getItem("empresaAtivaId") || null;
+        if (empresaId) { renderizarServicosVitrine(empresaId); }
+    </script>
+        <script type="module">
+        import { state } from './vitrini-state.js';
+        import { fazerLogin } from './vitrini-auth.js';
+        
+        // Lógica de Navegação (Não alterada)
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainNavigationContainer = document.getElementById('main-navigation-container');
+            const contentSections = document.querySelectorAll('.main-content-vitrine > .menu-content');
+            
+            function showMainMenu() { 
+                contentSections.forEach(section => section.style.display = 'none'); 
+                mainNavigationContainer.style.display = 'block'; 
+            }
+            function showContentSection(menuId) {
+                mainNavigationContainer.style.display = 'none';
+                contentSections.forEach(section => { 
+                    section.style.display = section.id === menuId ? 'block' : 'none'; 
+                });
+            }
 
-            if (menuAssinatura) {
-                 const btnVoltarAssinatura = menuAssinatura.querySelector('.btn-voltar');
-                btnVoltarAssinatura.addEventListener('click', () => {
-                    menuAssinatura.style.display = 'none';
-                    mainNavigationContainer.style.display = 'block';
-                });
-            }
-        });
-    </script>
+            mainNavigationContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.vitrine-card'); if (!card) return; e.preventDefault();
+                const menuKey = card.dataset.menuCard;
+                if (menuKey === 'perfil' && !state.currentUser) { fazerLogin(); return; }
+                showContentSection(`menu-${menuKey}`);
+            });
+            document.querySelectorAll('.btn-voltar').forEach(button => { 
+                button.addEventListener('click', showMainMenu);
+            });
+            const cardPerfilTexto = document.getElementById('card-perfil-texto');
+            if (cardPerfilTexto) {
+                const observer = new MutationObserver(() => { cardPerfilTexto.textContent = state.currentUser ? 'Meu Perfil' : 'Login'; });
+                const userInfoDiv = document.getElementById('user-info');
+                if(userInfoDiv) { observer.observe(userInfoDiv, { attributes: true, childList: true, subtree: true }); }
+            }
+        });
+    </script>
+    <script type="module">
+        import { db, auth } from './vitrini-firebase.js';
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        
+        // Atualização do Header (Não alterada)
+        function atualizarHeaderCard(dadosEmpresa, usuario) {
+            const logoEl = document.getElementById('logo-publico');
+            const nomeNegocioEl = document.getElementById('nome-negocio-publico');
+            const boasVindasEl = document.getElementById('boas-vindas-usuario');
+            const nomeUsuarioEl = document.getElementById('usuario-logado-nome');
+            const nomeDaEmpresa = dadosEmpresa ? dadosEmpresa.nomeFantasia : "Negócio";
+            const logoDaEmpresa = dadosEmpresa ? dadosEmpresa.logoUrl : null;
+            nomeNegocioEl.textContent = nomeDaEmpresa;
+            document.title = nomeDaEmpresa; 
+            if (logoDaEmpresa) {
+                logoEl.src = logoDaEmpresa;
+                logoEl.alt = `Logo de ${nomeDaEmpresa}`;
+            }
+            if (usuario) {
+                boasVindasEl.textContent = `Olá, seja bem-vindo(a)!`; 
+                const primeiroNome = usuario.displayName ? usuario.displayName.split(' ')[0] : 'Cliente';
+                nomeUsuarioEl.textContent = primeiroNome;
+                nomeUsuarioEl.style.display = 'inline-block'; 
+            } else {
+                boasVindasEl.textContent = "Faça seu agendamento!";
+                nomeUsuarioEl.style.display = 'none'; 
+                nomeUsuarioEl.textContent = '';
+            }
+        }
+        
+        // INICIALIZAÇÃO DA PÁGINA COM BLOQUEIO INTELIGENTE
+        async function inicializarPagina() {
+            const loader = document.getElementById('vitrine-loader');
+            const content = document.getElementById('vitrine-content');
+            
+            // 🛑 CORREÇÃO APLICADA AQUI: Se a URL aponta para o destino PET,
+            // não deixe o layout SALÃO aparecer. O script na vitrine-pet.html cuidará da exibição.
+            if (window.location.pathname.endsWith("vitrine-pet.html")) {
+                loader.style.display = 'none';
+                return; // Bloqueia a inicialização e exibição do content padrão.
+            }
 
-    <script type="module">
-        import { auth } from './vitrini-firebase.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // SUA LÓGICA ORIGINAL DE AUTENTICAÇÃO NO AGENDAMENTO, 100% INALTERADA
-        document.addEventListener('DOMContentLoaded', ( ) => {
-            const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
-            const modalAuth = document.getElementById('modal-auth-janela');
-            const btnCloseModal = document.getElementById('modal-auth-close-btn');
-            if (btnConfirmarAgendamento && modalAuth && btnCloseModal) {
-                const fecharModal = () => { modalAuth.style.display = 'none'; };
-                btnConfirmarAgendamento.addEventListener('click', (event) => {
-                    if (!auth.currentUser) {
-                        event.preventDefault(); event.stopImmediatePropagation();
-                        modalAuth.style.display = 'flex';
-                        const unsubscribe = onAuthStateChanged(auth, (user) => {
-                            if (user) {
-                                // console.log('Login detectado! Fechando modal e continuando agendamento.'); // DEBUG REMOVIDO
-                                unsubscribe(); fecharModal();
-                                setTimeout(() => { btnConfirmarAgendamento.click(); }, 150);
-                            }
-                        });
-                    }
-                }, true);
-                btnCloseModal.addEventListener('click', fecharModal);
-                modalAuth.addEventListener('click', (event) => { if (event.target === modalAuth) { fecharModal(); } });
-            }
-        });
-    </script>
-    <script type="module">
-        import { db } from './vitrini-firebase.js';
-        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
+            const empresaId = localStorage.getItem("empresaAtivaId");
+            let dadosEmpresa = null;
+            if (empresaId) {
+                try {
+                    const docRef = doc(db, "empresarios", empresaId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        dadosEmpresa = docSnap.data();
+                    } else {
+                        console.error("Empresa não encontrada:", empresaId);
+                    }
+                } catch (error) {
+                    console.error("Erro ao buscar dados da empresa:", error);
+                }
+            } else {
+                console.error("ID da empresa não encontrado no localStorage.");
+            }
+            onAuthStateChanged(auth, (usuario) => {
+                atualizarHeaderCard(dadosEmpresa, usuario);
+            });
+            loader.style.display = 'none';
+            content.style.display = 'block';
+        }
+        document.addEventListener('DOMContentLoaded', inicializarPagina);
+    </script>
+    
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener('agendamento:salvo', (e) => {
+                try {
+                    if (window.UI && typeof UI.mostrarToast === 'function') {
+                        UI.mostrarToast('Agendamento confirmado!', 'success');
+                    } else if (typeof window.alert === 'function') {
+                        // alert('Agendamento confirmado!');
+                    }
+                } catch (err) {
+                    console.warn('Erro ao mostrar toast de confirmação:', err);
+                }
 
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
-        function getHojeDiaSemana( ) { return new Date().getDay(); }
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
-        async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
-            if (!empresaId) return;
-            const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
-            const snapshot = await getDocs(promocoesRef);
-            const promocoesAtivas = []; const hoje = getHojeDiaSemana();
-            snapshot.forEach(doc => { const promo = doc.data(); if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) { promocoesAtivas.push({ id: doc.id, ...promo }); } });
-            listaServicos.forEach(servico => {
-                let melhorPromocao = null;
-                for (let promo of promocoesAtivas) { if (promo.servicoIds && promo.servicoIds.includes(servico.id)) { melhorPromocao = promo; break; } }
-                if (!melhorPromocao) { melhorPromocao = promocoesAtivas.find(promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)); }
-                if (melhorPromocao) {
-                    let precoAntigo = servico.preco; let precoNovo = precoAntigo;
-                    if (melhorPromocao.tipoDesconto === "percentual") { precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100); } else if (melhorPromocao.tipoDesconto === "valorFixo") { precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0); }
-                    servico.promocao = { nome: melhorPromocao.nome, precoOriginal: precoAntigo, precoComDesconto: precoNovo, tipoDesconto: melhorPromocao.tipoDesconto, valorDesconto: melhorPromocao.valor };
-                }
-            });
-        }
-        
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA (JÁ COM A LÓGICA DO PREÇO ZERO)
-        async function renderizarServicosVitrine(empresaId) {
-            const servicosRef = collection(db, "empresarios", empresaId, "servicos");
-            const snapshot = await getDocs(servicosRef);
-            const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
-            
-            await aplicarPromocoesNaVitrine(listaServicos, empresaId); 
-
-            try {
-                await marcarServicosInclusosParaUsuario(listaServicos, empresaId); 
-            } catch (err) {
-                console.info('Não foi possível ler assinaturas do cliente (permissão?). Serviços exibidos normalmente.');
-            }
-
-            const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
-            listaServicosDiv.innerHTML = "";
-            
-            listaServicos.forEach(servico => {
-                const div = document.createElement("div"); div.classList.add("servico-card"); 
-                let precoHtml = "";
-
-                if (servico.precoCobrado === 0) { 
-                    const precoZeroFormatado = Number(0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    precoHtml = `<span class="preco-promocional">${precoZeroFormatado}</span> <span class="badge-incluso">Incluso no plano</span>`;
-                } else if (servico.promocao) {
-                    const precoOriginalFmt = (servico.promocao.precoOriginal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    const precoPromoFmt = (servico.promocao.precoComDesconto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    precoHtml = `<span class="preco-original">${precoOriginalFmt}</span> <span class="preco-promocional">${precoPromoFmt}</span> <span class="badge-promocao">PROMO</span>`;
-                } else { 
-                     const precoNormalFmt = (servico.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                     precoHtml = `<span class="preco-promocional">${precoNormalFmt}</span>`;
-                }
-
-                div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
-                listaServicosDiv.appendChild(div);
-            });
-        }
-        
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO, CHAMANDO A FUNÇÃO
-        let empresaId = localStorage.getItem("empresaAtivaId") || null;
-        if (empresaId) { renderizarServicosVitrine(empresaId); }
-    </script>
-    
-    <script type="module">
-        import { state } from './vitrini-state.js';
-        import { fazerLogin } from './vitrini-auth.js';
-        
-        // SUA LÓGICA ORIGINAL DE NAVEGAÇÃO, 100% INALTERADA
-        document.addEventListener('DOMContentLoaded', () => {
-            const mainNavigationContainer = document.getElementById('main-navigation-container');
-            const contentSections = document.querySelectorAll('.main-content-vitrine > .menu-content');
-            
-            function showMainMenu() { 
-                contentSections.forEach(section => section.style.display = 'none'); 
-                mainNavigationContainer.style.display = 'block'; 
-            }
-            function showContentSection(menuId) {
-                mainNavigationContainer.style.display = 'none';
-                contentSections.forEach(section => { 
-                    section.style.display = section.id === menuId ? 'block' : 'none'; 
-                });
-            }
-
-            mainNavigationContainer.addEventListener('click', (e) => {
-                const card = e.target.closest('.vitrine-card'); if (!card) return; e.preventDefault();
-                const menuKey = card.dataset.menuCard;
-                if (menuKey === 'perfil' && !state.currentUser) { fazerLogin(); return; }
-                showContentSection(`menu-${menuKey}`);
-            });
-            document.querySelectorAll('.btn-voltar').forEach(button => { 
-                button.addEventListener('click', showMainMenu);
-            });
-            const cardPerfilTexto = document.getElementById('card-perfil-texto');
-            if (cardPerfilTexto) {
-                const observer = new MutationObserver(() => { cardPerfilTexto.textContent = state.currentUser ? 'Meu Perfil' : 'Login'; });
-                const userInfoDiv = document.getElementById('user-info');
-                if(userInfoDiv) { observer.observe(userInfoDiv, { attributes: true, childList: true, subtree: true }); }
-            }
-        });
-    </script>
-
-    <script type="module">
-        import { db, auth } from './vitrini-firebase.js';
-        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // SUA LÓGICA ORIGINAL DE ATUALIZAÇÃO DO HEADER, 100% INALTERADA
-        function atualizarHeaderCard(dadosEmpresa, usuario) {
-            const logoEl = document.getElementById('logo-publico');
-            const nomeNegocioEl = document.getElementById('nome-negocio-publico');
-            const boasVindasEl = document.getElementById('boas-vindas-usuario');
-            const nomeUsuarioEl = document.getElementById('usuario-logado-nome');
-            const nomeDaEmpresa = dadosEmpresa ? dadosEmpresa.nomeFantasia : "Negócio";
-            const logoDaEmpresa = dadosEmpresa ? dadosEmpresa.logoUrl : null;
-            nomeNegocioEl.textContent = nomeDaEmpresa;
-            document.title = nomeDaEmpresa; 
-            if (logoDaEmpresa) {
-                logoEl.src = logoDaEmpresa;
-                logoEl.alt = `Logo de ${nomeDaEmpresa}`;
-            }
-            if (usuario) {
-                boasVindasEl.textContent = `Olá, seja bem-vindo(a)!`; 
-                const primeiroNome = usuario.displayName ? usuario.displayName.split(' ')[0] : 'Cliente';
-                nomeUsuarioEl.textContent = primeiroNome;
-                nomeUsuarioEl.style.display = 'inline-block'; 
-            } else {
-                boasVindasEl.textContent = "Faça seu agendamento!";
-                nomeUsuarioEl.style.display = 'none'; 
-                nomeUsuarioEl.textContent = '';
-            }
-        }
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO DA PÁGINA, COM A CORREÇÃO
-        async function inicializarPagina() {
-            const loader = document.getElementById('vitrine-loader');
-            const content = document.getElementById('vitrine-content');
-            
-            // 🛑 CORREÇÃO APLICADA: Se a URL já aponta para PET, pare o carregamento deste layout.
-            if (window.location.pathname.endsWith("vitrine-pet.html")) {
-                loader.style.display = 'none';
-                return; // Para a execução do layout SALÃO.
-            }
-            // FIM DA CORREÇÃO
-
-            const empresaId = localStorage.getItem("empresaAtivaId");
-            let dadosEmpresa = null;
-            if (empresaId) {
-                try {
-                    const docRef = doc(db, "empresarios", empresaId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        dadosEmpresa = docSnap.data();
-                    } else {
-                        console.error("Empresa não encontrada:", empresaId);
-                    }
-                } catch (error) {
-                    console.error("Erro ao buscar dados da empresa:", error);
-                }
-            } else {
-                console.error("ID da empresa não encontrado no localStorage.");
-            }
-            onAuthStateChanged(auth, (usuario) => {
-                atualizarHeaderCard(dadosEmpresa, usuario);
-            });
-            loader.style.display = 'none';
-            content.style.display = 'block';
-        }
-        document.addEventListener('DOMContentLoaded', inicializarPagina);
-    </script>
-
-        <script type="module">
-        // Este pequeno trecho apenas escuta o evento 'agendamento:salvo'
-        // (emitido pela função salvarAgendamento no seu módulo de agendamento)
-        // e então navega para a aba "Minhas Reservas" e dispara o botão "Ver Ativos".
-        // Não altera nenhuma lógica de negócio; apenas dispara os mesmos handlers UI
-        // que o clique manual do usuário faria.
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.addEventListener('agendamento:salvo', (e) => {
-                // 1) opcional: mostrar uma confirmação rápida (UI existente)
-                try {
-                    if (window.UI && typeof UI.mostrarToast === 'function') {
-                        UI.mostrarToast('Agendamento confirmado!', 'success');
-                    } else if (typeof window.alert === 'function') {
-                        // pequeno fallback não intrusivo (remova se não quiser)
-                        // alert('Agendamento confirmado!');
-                    }
-                } catch (err) {
-                    // não interrompe fluxo por erro em UI
-                    console.warn('Erro ao mostrar toast de confirmação:', err);
-                }
-
-                // 2) navegar para a aba "visualizacao" (mesma ação do clique do usuário)
-                const visualCard = document.querySelector('.vitrine-card[data-menu-card="visualizacao"]');
-                if (visualCard) {
-                    // Dispara o clique para reutilizar toda a lógica de navegação já existente
-                    visualCard.click();
-
-                    // 3) garantir que o botão "Ver Ativos" seja acionado para carregar os agendamentos
-                    //    com pequeno delay para permitir que a aba seja exibida
-                    setTimeout(() => {
-                        const btnAtivos = document.getElementById('btn-ver-ativos');
-                        if (btnAtivos) {
-                            // Simula clique para acionar handleFiltroAgendamentos
-                            btnAtivos.click();
-                        } else {
-                            // fallback: se handleFiltroAgendamentos estiver exposto globalmente, chama diretamente
-                            try {
-                                if (typeof window.handleFiltroAgendamentos === 'function') {
-                                    window.handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
-                                }
-                            } catch (err) {
-                                console.warn('Não foi possível disparar carregamento dos agendamentos automaticamente:', err);
-                            }
-                        }
-                    }, 200);
-                } else {
-                    console.warn('Elemento de navegação para "Minhas Reservas" não encontrado.');
-                }
-            });
-        });
-    </script>
+                const visualCard = document.querySelector('.vitrine-card[data-menu-card="visualizacao"]');
+                if (visualCard) {
+                    visualCard.click();
+                    setTimeout(() => {
+                        const btnAtivos = document.getElementById('btn-ver-ativos');
+                        if (btnAtivos) {
+                            btnAtivos.click();
+                        } else {
+                            try {
+                                if (typeof window.handleFiltroAgendamentos === 'function') {
+                                    window.handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+                                }
+                            } catch (err) {
+                                console.warn('Não foi possível disparar carregamento dos agendamentos automaticamente:', err);
+                            }
+                        }
+                    }, 200);
+                } else {
+                    console.warn('Elemento de navegação para "Minhas Reservas" não encontrado.');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
