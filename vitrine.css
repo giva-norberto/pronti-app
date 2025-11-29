@@ -802,3 +802,126 @@ input[type="date"]:focus {
     font-weight: 600;
     font-size: 1rem;
 }
+/* ===========================
+   TEMA PET PREMIUM / LUXO
+   =========================== */
+
+/* Paleta */
+:root {
+    --pet-bg: #f5f0eb;         /* creme */
+    --pet-brown: #5a3e2b;      /* marrom elegante */
+    --pet-light-brown: #c9b39a; /* dourado queimado */
+    --pet-gold: #d7b56d;       /* dourado premium */
+    --pet-white: #ffffff;
+}
+
+/* Fundo geral */
+body {
+    background: var(--pet-bg) !important;
+    font-family: "Poppins", sans-serif;
+    color: var(--pet-brown);
+}
+
+/* Card padrão da vitrine */
+.card, .servico-card, .prof-card, .horario-card {
+    background: var(--pet-white) !important;
+    border-radius: 18px !important;
+    border: 1px solid var(--pet-light-brown);
+    box-shadow: 0 4px 12px rgba(90, 62, 43, 0.15) !important;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.card:hover, .servico-card:hover, .prof-card:hover, .horario-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(90, 62, 43, 0.25) !important;
+}
+
+/* Botões */
+button, .btn {
+    background: var(--pet-brown) !important;
+    color: var(--pet-white) !important;
+    border-radius: 14px !important;
+    border: none !important;
+    padding: 12px 18px !important;
+    font-weight: 600;
+    transition: background .2s ease, transform .2s ease;
+}
+
+button:hover, .btn:hover {
+    background: var(--pet-gold) !important;
+    transform: translateY(-2px);
+}
+
+/* Títulos principais */
+h1, h2, h3, h4 {
+    color: var(--pet-brown) !important;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Cabeçalho (logo + nome) */
+.header-vitrine {
+    background: linear-gradient(135deg, var(--pet-brown), var(--pet-light-brown));
+    padding: 20px;
+    border-radius: 0 0 20px 20px;
+    color: var(--pet-white);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Ícone elegante usando pseudo-elemento */
+.header-vitrine::after {
+    content: "🐾";
+    font-size: 28px;
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    opacity: 0.25;
+}
+
+/* Serviços */
+.servico-card .preco {
+    color: var(--pet-gold) !important;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+/* Profissionais */
+.prof-card {
+    position: relative;
+}
+
+.prof-card::after {
+    content: "🐕‍🦺";
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    opacity: 0.2;
+    font-size: 24px;
+}
+
+/* Horários */
+.horario-card {
+    border: 1px solid var(--pet-gold) !important;
+}
+
+/* Quando selecionado */
+.horario-card.selecionado, .servico-card.selecionado, .prof-card.selecionado {
+    border: 2px solid var(--pet-gold) !important;
+    box-shadow: 0 0 8px rgba(215, 181, 109, 0.5) !important;
+    transform: scale(1.02);
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--pet-brown);
+    opacity: 0.7;
+}
+
+/* Mobile ajustes */
+@media (max-width: 480px) {
+    .card, .servico-card, .prof-card {
+        border-radius: 16px !important;
+    }
+}
