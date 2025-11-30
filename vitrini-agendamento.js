@@ -7,6 +7,7 @@
   - adicionada função profissionalTemAusencia(empresaId, profissionalId, data)
   - encontrarPrimeiraDataComSlots agora pula datas em que o profissional tem ausência
   - sem alterar a lógica de cálculo de slots (calcularSlotsDisponiveis)
+  - ✅ Adicionado: verificação da assinatura do cliente APENAS para ajuste do preço cobrado do serviço (não bloqueia agendamento)
 */
 
 import { db } from './vitrini-firebase.js';
@@ -60,6 +61,27 @@ export async function profissionalTemAusencia(empresaId, profissionalId, dataYYY
     } catch (err) {
         // Em caso de erro na verificação, assumimos NÃO ausente para não bloquear indevidamente.
         console.warn('Erro ao verificar ausência do profissional:', err);
+        return false;
+    }
+}
+
+// --- NOVA FUNÇÃO: Verifica se o cliente tem assinatura válida
+async function clienteTemAssinaturaValida(empresaId, clienteId) {
+    try {
+        const assinaturasRef = collection(db, "empresarios", empresaId, "clientes", clienteId, "assinaturas");
+        const q = query(assinaturasRef, where("status", "==", "ativo"));
+        const snap = await getDocs(q);
+        const agora = new Date();
+        for (const docSnap of snap.docs) {
+            const assinatura = docSnap.data();
+            const dataFim = assinatura.dataFim?.toDate ? assinatura.dataFim.toDate() : new Date(assinatura.dataFim);
+            if (dataFim > agora) {
+                return true;
+            }
+        }
+        return false;
+    } catch (err) {
+        console.warn('Erro ao verificar assinatura válida do cliente:', err);
         return false;
     }
 }
@@ -203,9 +225,20 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             ? Number(agendamento.servico.precoOriginal)
             : (agendamento?.servico?.preco != null ? Number(agendamento.servico.preco) : 0);
 
-        const precoCobrado = agendamento?.servico?.precoCobrado != null
-            ? Number(agendamento.servico.precoCobrado)
-            : precoOriginal;
+        // ========================================
+        // ⬇️ ALTERAÇÃO: calcula precoCobrado considerando assinatura válida
+        // ========================================
+        let precoCobrado = precoOriginal;
+        // Verifica se cliente tem assinatura válida e serviço está incluso (precoCobrado originalmente zerado)
+        const temAssinaturaValida = await clienteTemAssinaturaValida(empresaId, currentUser.uid);
+        const servicoInclusoViaAssinatura = agendamento?.servico?.precoCobrado === 0; // regra original do sistema
+
+        if (temAssinaturaValida && servicoInclusoViaAssinatura) {
+            precoCobrado = 0; // benefício aplicado
+        } else {
+            precoCobrado = precoOriginal; // sem benefício
+        }
+        // ========================================
 
         const payload = {
             empresaId: empresaId,
@@ -225,7 +258,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         };
 
-        if (agendamento.assinaturaConsumo) {
+        if (agendamento.assinaturaConsumo && temAssinaturaValida) {
             payload.assinaturaConsumo = agendamento.assinaturaConsumo;
             payload.origemPagamento = 'assinatura';
         }
