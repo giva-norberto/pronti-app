@@ -229,9 +229,9 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
         // ⬇️ ALTERAÇÃO: calcula precoCobrado considerando assinatura válida
         // ========================================
         let precoCobrado = precoOriginal;
-        // Verifica se cliente tem assinatura válida e serviço está incluso (precoCobrado originalmente zerado)
+        // Verifica se cliente tem assinatura válida e serviço está incluso (usa flag específico, não o preco)
         const temAssinaturaValida = await clienteTemAssinaturaValida(empresaId, currentUser.uid);
-        const servicoInclusoViaAssinatura = agendamento?.servico?.precoCobrado === 0; // regra original do sistema
+        const servicoInclusoViaAssinatura = agendamento?.servico?.fazParteDaAssinatura === true; // <-- CORREÇÃO AQUI
 
         if (temAssinaturaValida && servicoInclusoViaAssinatura) {
             precoCobrado = 0; // benefício aplicado
