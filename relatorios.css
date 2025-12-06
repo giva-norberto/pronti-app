@@ -6,6 +6,11 @@
     --cor-fundo-app: #f6f7fb;
 }
 
+/* box-sizing global evita estouros de largura */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 /* Fundo azul padrão Pronti no body */
 html, body {
     background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
@@ -14,32 +19,88 @@ html, body {
     padding: 0 !important;
     font-family: 'Inter', Arial, sans-serif !important;
     -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
 }
 
-/* Abas (menus) compactas */
+/* Container principal - garante largura responsiva e padding interno */
+.main-relatorios {
+    max-width: 1100px;
+    width: 100%;
+    margin: 16px auto;
+    padding: 10px; /* padding interno para não colar nas bordas do mobile */
+    min-height: calc(100vh - 32px);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 28px #4f46e525;
+    overflow: visible;
+}
+
+/* Top actions - será capaz de quebrar em várias linhas no mobile */
+.top-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
+    padding: 12px;
+    border-radius: 12px 12px 0 0;
+    color: #fff;
+    gap: 12px;
+    flex-wrap: wrap; /* permite que elementos quebrem em linhas seguintes */
+}
+
+/* Botão voltar */
+.btn-voltar {
+    background: #fff;
+    color: #6366f1;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.94em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #4f46e51c;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    flex: 0 0 auto; /* não cresce para empurrar as abas */
+    white-space: nowrap;
+}
+
+/* Esconder o texto 'Voltar' em telas muito pequenas para economizar espaço */
+.btn-voltar .btn-text { display: inline; }
+@media (max-width: 420px) {
+    .btn-voltar { padding: 8px; }
+    .btn-voltar .btn-text { display: none; }
+}
+
+/* Abas (menus) compactas - ficam dentro do espaço restante e roláveis */
 .abas-container {
     display: flex;
     gap: 0;
-    margin-bottom: 4px; /* Ajuste: Reduzido de 6px para 4px */
+    margin-bottom: 4px;
     overflow-x: auto;
     border-bottom: 1px solid #e8eaf3;
     background: transparent;
     scrollbar-width: none;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0; /* crucial: permite que container flex encolha sem forçar overflow do pai */
 }
 .abas-container::-webkit-scrollbar { display: none; }
 
 .aba {
-    padding: 3px 8px; /* Ajuste: Reduzido de 4px 10px para 3px 8px */
-    font-size: 0.88em; /* Ajuste: Reduzido de 0.93em para 0.88em */
+    padding: 3px 8px;
+    font-size: 0.88em;
     font-weight: 600;
     border: none;
     background: none;
     color: var(--cor-texto-escuro);
     margin: 0;
-    border-radius: 4px 4px 0 0; /* Ajuste: Reduzido de 6px para 4px */
+    border-radius: 4px 4px 0 0;
     cursor: pointer;
     transition: background 0.18s, color 0.18s;
-    min-width: 50px; /* Ajuste: Reduzido de 58px para 50px */
+    min-width: 50px;
     white-space: nowrap;
     flex-shrink: 0;
     outline: none;
@@ -51,70 +112,43 @@ html, body {
 .aba.active {
     background: #fff;
     color: var(--cor-primaria);
-    border-bottom: 2px solid var(--cor-primaria); /* Ajuste: Reduzido de 2.5px para 2px */
+    border-bottom: 2px solid var(--cor-primaria);
     z-index: 2;
 }
 
-/* Botão de exportação */
-.btn-exportar-csv {
-    background: var(--cor-sucesso);
-    color: #fff;
-    border: none;
-    border-radius: 3px; /* Ajuste: Reduzido de 4px para 3px */
-    margin: 5px 0; /* Ajuste: Reduzido de 7px para 5px */
-    padding: 3px 10px; /* Ajuste: Reduzido de 4px 12px para 3px 10px */
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.88em; /* Ajuste: Reduzido de 0.93em para 0.88em */
-    transition: background 0.18s;
-    align-self: flex-end;
-    height: 28px; /* Ajuste: Reduzido de 30px para 28px */
-    min-width: 60px; /* Ajuste: Reduzido de 70px para 60px */
-    display: inline-flex;
-    align-items: center;
-    gap: 5px; /* Ajuste: Reduzido de 7px para 5px */
-}
-.btn-exportar-csv:hover, .btn-exportar-csv:focus {
-    background: #22996c;
-    outline: none;
-}
-
-/* Filtros compactos
-   NOTE: keep both class names to be robust (.filtros-relatorio and .filtros-relatorios)
-   so this CSS works whether HTML uses singular or plural (to avoid breaking existing markup).
-*/
+/* Filtros compactos (aceita singular/plural) */
 .filtros-relatorio,
 .filtros-relatorios {
     display: flex;
-    gap: 5px; /* Ajuste: Reduzido de 7px para 5px */
+    gap: 5px;
     flex-wrap: wrap;
-    margin-bottom: 7px; /* Ajuste: Reduzido de 9px para 7px */
+    margin: 8px 0 7px 0;
     align-items: center;
     background: #f7fafd;
-    padding: 3px 5px; /* Ajuste: Reduzido de 4px 7px para 3px 5px */
-    border-radius: 4px; /* Ajuste: Reduzido de 6px para 4px */
+    padding: 6px 8px;
+    border-radius: 6px;
     box-shadow: 0 1px 2px #e5e8f1;
 }
 .filtros-relatorio label,
 .filtros-relatorios label {
     font-weight: 500;
-    margin-right: 1px; /* Ajuste: Reduzido de 2px para 1px */
+    margin-right: 4px;
     color: var(--cor-cinza);
-    font-size: 0.88em; /* Ajuste: Reduzido de 0.93em para 0.88em */
+    font-size: 0.88em;
 }
 .filtros-relatorio input,
 .filtros-relatorio select,
 .filtros-relatorios input,
 .filtros-relatorios select {
-    font-size: 0.88em; /* Ajuste: Reduzido de 0.93em para 0.88em */
-    padding: 3px 6px; /* Ajuste: Reduzido de 4px 7px para 3px 6px */
-    border-radius: 4px; /* Ajuste: Reduzido de 5px para 4px */
+    font-size: 0.88em;
+    padding: 4px 6px;
+    border-radius: 4px;
     border: 1px solid #d1d5db;
     background: #fff;
     color: var(--cor-texto-escuro);
     transition: border 0.18s;
-    min-width: 50px; /* Ajuste: Reduzido de 55px para 50px */
-    max-width: 100px; /* Ajuste: Reduzido de 110px para 100px */
+    min-width: 50px;
+    max-width: 100px;
 }
 .filtros-relatorio input:focus,
 .filtros-relatorio select:focus,
@@ -124,27 +158,37 @@ html, body {
     outline: none;
 }
 
-/* Tabela compacta - wrapper para scroll horizontal em mobile */
-.aba-conteudo .table-wrapper,
-.aba-conteudo > div[style*="overflow-x"] {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+/* Wrapper para rolagem horizontal da tabela */
+.aba-conteudo {
+    display: none;
+    animation: fadeIn .22s;
+    background: #fff;
+    border-radius: 8px;
+    margin: 12px 6px;
+    padding: 12px;
+    min-height: 160px;
+    box-shadow: 0 2px 10px #4f46e510;
+    border: 1px solid #e0e7ff;
+    overflow-x: auto; /* garante rolagem horizontal quando necessário */
+    -webkit-overflow-scrolling: touch; /* rolagem suave em iOS */
 }
+.aba-conteudo.active { display: block; }
 
-/* Table base */
+/* Table compacta */
 .aba-conteudo table {
     width: 100%;
-    font-size: 0.95em; /* Ajuste: Reduzido de 1em para 0.95em */
-    border-radius: 4px; /* Ajuste: Reduzido de 6px para 4px */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Ajuste: Sombra mais suave */
+    font-size: 0.95em;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     background: #fff;
     overflow: hidden;
     border-spacing: 0;
-    margin-bottom: 7px; /* Ajuste: Reduzido de 9px para 7px */
+    margin-bottom: 7px;
     border-collapse: collapse;
 }
-.aba-conteudo th, .aba-conteudo td {
-    padding: 5px 7px; /* Ajuste: Reduzido de 6px 8px para 5px 7px */
+.aba-conteudo th,
+.aba-conteudo td {
+    padding: 6px 8px;
     border-bottom: 1px solid #f0f0f0;
     text-align: left;
     font-weight: 400;
@@ -155,7 +199,7 @@ html, body {
     font-weight: 600;
     color: var(--cor-primaria);
     letter-spacing: -0.3px;
-    font-size: 0.93em; /* Ajuste: Reduzido de 0.98em para 0.93em */
+    font-size: 0.93em;
 }
 .aba-conteudo tr:last-child td { border-bottom: none; }
 .aba-conteudo tr:hover td {
@@ -163,114 +207,51 @@ html, body {
     transition: background 0.13s;
 }
 .aba-conteudo p {
-    margin: 9px 0; /* Ajuste: Reduzido de 11px para 9px */
+    margin: 9px 0;
     color: var(--cor-cinza);
-    font-size: 0.93em; /* Ajuste: Reduzido de 0.97em para 0.93em */
+    font-size: 0.93em;
     text-align: center;
 }
 
-/* Small screens: keep horizontal scroll for wide tables, but provide a "card" fallback
-   for very narrow screens. The CSS below supports both: 1) horizontal scroll, 2) optional
-   card-view when JS adds data-label attributes to td elements (recommended). */
-
-/* Card layout for very small devices */
+/* Card layout para telas muito pequenas (fallback para tabelas grandes) */
 @media (max-width: 420px) {
-    /* Use card-style instead of table if data-label exists */
-    .aba-conteudo table,
-    .aba-conteudo thead,
-    .aba-conteudo tbody,
-    .aba-conteudo th,
-    .aba-conteudo td,
-    .aba-conteudo tr {
+    .main-relatorios { margin: 8px; padding: 8px; }
+    .top-actions { padding: 8px; gap: 6px; }
+    .btn-voltar { padding: 6px 8px; font-size: 0.9em; }
+    .abas-container { margin-left: 0; width: 100%; padding-bottom: 6px; }
+    .aba { padding: 4px 6px; font-size: 0.85em; min-width: 40px; }
+    .filtros-relatorio, .filtros-relatorios { gap: 4px; padding: 4px; }
+    .filtros-relatorio input, .filtros-relatorio select,
+    .filtros-relatorios input, .filtros-relatorios select {
+        min-width: 44px; padding: 4px 6px; font-size: 0.88em;
+    }
+    /* alternativa cartão para tabelas muito largas (se quiser ativar via JS, adicionar data-label nos td) */
+    .aba-conteudo table, .aba-conteudo thead, .aba-conteudo tbody,
+    .aba-conteudo th, .aba-conteudo td, .aba-conteudo tr {
         display: block;
     }
-
-    .aba-conteudo thead {
-        display: none;
-    }
-
-    .aba-conteudo tr {
-        margin: 6px 0; /* Ajuste: Reduzido de 8px para 6px */
-        background: #fff;
-        border-radius: 6px; /* Ajuste: Reduzido de 8px para 6px */
-        box-shadow: 0 1px 4px rgba(0,0,0,0.05); /* Ajuste: Sombra mais suave */
-        padding: 6px; /* Ajuste: Reduzido de 8px para 6px */
-        border: 1px solid #eef2ff;
-    }
-
+    .aba-conteudo thead { display: none; }
+    .aba-conteudo tr { margin: 6px 0; padding: 6px; border-radius: 6px; border: 1px solid #eef2ff; background: #fff; }
     .aba-conteudo td {
-        display: flex;
-        justify-content: space-between;
-        padding: 4px 6px; /* Ajuste: Reduzido de 6px 8px para 4px 6px */
-        border: none;
-        border-bottom: 1px dashed #f0f3fb;
-        font-size: 0.9em; /* Ajuste: Reduzido de 0.95em para 0.9em */
+        display: flex; justify-content: space-between;
+        padding: 6px; border: none; border-bottom: 1px dashed #f0f3fb; font-size: 0.9em;
     }
-    .aba-conteudo td:last-child { border-bottom: none; }
-
-    /* Show label using data-label when present; if not present, content remains as-is */
     .aba-conteudo td::before {
         content: attr(data-label);
-        font-weight: 700;
-        color: #64748b;
-        margin-right: 6px; /* Ajuste: Reduzido de 8px para 6px */
-        flex: 0 0 40%; /* Ajuste: Reduzido de 44% para 40% */
-        font-size: 0.85em; /* Ajuste: Reduzido de 0.88em para 0.85em */
+        font-weight: 700; color: #64748b; margin-right: 6px; flex: 0 0 42%; font-size: 0.85em;
     }
-
-    /* Filters and buttons compact adjustments */
-    .btn-exportar-csv {
-        font-size: 0.85em; /* Ajuste: Reduzido de 0.9em para 0.85em */
-        padding: 2px 5px; /* Ajuste: Reduzido de 3px 6px para 2px 5px */
-        min-width: 40px; /* Ajuste: Reduzido de 48px para 40px */
-        height: 24px; /* Ajuste: Reduzido de 26px para 24px */
-    }
-    .filtros-relatorio, .filtros-relatorios {
-        gap: 4px; /* Ajuste: Reduzido de 6px para 4px */
-        padding: 1px 3px; /* Ajuste: Reduzido de 2px 4px para 1px 3px */
-    }
-    .abas-container .aba {
-        padding: 4px 6px; /* Ajuste: Reduzido de 6px 8px para 4px 6px */
-        font-size: 0.85em; /* Ajuste: Reduzido de 0.88em para 0.85em */
-        min-width: 40px; /* Ajuste: Reduzido de 48px para 40px */
-    }
+    .btn-exportar-csv { font-size: 0.85em; padding: 2px 6px; min-width: 40px; height: 26px; }
 }
 
-/* Adição de media query para telas médias (tablets) para garantir que os ajustes de tamanho sejam aplicados de forma consistente, mas menos agressiva que em telas muito pequenas */
-@media (min-width: 421px) and (max-width: 768px) {
-    .aba {
-        padding: 4px 10px;
-        font-size: 0.9em; /* Ajuste para telas médias */
-        min-width: 55px;
-    }
-    .btn-exportar-csv {
-        font-size: 0.9em;
-        padding: 4px 12px;
-        height: 28px;
-    }
-    .filtros-relatorio, .filtros-relatorios {
-        gap: 6px;
-        padding: 3px 6px;
-    }
-    .filtros-relatorio label,
-    .filtros-relatorios label {
-        font-size: 0.9em;
-    }
-    .filtros-relatorio input,
-    .filtros-relatorio select,
-    .filtros-relatorios input,
-    .filtros-relatorios select {
-        font-size: 0.9em;
-        padding: 4px 7px;
-        max-width: 100px;
-    }
-    .aba-conteudo table {
-        font-size: 0.98em;
-    }
-    .aba-conteudo th, .aba-conteudo td {
-        padding: 6px 8px;
-    }
-    .aba-conteudo th {
-        font-size: 0.95em;
-    }
+/* Tablets / small desktops */
+@media (min-width: 421px) and (max-width: 900px) {
+    .main-relatorios { margin: 12px; padding: 8px; min-height: calc(100vh - 24px); }
+    .aba { padding: 4px 10px; font-size: 0.9em; min-width: 55px; }
+    .btn-exportar-csv { font-size: 0.9em; padding: 4px 10px; height: 28px; }
+    .filtros-relatorio, .filtros-relatorios { gap: 6px; padding: 6px; }
+    .aba-conteudo { margin: 10px 6px; padding: 10px; border-radius: 8px; }
+    .aba-conteudo th, .aba-conteudo td { padding: 6px 8px; }
 }
+
+/* animação */
+@keyframes fadeIn { from { opacity: 0;} to { opacity: 1;} }
