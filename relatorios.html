@@ -266,6 +266,34 @@
       }
     }
   </style>
+
+  <!-- Scoped overrides for Relatórios page (no other pages are affected) -->
+  <style>
+    /* Only when body has class 'relatorios-page' these rules will apply */
+    .relatorios-page #sidebar-placeholder { display: none !important; width: 0 !important; min-width: 0 !important; visibility: hidden !important; }
+    .relatorios-page .main-content, .relatorios-page .main-relatorios { margin-left: 0 !important; width: 100% !important; padding: 12px !important; box-sizing: border-box; min-width: 0 !important; overflow: visible !important; }
+    .relatorios-page .top-actions, .relatorios-page .abas-container, .relatorios-page .conteudo-abas, .relatorios-page .aba-conteudo { min-width: 0 !important; }
+    .relatorios-page .abas-container { flex: 1 1 auto !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; }
+    .relatorios-page .abas-container::-webkit-scrollbar { display: none !important; }
+    .relatorios-page img, .relatorios-page iframe, .relatorios-page table { max-width: 100% !important; height: auto !important; }
+    .relatorios-page .aba-conteudo, .relatorios-page .table-wrapper { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+    .relatorios-page .empty-state-bg { width: 100% !important; max-width: 100% !important; }
+    @media (max-width: 900px) {
+      .relatorios-page .top-actions { flex-wrap: wrap !important; gap: 8px !important; }
+      .relatorios-page .filtros-relatorios { gap: 8px !important; padding: 6px !important; }
+      .relatorios-page .filtros-relatorios input, .relatorios-page .filtros-relatorios select { min-width: 56px !important; }
+      .relatorios-page .aba { min-width: 44px !important; padding: 4px 6px !important; font-size: 0.9em !important; }
+    }
+    @media (max-width: 420px) {
+      .relatorios-page .btn-voltar .btn-text { display: none !important; }
+      .relatorios-page .btn-voltar { padding: 6px !important; }
+      .relatorios-page .aba-conteudo table, .relatorios-page .aba-conteudo thead, .relatorios-page .aba-conteudo tbody, .relatorios-page .aba-conteudo th, .relatorios-page .aba-conteudo td, .relatorios-page .aba-conteudo tr { display: block !important; }
+      .relatorios-page .aba-conteudo thead { display: none !important; }
+      .relatorios-page .aba-conteudo tr { margin: 6px 0 !important; padding: 6px !important; border-radius: 6px !important; border: 1px solid #eef6ff !important; background: #fff !important; }
+      .relatorios-page .aba-conteudo td { display: flex !important; justify-content: space-between !important; padding: 6px !important; border-bottom: 1px dashed #f0f3fb !important; font-size: 0.9em !important; }
+      .relatorios-page .aba-conteudo td::before { content: attr(data-label) !important; font-weight: 700 !important; color: #64748b !important; margin-right: 6px !important; flex: 0 0 42% !important; font-size: 0.85em !important; }
+    }
+  </style>
 </head>
 <body>
   <div id="page-content">
@@ -311,6 +339,26 @@
       </section>
     </main>
   </div>
+
+  <script>
+    // Auto-apply relatorios-page scope so overrides only affect this page.
+    (function () {
+      try {
+        const path = window.location.pathname || '';
+        const hasMarker = document.getElementById('conteudo-abas') !== null || document.querySelector('.conteudo-abas') !== null;
+        const isRelPath = path.indexOf('relatorios') !== -1 || path.indexOf('report') !== -1;
+        if (isRelPath || hasMarker) {
+          document.body.classList.add('relatorios-page');
+          document.body.setAttribute('data-relatorios-forced', 'true');
+          console.debug('[relatorios] relatorios-page class applied');
+        } else {
+          console.debug('[relatorios] relatorios-page not applied (not a relatorios page)');
+        }
+      } catch (err) {
+        console.error('[relatorios] error applying relatorios-page', err);
+      }
+    })();
+  </script>
 
   <script type="module">
     import { verificarAcesso } from './userService.js';
