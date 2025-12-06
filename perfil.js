@@ -114,9 +114,7 @@ window.addEventListener('DOMContentLoaded', () => {
         msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
         btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
         empresaSelectorGroup: document.getElementById('empresa-selector-group'),
-        selectEmpresa: document.getElementById('selectEmpresa'),
-
-        tipoEmpresa: document.getElementById('tipoEmpresa') // ⭐ ADIÇÃO
+        selectEmpresa: document.getElementById('selectEmpresa')
     };
 
     let empresaId = null;
@@ -215,9 +213,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 status: "ativo",
                 updatedAt: serverTimestamp(),
                 trialDisponivel: trialDisponivel,
-                trialMotivoBloqueio: trialMotivoBloqueio,
-
-                tipoEmpresa: elements.tipoEmpresa?.value || "estetica"
+                trialMotivoBloqueio: trialMotivoBloqueio
             };
 
             const valorSlugInput = elements.slugInput.value.trim();
@@ -308,7 +304,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 setTimeout(() => {
                     if (elements.msgCadastroSucesso) {
-                        elements.msgCadastroSucesso.style.display = "none";
+                        elements.msgCadastroSucesso.style.display = 'none';
                     }
                 }, 4000);
             } else {
@@ -333,7 +329,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el) el.style.display = 'none'; });
-        if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
+        if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = 'none';
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
     }
@@ -394,15 +390,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.chavePixInput) elements.chavePixInput.value = dadosEmpresa.chavePix || '';
         if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
 
-        if (elements.tipoEmpresa) elements.tipoEmpresa.value = dadosEmpresa.tipoEmpresa || "estetica";
-
         if (!empresaId) return;
 
         const slug = dadosEmpresa.slug;
         
-        // 🎯 LÓGICA CORRIGIDA: Escolher vitrine com base no tipo de empresa
-        const tipoEmpresa = dadosEmpresa.tipoEmpresa || 'estetica';
-        const vitrineBase = (tipoEmpresa === 'pets' || tipoEmpresa === 'pet') ? 'vitrine-pet.html' : 'vitrine.html';
+        const vitrineBase = 'vitrine.html';
 
         const urlCompleta = slug
             ? `${window.location.origin}/r.html?c=${slug}`
