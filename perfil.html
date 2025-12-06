@@ -193,6 +193,34 @@
       border-radius: 50%;
       border: 2px solid var(--border-color);
     }
+
+    /* Floating back button (mobile) */
+    .floating-back-btn {
+      position: fixed;
+      left: 16px;
+      bottom: 22px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      border: 2px solid rgba(79,70,229,0.12);
+      z-index: 4000;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+      opacity: 1;
+    }
+    .floating-back-btn:hover { transform: translateY(-3px); }
+
+    @media (min-width: 901px) {
+      /* hide on larger screens to match other pages */
+      .floating-back-btn { display: none; }
+    }
+
     @media (max-width: 900px) {
       body { flex-direction: column; }
       .main-content { margin-left: 0; padding: 16px; }
@@ -298,6 +326,12 @@
       </form>
     </div>
   </main>
+
+  <!-- Floating back button (mobile) -->
+  <button id="floating-back-btn" class="floating-back-btn" aria-label="Voltar" title="Voltar">
+    <i class="fa-solid fa-arrow-left"></i>
+  </button>
+
   <div id="modal-add-profissional" class="modal-overlay" style="display: none;"></div>
 
   <!-- Modal de confirmação padrão Pronti (CORRIGE O ERRO do botão SALVAR) -->
@@ -325,6 +359,29 @@
             if (perfilLink) perfilLink.classList.add('active');
           }, 10);
         });
+
+      // Floating back button behavior
+      const backBtn = document.getElementById('floating-back-btn');
+      if (backBtn) {
+        // Hide if there's no history to go back to
+        if (!history.length || history.length <= 1) {
+          backBtn.style.display = 'none';
+        }
+        backBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          // Try history.back(), fallback to a safe URL
+          if (document.referrer && document.referrer !== window.location.href) {
+            history.back();
+            setTimeout(() => {
+              // if still on same page after short delay, fallback
+              if (document.location.href.indexOf(window.location.origin) !== 0) return;
+            }, 150);
+          } else {
+            // fallback: go to dashboard or home (adjust if you have specific page)
+            window.location.href = '/';
+          }
+        });
+      }
     });
   </script>
   <script src="perfil.js" type="module"></script>
