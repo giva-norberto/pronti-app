@@ -83,6 +83,49 @@ async function clienteTemAssinaturaValida(empresaId, clienteId) {
     }
 }
 
+// ======================================================================
+// 🆕 NOVA FUNÇÃO: Criar lembrete automático (1 hora antes do agendamento)
+// ======================================================================
+async function criarLembreteAutomatico(empresaId, agendamento, currentUser) {
+    try {
+        // Parseia a data do agendamento (formato YYYY-MM-DD)
+        const [ano, mes, dia] = agendamento.data.split('-').map(Number);
+        const [hora, minuto] = agendamento.horario.split(':').map(Number);
+        
+        // Cria objeto Date com a data/hora do agendamento
+        const dataAgendamento = new Date(ano, mes - 1, dia, hora, minuto);
+        
+        // Calcula 1 hora antes
+        const dataLembrete = new Date(dataAgendamento.getTime() - 60 * 60 * 1000);
+        
+        // Não cria lembrete se o horário já passou
+        if (dataLembrete <= new Date()) {
+            console.log('⏰ Lembrete não criado: horário já passou');
+            return;
+        }
+
+        // Cria documento na coleção lembretesPendentes
+        const lembreteRef = collection(db, 'lembretesPendentes');
+        
+        await addDoc(lembreteRef, {
+            clienteId: currentUser.uid,
+            empresaId: empresaId,
+            servicoNome: agendamento.servico.nome,
+            profissionalNome: agendamento.profissional.nome,
+            dataAgendamento: agendamento.data,
+            horarioTexto: agendamento.horario,
+            dataEnvio: dataLembrete,
+            enviado: false,
+            criadoEm: new Date()
+        });
+
+        console.log('✅ Lembrete automático criado para:', dataLembrete);
+    } catch (error) {
+        console.error('❌ Erro ao criar lembrete automático (não bloqueia agendamento):', error);
+        // Não lança erro para não bloquear o agendamento principal
+    }
+}
+
 // --- Funções Principais de Agendamento ---
 export async function buscarAgendamentosDoDia(empresaId, data) {
     try {
@@ -310,6 +353,9 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
         }
 
         await addDoc(agendamentosRef, payload);
+
+        // ✨ NOVO: Criar lembrete automático
+        await criarLembreteAutomatico(empresaId, agendamento, currentUser);
 
         if (agendamento.empresa && agendamento.empresa.donoId) {
             try {
