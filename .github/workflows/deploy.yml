@@ -45,3 +45,8 @@ jobs:
       # 7. Deploy Functions
       - name: Deploy Cloud Functions
         run: firebase deploy --only functions --project pronti-app-37c6e --non-interactive
+
+      # 8. Cleanup credentials
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f $HOME/firebase-credentials.json
