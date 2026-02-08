@@ -44,7 +44,9 @@ jobs:
 
       # 7. Deploy Functions
       - name: Deploy Cloud Functions
-        run: firebase deploy --only functions --project pronti-app-37c6e --non-interactive
+        env:
+          FIRESTORE_EMULATOR_HOST: ""
+        run: firebase deploy --only functions --project pronti-app-37c6e --non-interactive --force
 
       # 8. Cleanup credentials
       - name: Cleanup credentials
