@@ -26,7 +26,7 @@ if (!admin.apps.length) {
 }
 
 // AJUSTE CRÍTICO: Conecta explicitamente ao seu banco nomeado para evitar erro 404
-const db = admin.firestore("pronti-app"); 
+const db = admin.app().firestore("pronti-app"); 
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
