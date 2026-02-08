@@ -24,7 +24,9 @@ if (!admin.apps.length) {
     // databaseURL: "https://pronti-app-37c6e.firebaseio.com"
   });
 }
-const db = admin.firestore();
+
+// AJUSTE CRÍTICO: Conecta explicitamente ao seu banco nomeado para evitar erro 404
+const db = admin.firestore("pronti-app"); 
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
