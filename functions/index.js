@@ -13,20 +13,13 @@ const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
 // ========================= Inicialização do Firebase ==========================
-// Garanta que o Admin SDK inicialize com o projectId correto.
-// Isso evita problemas quando o ambiente não resolve automaticamente o projeto.
-const detectedProjectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "pronti-app-37c6e";
-
+// Garanta que o Admin SDK inicialize corretamente.
 if (!admin.apps.length) {
-  admin.initializeApp({
-    projectId: detectedProjectId,
-    // NÃO definir databaseURL aqui a não ser que esteja usando Realtime Database.
-    // databaseURL: "https://pronti-app-37c6e.firebaseio.com"
-  });
+  admin.initializeApp();
 }
 
-// AJUSTE CRÍTICO: Conecta explicitamente ao seu banco nomeado para evitar erro 404
-const db = admin.app().firestore("pronti-app"); 
+// CORREÇÃO FINAL: Usa o banco (default) na região southamerica-east1
+const db = admin.firestore(); 
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
@@ -126,7 +119,7 @@ exports.createPreference = onRequest(
         }
         const userRecord = await admin.auth().getUser(userId);
         const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
-        const notificationUrl = `https://southamerica-east1-${detectedProjectId}.cloudfunctions.net/receberWebhookMercadoPago`;
+        const notificationUrl = `https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago`;
         const subscriptionData = {
           reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
           auto_recurring: {
