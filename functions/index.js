@@ -287,10 +287,12 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       notification: {
         title: titulo,
         body: mensagem,
-        icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-        badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
       },
       webpush: {
+        notification: {
+          icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+          badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+        },
         fcmOptions: {
           link: "https://prontiapp.com.br/agenda.html",
         },
@@ -333,7 +335,12 @@ exports.rotinaLembreteAgendamento = onSchedule(
         .where("dataEnvio", "<=", admin.firestore.Timestamp.fromDate(limiteJanela))
         .get();
 
-      if (snapshot.empty) return;
+      if (snapshot.empty) {
+        logger.info("Nenhum lembrete pendente encontrado.");
+        return;
+      }
+
+      logger.info(`Encontrados ${snapshot.size} lembrete(s) pendente(s).`);
 
       const envios = snapshot.docs.map(async (doc) => {
         const lembrete = doc.data();
@@ -344,15 +351,26 @@ exports.rotinaLembreteAgendamento = onSchedule(
             notification: {
               title: "Lembrete Pronti ⏰",
               body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto}).`,
-              icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
+            },
+            webpush: {
+              notification: {
+                icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
+              },
+              fcmOptions: {
+                link: "https://prontiapp.com.br/agenda.html"
+              }
             },
             token: tokenSnap.data().fcmToken,
           });
+          logger.info(`✅ Lembrete enviado para cliente ${lembrete.clienteId}`);
+        } else {
+          logger.warn(`Token FCM não encontrado para cliente ${lembrete.clienteId}`);
         }
         return doc.ref.update({ enviado: true, processadoEm: admin.firestore.FieldValue.serverTimestamp() });
       });
 
       await Promise.all(envios);
+      logger.info("✅ Todos os lembretes foram processados com sucesso!");
     } catch (error) {
       logger.error("Erro na rotina de lembretes:", error);
     }
