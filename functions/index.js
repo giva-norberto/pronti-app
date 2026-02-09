@@ -18,8 +18,10 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// CORREÇÃO FINAL: Usa o banco (default) na região southamerica-east1
-const db = admin.firestore(); 
+// ✅ CORREÇÃO: Conecta ao database "pronti-app" onde seus dados estão
+const db = admin.firestore();
+db.settings({ databaseId: 'pronti-app' });
+
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
