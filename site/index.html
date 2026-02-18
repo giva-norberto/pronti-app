@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Pronti - A plataforma completa de agendamento online para seu negócio. Simples, rápido e 100% online.">
-    <title>Pronti — Agendamento Online Simples e Poderoso</title>
+    <meta name="description" content="Pronti - Gestão inteligente para barbearias, salões e clínicas. Agendamento online, Clube de Assinaturas e IA de faturamento.">
+    <title>Pronti — Agendamento Online e Gestão Inteligente</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <style>
         :root {
@@ -17,6 +18,7 @@
             --text-main: #0f172a;
             --text-muted: #64748b;
             --white: #ffffff;
+            --success: #10b981;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,181 +58,114 @@
             justify-content: space-between;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .logo-icon {
             width: 36px; height: 36px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800;
         }
-
-        .logo-text {
-            font-weight: 800;
-            font-size: 22px;
-            color: white;
-            transition: color 0.3s;
-        }
-
+        .logo-text { font-weight: 800; font-size: 22px; color: white; transition: color 0.3s; }
         .header.scrolled .logo-text { color: var(--text-main); }
 
         .nav { display: none; gap: 32px; }
         @media (min-width: 768px) { .nav { display: flex; } }
-
-        .nav a {
-            font-size: 14px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.9);
-            text-decoration: none;
-            transition: 0.2s;
-        }
-
+        .nav a { font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.9); text-decoration: none; transition: 0.2s; }
         .header.scrolled .nav a { color: var(--text-muted); }
         .header.scrolled .nav a:hover { color: var(--primary); }
 
         .header-btn {
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            background: var(--white);
-            color: var(--primary);
-            transition: transform 0.2s, background 0.2s;
+            padding: 10px 20px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer;
+            background: var(--white); color: var(--primary); transition: 0.2s;
         }
-
-        .header.scrolled .header-btn {
-            background: var(--primary);
-            color: var(--white);
-        }
-
-        .header-btn:active { transform: scale(0.95); }
+        .header.scrolled .header-btn { background: var(--primary); color: var(--white); }
 
         /* HERO */
         .hero {
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #4f46e5 100%);
-            padding: 100px 24px 60px;
-            text-align: center;
-            color: white;
-            position: relative;
+            padding: 120px 24px 80px; text-align: center; color: white; position: relative;
         }
 
         .hero-content { max-width: 850px; z-index: 1; }
-
-        .hero h1 {
-            font-size: clamp(2.5rem, 8vw, 4.5rem);
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 24px;
-            letter-spacing: -0.03em;
-        }
-
+        .hero h1 { font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; line-height: 1.1; margin-bottom: 24px; letter-spacing: -0.03em; }
         .hero h1 span { color: #bfdbfe; }
-
-        .hero p {
-            font-size: clamp(1.1rem, 3vw, 1.4rem);
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 40px;
-            max-width: 650px;
-            margin-left: auto; margin-right: auto;
-        }
+        .hero p { font-size: clamp(1.1rem, 3vw, 1.4rem); color: rgba(255, 255, 255, 0.8); margin-bottom: 40px; max-width: 650px; margin: 0 auto 40px; }
 
         .btn-main {
-            padding: 18px 36px;
-            font-size: 18px;
-            font-weight: 700;
-            border-radius: 14px;
-            border: none;
-            cursor: pointer;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: var(--white);
-            color: var(--primary);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 18px 36px; font-size: 18px; font-weight: 700; border-radius: 14px; border: none; cursor: pointer;
+            transition: 0.3s; background: var(--white); color: var(--primary); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
-
         .btn-main:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); }
 
         /* STATS */
-        .stats { margin-top: -50px; padding: 0 20px; position: relative; z-index: 2; }
+        .stats { margin-top: -60px; padding: 0 20px; position: relative; z-index: 2; }
         .stats-grid {
-            max-width: 1100px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            gap: 20px;
+            max-width: 1100px; margin: 0 auto; background: white; border-radius: 24px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            padding: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); gap: 20px;
         }
-        .stat-item h3 { font-size: 2rem; color: var(--primary); }
-        .stat-item p { color: var(--text-muted); font-weight: 500; }
         .stat-item { text-align: center; }
+        .stat-item h3 { font-size: 2.2rem; color: var(--primary); font-weight: 800; }
+        .stat-item p { color: var(--text-muted); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
 
         /* SECTIONS */
         .section { padding: 100px 24px; max-width: 1200px; margin: 0 auto; }
         .section-header { text-align: center; margin-bottom: 60px; }
         .badge { 
-            background: #dbeafe; color: var(--primary); 
-            padding: 6px 14px; border-radius: 50px; 
+            background: #dbeafe; color: var(--primary); padding: 6px 16px; border-radius: 50px; 
             font-size: 13px; font-weight: 700; margin-bottom: 15px; display: inline-block;
         }
+        .section-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 15px; }
 
-        /* SEGMENTOS - FOCADO NO ATUAL */
-        .grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+        /* CARDS */
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card-feature {
+            background: white; padding: 40px; border-radius: 24px; border: 1px solid #e2e8f0; transition: 0.3s;
         }
+        .card-feature:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.05); border-color: var(--primary); }
+        .icon-box { font-size: 45px; margin-bottom: 25px; display: block; }
+        .card-feature h3 { font-size: 1.5rem; margin-bottom: 15px; color: var(--text-main); }
+        .card-feature p { color: var(--text-muted); font-size: 1rem; }
 
-        .card-seg {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            border: 1px solid #e2e8f0;
-            transition: 0.3s;
-            text-align: center;
+        /* CLUBE DE ASSINATURA */
+        .highlight-box {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white; border-radius: 32px; padding: 60px; display: flex; align-items: center; gap: 50px;
+            margin: 40px 0; flex-wrap: wrap;
         }
-
-        .card-seg:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-
-        .icon-box {
-            font-size: 40px;
-            margin-bottom: 20px;
-        }
+        .highlight-text { flex: 1; min-width: 300px; }
+        .highlight-text h2 { font-size: 2.5rem; margin-bottom: 20px; line-height: 1.2; }
+        .highlight-text h2 span { color: var(--success); }
+        .crown-icon { font-size: 80px; color: #facc15; }
 
         /* PREÇOS */
-        .pricing-card.highlight {
-            background: var(--primary);
-            color: white;
-            transform: scale(1.05);
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .price-card {
+            background: white; padding: 40px; border-radius: 24px; border: 1px solid #e2e8f0; position: relative;
+            display: flex; flex-direction: column;
         }
+        .price-card.popular { border: 2px solid var(--primary); }
+        .price-card.popular::before {
+            content: "MAIS ESCOLHIDO"; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            background: var(--primary); color: white; padding: 4px 15px; border-radius: 20px; font-size: 12px; font-weight: 800;
+        }
+        .price-value { font-size: 3rem; font-weight: 800; margin: 20px 0; color: var(--text-main); }
+        .price-value small { font-size: 1rem; color: var(--text-muted); }
+        .price-list { list-style: none; margin-bottom: 30px; flex-grow: 1; }
+        .price-list li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-weight: 500; }
+        .price-list li i { color: var(--success); }
 
-        /* CTA FINAL */
+        /* CTA BOX */
         .cta-box {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            padding: 80px 40px;
-            border-radius: 30px;
-            text-align: center;
-            color: white;
-            margin-top: 60px;
+            padding: 80px 40px; border-radius: 32px; text-align: center; color: white;
         }
 
         footer { text-align: center; padding: 60px 20px; color: var(--text-muted); border-top: 1px solid #e2e8f0; }
-
+        .footer-logo { font-weight: 800; font-size: 24px; color: var(--text-main); margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
@@ -242,20 +177,20 @@
                 <span class="logo-text">Pronti</span>
             </a>
             <nav class="nav">
-                <a href="#solucoes">Soluções</a>
+                <a href="#recursos">Recursos</a>
+                <a href="#clube">Clube VIP</a>
                 <a href="#precos">Preços</a>
-                <a href="#depoimentos">Depoimentos</a>
             </nav>
-            <button class="header-btn" onclick="criarConta()">Criar Agenda Grátis</button>
+            <button class="header-btn" onclick="criarConta()">Testar 14 Dias Grátis</button>
         </div>
     </header>
 
     <section class="hero">
         <div class="hero-content">
-            <div class="badge" style="background: rgba(255,255,255,0.2); color: white;">🚀 Agendamento Inteligente v2.0</div>
+            <div class="badge" style="background: rgba(255,255,255,0.2); color: white;">✨ Transforme seu negócio hoje</div>
             <h1>Seu agendamento na palma da mão, do jeito <span>Pronti</span></h1>
-            <p>A ferramenta que organiza sua agenda e automatiza seus atendimentos enquanto você foca no seu talento.</p>
-            <button class="btn-main" onclick="criarConta()">Começar Agora — É Grátis</button>
+            <p>O único sistema que cria seu App Próprio, gerencia seu Clube de Assinaturas e usa IA para aumentar seu faturamento.</p>
+            <button class="btn-main" onclick="criarConta()">Começar Teste Gratuito →</button>
         </div>
     </section>
 
@@ -263,117 +198,144 @@
         <div class="stats-grid">
             <div class="stat-item">
                 <h3>10k+</h3>
-                <p>Usuários Ativos</p>
+                <p>Empresas Ativas</p>
             </div>
             <div class="stat-item">
                 <h3>500k</h3>
-                <p>Agendamentos Realizados</p>
+                <p>Agendamentos/Mês</p>
+            </div>
+            <div class="stat-item">
+                <h3>R$ 0</h3>
+                <p>Custo de Instalação</p>
             </div>
             <div class="stat-item">
                 <h3>4.9/5</h3>
-                <p>Avaliação na Loja</p>
+                <p>Avaliação Média</p>
             </div>
         </div>
     </div>
 
-    <section class="section" id="solucoes">
+    <section class="section" id="recursos">
         <div class="section-header">
-            <span class="badge">Segmentos</span>
-            <h2>Feito para o seu negócio</h2>
-            <p>O Pronti se adapta à sua rotina e dos seus clientes.</p>
+            <span class="badge">Funcionalidades</span>
+            <h2 class="section-title">Tecnologia que trabalha por você</h2>
         </div>
-
         <div class="grid-cards">
-            <div class="card-seg">
-                <div class="icon-box">💇</div>
-                <h3>Beleza e Estética</h3>
-                <p>Salões, clínicas de estética e spas com gestão completa de serviços.</p>
-                <br>
-                <button class="header-btn" style="width:100%;" onclick="abrir('beleza')">Acessar Sistema</button>
+            <div class="card-feature">
+                <span class="icon-box">📱</span>
+                <h3>Seu App Exclusivo</h3>
+                <p>Instale o Pronti na tela inicial do seu celular e do seu cliente. Sua logo, sua marca, sua identidade visual (PWA).</p>
             </div>
-            <div class="card-seg">
-                <div class="icon-box">💈</div>
-                <h3>Barbearias</h3>
-                <p>Agilidade no corte e controle total da cadeira e comissões.</p>
-                <br>
-                <button class="header-btn" style="width:100%;" onclick="abrir('barbearia')">Acessar Sistema</button>
+            <div class="card-feature">
+                <span class="icon-box">📅</span>
+                <h3>Agenda Inteligente</h3>
+                <p>Cálculo automático de slots por duração de serviço e gestão de ausências. Sem horários duplicados.</p>
             </div>
-            <div class="card-seg">
-                <div class="icon-box">🏥</div>
-                <h3>Saúde</h3>
-                <p>Consultórios e profissionais liberais que buscam profissionalismo.</p>
-                <br>
-                <button class="header-btn" style="width:100%;" onclick="abrir('saude')">Acessar Sistema</button>
+            <div class="card-feature">
+                <span class="icon-box">⚡</span>
+                <h3>Preços Dinâmicos</h3>
+                <p>Crie promoções automáticas para dias de pouco movimento e lote sua agenda nas segundas e terças.</p>
+            </div>
+            <div class="card-feature">
+                <span class="icon-box">🤖</span>
+                <h3>Resumo Diário IA</h3>
+                <p>Receba todas as manhãs um insight de faturamento previsto, ocupação e sugestões para vender mais.</p>
+            </div>
+            <div class="card-feature">
+                <span class="icon-box">🔔</span>
+                <h3>Notificações Push</h3>
+                <p>Avisos sonoros e visuais instantâneos a cada novo agendamento. Você nunca mais perde o horário.</p>
+            </div>
+            <div class="card-feature">
+                <span class="icon-box">🔐</span>
+                <h3>Gestão de Equipe</h3>
+                <p>Níveis de acesso para sócios e funcionários. Proteja seus dados financeiros com total segurança.</p>
             </div>
         </div>
     </section>
 
-    <section class="section" style="background: white;" id="precos">
-        <div class="section-header">
-            <span class="badge">Planos</span>
-            <h2>Preços transparentes</h2>
-        </div>
-
-        <div class="grid-cards">
-            <div class="card-seg">
-                <h3>Iniciante</h3>
-                <p>Para quem está começando</p>
-                <h2 style="font-size: 2.5rem; margin: 20px 0;">Grátis</h2>
-                <ul style="text-align: left; list-style: none; margin-bottom: 20px;">
-                    <li>✓ 1 Profissional</li>
-                    <li>✓ Link Personalizado</li>
-                    <li>✓ Agenda 24h</li>
-                </ul>
-                <button class="header-btn" style="width:100%" onclick="criarConta()">Cadastrar</button>
+    <section class="section" id="clube">
+        <div class="highlight-box">
+            <div class="highlight-text">
+                <span class="badge" style="background: var(--success); color: white;">DIFERENCIAL ÚNICO</span>
+                <h2>Crie seu próprio <span>Clube de Assinaturas</span></h2>
+                <p>Fidelize seus clientes com planos mensais. O Pronti gerencia os créditos, cobra automaticamente e libera o agendamento VIP por R$ 0,00.</p>
+                <br>
+                <button class="header-btn" onclick="criarConta()">Quero criar meu Clube VIP</button>
             </div>
+            <div class="crown-icon">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+        </div>
+    </section>
 
-            <div class="card-seg" style="background: var(--primary); color: white;">
-                <h3>Profissional</h3>
-                <p style="color: #bfdbfe;">O mais escolhido</p>
-                <h2 style="font-size: 2.5rem; margin: 20px 0;">R$ 49<small>/mês</small></h2>
-                <ul style="text-align: left; list-style: none; margin-bottom: 20px;">
-                    <li>✓ Profissionais Ilimitados</li>
-                    <li>✓ Lembretes WhatsApp</li>
-                    <li>✓ Relatórios Financeiros</li>
+    <section class="section" id="precos">
+        <div class="section-header">
+            <span class="badge">Investimento</span>
+            <h2 class="section-title">O preço mais justo do mercado</h2>
+            <p>Pague apenas pelo tamanho da sua equipe. Teste tudo por 14 dias.</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h3>Iniciante</h3>
+                <div class="price-value">Grátis</div>
+                <ul class="price-list">
+                    <li><i class="fa-solid fa-check"></i> 1 Profissional</li>
+                    <li><i class="fa-solid fa-check"></i> Link de Agendamento</li>
+                    <li><i class="fa-solid fa-check"></i> Suporte por E-mail</li>
                 </ul>
-                <button class="btn-main" style="width:100%; color: var(--primary)" onclick="criarConta()">Assinar Agora</button>
+                <button class="header-btn" style="border: 1px solid #ddd;" onclick="criarConta()">Começar Grátis</button>
+            </div>
+            <div class="price-card popular">
+                <h3>Profissional</h3>
+                <div class="price-value">R$ 29,90<small>/mês</small></div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: -15px;">VALOR POR PROFISSIONAL</p>
+                <ul class="price-list" style="margin-top: 20px;">
+                    <li><i class="fa-solid fa-check"></i> Clube de Assinaturas</li>
+                    <li><i class="fa-solid fa-check"></i> Promoções Automáticas</li>
+                    <li><i class="fa-solid fa-check"></i> Inteligência de Resumo</li>
+                    <li><i class="fa-solid fa-check"></i> App PWA Instalável</li>
+                    <li><i class="fa-solid fa-check"></i> Notificações Sonoras</li>
+                </ul>
+                <button class="btn-main" style="width: 100%; font-size: 16px;" onclick="criarConta()">Testar 14 Dias Grátis</button>
+            </div>
+            <div class="price-card">
+                <h3>Corporativo</h3>
+                <div class="price-value">Consultar</div>
+                <ul class="price-list">
+                    <li><i class="fa-solid fa-check"></i> Múltiplas Unidades</li>
+                    <li><i class="fa-solid fa-check"></i> Gerente de Conta</li>
+                    <li><i class="fa-solid fa-check"></i> API de Integração</li>
+                </ul>
+                <button class="header-btn" style="border: 1px solid #ddd;" onclick="criarConta()">Falar com Consultor</button>
             </div>
         </div>
     </section>
 
     <section class="section">
         <div class="cta-box">
-            <h2>Pronto para profissionalizar sua agenda?</h2>
-            <p>Cadastre-se hoje e ganhe 15 dias de recursos premium para testar.</p>
+            <h2>Pare de perder tempo com agendas de papel</h2>
+            <p>Junte-se a milhares de empreendedores que profissionalizaram sua gestão com o Pronti.</p>
             <br>
-            <button class="btn-main" onclick="criarConta()">Criar Minha Conta Grátis</button>
+            <button class="btn-main" onclick="criarConta()">Criar Minha Agenda Agora</button>
+            <p style="margin-top: 15px; font-size: 14px; opacity: 0.8;">Sem cartão de crédito. Cancelamento a qualquer momento.</p>
         </div>
     </section>
 
     <footer>
-        <div class="logo" style="justify-content: center; margin-bottom: 20px;">
-            <div class="logo-icon">P</div>
-            <span class="logo-text" style="color: var(--text-main)">Pronti</span>
-        </div>
+        <span class="footer-logo">Pronti</span>
         <p>© 2026 Pronti — Desenvolvido por Givanildo Silva em Contagem/MG</p>
+        <div style="margin-top: 20px; font-size: 20px; display: flex; justify-content: center; gap: 20px;">
+            <i class="fa-brands fa-instagram"></i>
+            <i class="fa-brands fa-whatsapp"></i>
+        </div>
     </footer>
 
     <script>
-        // Header Effect
         window.addEventListener('scroll', () => {
             const header = document.getElementById('header');
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
-            }
+            header.classList.toggle('scrolled', window.scrollY > 50);
         });
-
-        // Navigation
-        function abrir(segmento) {
-            // Como você usa o app principal hoje, redirecionamos para a Home com o contexto
-            window.location.href = "https://prontiapp.com.br/?ref=" + segmento;
-        }
 
         function criarConta() {
             window.location.href = "https://prontiapp.com.br/cadastro";
