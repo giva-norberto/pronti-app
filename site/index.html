@@ -1,296 +1,232 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Pronti - A plataforma completa de agendamento online para seu negócio. Simples, rápido e 100% online.">
 
 <title>Pronti — Plataforma de Agendamento Online</title>
 
+<meta name="description" content="Agendamento online simples, rápido e profissional. Organize sua agenda, equipe e clientes em um só lugar com a Pronti.">
+
+<meta property="og:title" content="Pronti — Plataforma de Agendamento Online">
+<meta property="og:description" content="Organize sua agenda, equipe e clientes em um só lugar.">
+<meta property="og:url" content="https://prontiapp.com.br/site/">
+<meta property="og:type" content="website">
+
+<link rel="icon" href="/favicon.ico">
+
 <style>
-/* RESET E BASE */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
 }
 
-body{
-    background:#f8fafc;
-    color:#334155;
+body {
+    background: linear-gradient(135deg, #1e66ff, #0040c1);
+    color: #333;
     line-height: 1.6;
 }
 
-/* HERO */
-.hero{
-    background: linear-gradient(135deg, #1e66ff, #6ea8ff);
+.hero {
+    padding: 100px 20px;
+    text-align: center;
     color: white;
-    padding: 80px 20px;
-    text-align: center;
 }
 
-.hero h1{
-    font-size: clamp(2.5rem, 8vw, 3.5rem); /* Responsivo */
-    font-weight: 800;
-    margin-bottom: 15px;
-    letter-spacing: -1px;
-}
-
-.hero p{
-    font-size: clamp(1.1rem, 4vw, 1.4rem);
-    opacity: 0.9;
-    max-width: 700px;
-    margin: 0 auto;
-}
-
-/* CONTAINER PRINCIPAL */
-.container{
-    max-width: 1100px;
-    margin: auto;
-    padding: 40px 20px;
-}
-
-.card{
-    background: white;
-    border-radius: 20px;
-    padding: 40px 30px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-    margin-bottom: 50px;
-    margin-top: -60px; /* Sobrepõe levemente o hero */
-}
-
-.card h2{
-    text-align: center;
-    margin-bottom: 35px;
-    color: #1e293b;
-    font-size: 1.8rem;
-}
-
-/* APPS GRID */
-.apps{
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 25px;
-}
-
-.app{
-    border: 2px solid #f1f5f9;
-    padding: 30px 20px;
-    border-radius: 16px;
-    text-align: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.app:hover{
-    transform: translateY(-8px);
-    border-color: #1e66ff;
-    box-shadow: 0 15px 30px rgba(30, 102, 255, 0.1);
-}
-
-.app h3{
-    font-size: 1.3rem;
-    margin-bottom: 10px;
-}
-
-.app p{
-    font-size: 0.95rem;
-    color: #64748b;
+.hero h1 {
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 700;
     margin-bottom: 20px;
 }
 
-.app button{
-    background: #f1f5f9;
-    color: #1e66ff;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: 0.2s;
+.hero p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+    max-width: 600px;
+    margin: auto;
 }
 
-.app:hover button{
+.cta-btn {
+    margin-top: 30px;
+    padding: 15px 30px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: white;
+    color: #1e66ff;
+    font-weight: 600;
+    transition: 0.3s ease;
+}
+
+.cta-btn:hover {
+    transform: translateY(-3px);
+    background: #f2f6ff;
+}
+
+.section {
+    background: white;
+    padding: 80px 20px;
+}
+
+.section h2 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 2rem;
+}
+
+.apps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+.app {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid #eee;
+    padding: 25px;
+    border-radius: 12px;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.app:hover {
+    border-color: #1e66ff;
+    transform: translateY(-8px);
+}
+
+.app h3 {
+    margin-bottom: 10px;
+}
+
+.app p {
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.app button {
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
     background: #1e66ff;
     color: white;
-}
-
-/* FUNCIONALIDADES */
-.features-title {
-    text-align: center;
-    margin: 40px 0 30px;
-    font-size: 2rem;
-    color: #1e293b;
-}
-
-.features{
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-}
-
-.feature{
-    background: white;
-    padding: 30px;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-.feature h3{
-    margin-bottom: 12px;
-    color: #1e66ff;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.feature p{
-    color: #64748b;
-    font-size: 1rem;
-}
-
-/* CTA */
-.cta{
-    text-align: center;
-    background: linear-gradient(135deg, #1e66ff, #6ea8ff);
-    color: white;
-    padding: 60px 20px;
-    border-radius: 20px;
-    margin-top: 60px;
-}
-
-.cta h2 { font-size: 2rem; margin-bottom: 10px; }
-
-.cta button{
-    margin-top: 25px;
-    background: white;
-    color: #1e66ff;
-    border: none;
-    padding: 18px 40px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    border-radius: 12px;
     cursor: pointer;
-    transition: 0.3s;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    transition: 0.3s ease;
 }
 
-.cta button:hover{
-    transform: scale(1.05);
-    box-shadow: 0 15px 25px rgba(0,0,0,0.15);
+.app button:hover {
+    background: #0040c1;
 }
 
-/* FOOTER */
-footer{
+.features {
+    max-width: 900px;
+    margin: auto;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.feature {
+    background: #f8f9ff;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.feature h4 {
+    margin-bottom: 10px;
+    color: #1e66ff;
+}
+
+.footer {
     text-align: center;
-    padding: 40px;
-    color: #94a3b8;
+    padding: 30px;
     font-size: 0.9rem;
+    color: white;
 }
-
 </style>
 </head>
+
 <body>
 
 <section class="hero">
-    <h1>PRONTI</h1>
-    <p>A plataforma completa de agendamento online para transformar a gestão do seu negócio.</p>
+    <h1>Agendamento Online Simples e Profissional</h1>
+    <p>Organize sua agenda, equipe e clientes em um só lugar com a Pronti.</p>
+    <button class="cta-btn" onclick="irParaSistema()" aria-label="Acessar sistema Pronti">
+        Acessar Pronti
+    </button>
 </section>
 
-<div class="container">
-    
-    <div class="card">
-        <h2>Escolha o seu segmento</h2>
-        <div class="apps">
-            <div class="app">
-                <div>
-                    <h3>🐶 Pronti Pet</h3>
-                    <p>Pet shops e clínicas veterinárias</p>
-                </div>
-                <button onclick="abrir('pet')">Abrir Sistema</button>
+<section class="section">
+    <h2>Ideal Para</h2>
+    <div class="apps">
+        <div class="app">
+            <div>
+                <h3>🐾 Pet Shop</h3>
+                <p>Banho, tosa e serviços veterinários organizados em poucos cliques.</p>
             </div>
+            <button onclick="irParaSistema()">Começar</button>
+        </div>
 
-            <div class="app">
-                <div>
-                    <h3>💇 Pronti Beleza</h3>
-                    <p>Salões de beleza e estética</p>
-                </div>
-                <button onclick="abrir('beleza')">Abrir Sistema</button>
+        <div class="app">
+            <div>
+                <h3>💇 Salão de Beleza</h3>
+                <p>Controle horários de cabeleireiros e esteticistas facilmente.</p>
             </div>
+            <button onclick="irParaSistema()">Começar</button>
+        </div>
 
-            <div class="app">
-                <div>
-                    <h3>💈 Pronti Barbearia</h3>
-                    <p>Barbearias profissionais</p>
-                </div>
-                <button onclick="abrir('barbearia')">Abrir Sistema</button>
+        <div class="app">
+            <div>
+                <h3>🏥 Clínicas e Profissionais</h3>
+                <p>Organize consultas, atendimentos e agenda da sua equipe.</p>
             </div>
-
-            <div class="app">
-                <div>
-                    <h3>🏥 Pronti Clínica</h3>
-                    <p>Clínicas e profissionais de saúde</p>
-                </div>
-                <button onclick="abrir('clinica')">Abrir Sistema</button>
-            </div>
+            <button onclick="irParaSistema()">Começar</button>
         </div>
     </div>
+</section>
 
-    <h2 class="features-title">Por que escolher o Pronti?</h2>
+<section class="section">
+    <h2>Funcionalidades</h2>
     <div class="features">
         <div class="feature">
-            <h3>📅 Agendamento 24h</h3>
-            <p>Seus clientes marcam horários sozinhos, mesmo de madrugada ou em feriados.</p>
+            <h4>Agenda Online</h4>
+            <p>Clientes agendam sozinhos, sem precisar ligar ou mandar mensagem.</p>
         </div>
+
         <div class="feature">
-            <h3>👥 Gestão de Equipa</h3>
-            <p>Controle as agendas de todos os colaboradores num único painel intuitivo.</p>
+            <h4>Controle de Equipe</h4>
+            <p>Gerencie horários individuais de cada profissional.</p>
         </div>
+
         <div class="feature">
-            <h3>🔗 Link Exclusivo</h3>
-            <p>Tenha uma página personalizada para divulgar no seu Instagram ou WhatsApp.</p>
+            <h4>Vitrine Personalizada</h4>
+            <p>Cada empresa possui seu próprio link de agendamento.</p>
         </div>
+
         <div class="feature">
-            <h3>📱 Web App</h3>
-            <p>Interface otimizada para telemóveis. Rápido, leve e sem ocupar espaço.</p>
-        </div>
-        <div class="feature">
-            <h3>⚡ Performance</h3>
-            <p>Carregamento instantâneo para não deixar o seu cliente à espera.</p>
-        </div>
-        <div class="feature">
-            <h3>☁️ Cloud Sync</h3>
-            <p>Os seus dados estão seguros e acessíveis de qualquer dispositivo com internet.</p>
+            <h4>Painel Administrativo</h4>
+            <p>Visualize, edite e organize todos os agendamentos em um só lugar.</p>
         </div>
     </div>
+</section>
 
-    <div class="cta">
-        <h2>Crie a sua agenda grátis agora</h2>
-        <p>Configuração rápida em menos de 1 minuto.</p>
-        <button onclick="criarConta()">
-            Começar Agora Grátis
-        </button>
-    </div>
-
-</div>
-
-<footer>
-    © 2026 Pronti — Soluções Inteligentes de Agendamento
+<footer class="footer">
+    © <span id="year"></span> Pronti — Soluções Inteligentes de Agendamento
 </footer>
 
 <script>
-function abrir(tipo){
-    // Redireciona passando o tipo como parâmetro para personalizar a experiência
-    window.location.href = "https://prontiapp.com.br/?segmento=" + tipo;
+function irParaSistema() {
+    window.location.href = "https://prontiapp.com.br/";
 }
 
-function criarConta(){
-    window.location.href = "https://prontiapp.com.br/cadastro";
-}
+document.getElementById("year").textContent = new Date().getFullYear();
 </script>
 
 </body>
