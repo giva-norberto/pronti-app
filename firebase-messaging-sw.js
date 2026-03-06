@@ -1,90 +1,124 @@
 // ======================================================================
-// firebase-messaging-sw.js  (para Firebase v10.x)
-// REVISADO: storageBucket corrigido para corresponder ao firebase-config.js
+// firebase-messaging-sw.js  (Firebase v10.x)
+// PRONTI APP - Push Notifications
 // ======================================================================
 
-// Importa a versão compatível para Service Worker
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js' );
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js' );
+// Firebase compat para Service Worker
+importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
 
-// === Configuração do Firebase (AGORA IDÊNTICA ao firebase-config.js) ===
+// --------------------------------------------------
+// CONFIG FIREBASE (mesma do firebase-config.js)
+// --------------------------------------------------
 firebase.initializeApp({
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  // ✅ CORRIGIDO: Usando .firebasestorage.app para consistência
-  storageBucket: "pronti-app-37c6e.firebasestorage.app", 
+  storageBucket: "pronti-app-37c6e.firebasestorage.app",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 });
 
-// === Inicializa o Messaging ===
+// --------------------------------------------------
+// MESSAGING
+// --------------------------------------------------
 const messaging = firebase.messaging();
 
-// === Recebe mensagens em segundo plano ===
-messaging.onBackgroundMessage(function (payload) {
-  console.log('[firebase-messaging-sw.js] Mensagem em segundo plano recebida:', payload);
+// --------------------------------------------------
+// RECEBE PUSH COM APP FECHADO
+// --------------------------------------------------
+messaging.onBackgroundMessage(function(payload) {
 
-  const notificationTitle = payload.notification?.title || payload.data?.title || 'Novo Agendamento';
-  const notificationOptions = {
-    body: payload.notification?.body || payload.data?.body || 'Você tem um novo agendamento!',
-    icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
-    image: payload.notification?.image || payload.data?.image,
-    badge: '/badge.png',
-    tag: `agendamento-${payload.data?.bilheteId || Date.now()}`, // Tag dinâmica evita sobrescrever notificações
-    requireInteraction: true, // Mantém a notificação visível até o usuário interagir
+  console.log("[Firebase SW] Push recebido:", payload);
+
+  const data = payload.data || {};
+  const notification = payload.notification || {};
+
+  const title =
+    notification.title ||
+    data.title ||
+    "Novo Agendamento";
+
+  const options = {
+    body:
+      notification.body ||
+      data.body ||
+      "Você tem um novo agendamento!",
+
+    icon: notification.icon || data.icon || "/icon.png",
+
+    image: notification.image || data.image,
+
+    badge: "/badge.png",
+
+    tag: `agendamento-${data.bilheteId || Date.now()}`,
+
+    requireInteraction: true,
+
     actions: [
       {
-        action: 'view',
-        title: 'Ver Agendamento'
+        action: "view",
+        title: "Ver Agendamento"
       },
       {
-        action: 'dismiss',
-        title: 'Dispensar'
+        action: "dismiss",
+        title: "Dispensar"
       }
     ],
-    data: payload.data // preserva dados para uso posterior
+
+    data: data
   };
 
-  // Exibe a notificação usando a API de Service Worker
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  self.registration.showNotification(title, options);
+
 });
 
-// === Clique na notificação ===
-self.addEventListener('notificationclick', function (event) {
-  console.log('[firebase-messaging-sw.js] Notificação clicada. Ação:', event.action);
+// --------------------------------------------------
+// CLICK NA NOTIFICAÇÃO
+// --------------------------------------------------
+self.addEventListener("notificationclick", function(event) {
 
-  // Fecha a notificação após o clique
+  console.log("[Firebase SW] Clique na notificação:", event.action);
+
   event.notification.close();
 
-  // Lógica para diferentes ações de clique
-  if (event.action === 'view') {
-    // Abre a página de agendamentos em uma nova aba/janela
+  if (event.action === "view") {
+
     event.waitUntil(
-      clients.openWindow('https://prontiapp.com.br/agendamentos' )
+      clients.openWindow("https://prontiapp.com.br/agendamentos")
     );
-  } else if (event.action === 'dismiss') {
-    // Nenhuma ação adicional, a notificação já foi fechada
-    console.log('[firebase-messaging-sw.js] Notificação dispensada.');
+
     return;
-  } else {
-    // Comportamento padrão: abre a página inicial do aplicativo
-    event.waitUntil(
-      clients.openWindow('https://prontiapp.com.br/' )
-    );
   }
+
+  if (event.action === "dismiss") {
+    return;
+  }
+
+  event.waitUntil(
+    clients.openWindow("https://prontiapp.com.br/")
+  );
+
 });
 
-// === Instalação do Service Worker ===
-self.addEventListener('install', function(event) {
-  console.log('[firebase-messaging-sw.js] Service Worker instalado.');
-  // Força a ativação do novo Service Worker imediatamente, sem esperar o fechamento de abas antigas.
+// --------------------------------------------------
+// INSTALL
+// --------------------------------------------------
+self.addEventListener("install", function(event) {
+
+  console.log("[Firebase SW] instalado");
+
   self.skipWaiting();
+
 });
 
-// === Ativação do Service Worker ===
-self.addEventListener('activate', function(event) {
-  console.log('[firebase-messaging-sw.js] Service Worker ativado.');
-  // Assume o controle de todas as abas abertas que estão no escopo do Service Worker.
+// --------------------------------------------------
+// ACTIVATE
+// --------------------------------------------------
+self.addEventListener("activate", function(event) {
+
+  console.log("[Firebase SW] ativado");
+
   event.waitUntil(self.clients.claim());
+
 });
