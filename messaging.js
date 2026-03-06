@@ -3,12 +3,18 @@
 // ✅ VERSÃO INTEGRAL MANTIDA - Sem remoção de funcionalidades
 // ✅ AJUSTE MÍNIMO: usar o Service Worker ATIVO do app (PWA) para gerar token e gravar no Firebase
 //    (evita conflito com service-worker.js no app instalado; mantém todo o resto igual)
+//
+// ✅ CORREÇÕES CIRÚRGICAS (sem mudar a lógica existente):
+//  1) Imports com caminho ABSOLUTO para funcionar em qualquer página (vitrine/painel)
+//  2) window.solicitarPermissaoParaNotificacoes agora aceita (userId, empresaId) opcionais,
+//     para a VITRINE conseguir salvar token sem depender do verificarAcesso().
+//     Se não vierem params, mantém o comportamento antigo usando verificarAcesso().
 // ======================================================================
 
-import { app, db } from './firebase-config.js';
+import { app, db } from '/firebase-config.js';
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { verificarAcesso } from './userService.js';
+import { verificarAcesso } from '/userService.js';
 
 // --- INÍCIO DA MELHORIA DE ÁUDIO ---
 let audioUnlocked = false;
@@ -212,7 +218,8 @@ class MessagingService {
 // --- INSTÂNCIA GLOBAL ---
 window.messagingService = new MessagingService();
 
-window.solicitarPermissaoParaNotificacoes = async function() {
+// ✅ CORREÇÃO CIRÚRGICA: aceita params opcionais (vitrine passa) e mantém fallback (painel)
+window.solicitarPermissaoParaNotificacoes = async function(userIdParam = null, empresaIdParam = null) {
   unlockAudio();
   const ok = await window.messagingService.initialize();
   if (ok) {
@@ -222,13 +229,22 @@ window.solicitarPermissaoParaNotificacoes = async function() {
         const btn = document.querySelector('.notification-button');
         if (btn) btn.style.display = 'none';
       }
-      const sessionProfile = await verificarAcesso();
-      if (!sessionProfile || !sessionProfile.user || !sessionProfile.empresaId) {
-        console.error('[messaging.js] Perfil inválido. Não foi possível salvar o token.');
-        return;
+
+      // 1) tenta usar parâmetros (ideal para vitrine/agendamento)
+      let userId = userIdParam;
+      let empresaId = empresaIdParam;
+
+      // 2) fallback antigo (painel): usa verificarAcesso()
+      if (!userId || !empresaId) {
+        const sessionProfile = await verificarAcesso();
+        if (!sessionProfile || !sessionProfile.user || !sessionProfile.empresaId) {
+          console.error('[messaging.js] Perfil inválido. Não foi possível salvar o token.');
+          return;
+        }
+        userId = sessionProfile.user.uid;
+        empresaId = sessionProfile.empresaId;
       }
-      const userId = sessionProfile.user.uid;
-      const empresaId = sessionProfile.empresaId;
+
       await window.messagingService.sendTokenToServer(userId, empresaId);
       iniciarOuvinteDeNotificacoes(userId);
     } catch (e) {
