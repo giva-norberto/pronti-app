@@ -10,6 +10,7 @@
   - ✅ Adicionado: verificação da assinatura do cliente APENAS para ajuste do preço cobrado do serviço (não bloqueia agendamento)
   - ✅ Adicionada função enviarEmailViaPHP(...) como utilitário; chamada ao envio foi alterada para usá‑la em background,
     mantendo todo o restante da lógica exatamente igual.
+  - ✅ Adicionado: Chamada ao serviço de notificações no ato do salvamento para geração do token FCM.
 */
 
 import { db } from './vitrini-firebase.js';
@@ -312,6 +313,12 @@ async function enviarEmailViaPHP(agendamento, currentUser) {
 // ======================================================================
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
+        // --- 🚀 NOVO: GARANTE GERAÇÃO DO TOKEN NO ATO DO AGENDAMENTO ---
+        if (window.solicitarPermissaoParaNotificacoes) {
+            console.log("🔔 Solicitando/Atualizando token de notificação antes de salvar...");
+            await window.solicitarPermissaoParaNotificacoes();
+        }
+
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
 
         const precoOriginal = agendamento?.servico?.precoOriginal != null
