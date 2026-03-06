@@ -1,12 +1,12 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
-// ✅ REVISADO E CORRIGIDO PARA iOS/Android/Desktop
-// ✅ CORREÇÃO: Removido updateDoc para não competir com Cloud Function
+// ✅ VERSÃO INTEGRAL MANTIDA - Sem remoção de funcionalidades
+// ✅ CORREÇÃO: Registro focado no Service Worker do Firebase
 // ======================================================================
 
 import { app, db } from './firebase-config.js';
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-import { doc, setDoc, collection, addDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { verificarAcesso } from './userService.js';
 
 // --- INÍCIO DA MELHORIA DE ÁUDIO ---
@@ -52,11 +52,15 @@ class MessagingService {
         console.warn('[messaging.js] Permissão negada pelo usuário.');
         return false;
       }
+
+      // Registro explícito do Service Worker do Firebase para evitar conflitos
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       console.log('[DEBUG][messaging.js] Service Worker ÚNICO (Cache+Push) registrado:', registration);
+      
       await this.waitForServiceWorker(registration);
       await this.getMessagingToken(registration);
       this.setupForegroundMessageListener();
+      
       console.log('[DEBUG][messaging.js] Serviço de Messaging inicializado com sucesso!');
       return true;
     } catch (error) {
@@ -205,7 +209,8 @@ window.solicitarPermissaoParaNotificacoes = async function() {
     try {
       if (window.mostrarMensagemNotificacao) {
         window.mostrarMensagemNotificacao('Notificações ativas!', 'success');
-        document.querySelector('.notification-button').style.display = 'none';
+        const btn = document.querySelector('.notification-button');
+        if (btn) btn.style.display = 'none';
       }
       const sessionProfile = await verificarAcesso();
       if (!sessionProfile || !sessionProfile.user || !sessionProfile.empresaId) {
@@ -250,7 +255,6 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
         const bilheteId = change.doc.id;
         console.log("✅ [Ouvinte] Novo bilhete recebido:", bilhete);
 
-        // ✅ Exibe notificação local (som + visual) quando app está aberto
         if (window.messagingService) {
           const payload = {
             data: {
@@ -262,7 +266,6 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
           console.log("✅ [Ouvinte] Notificação local exibida com som.");
         }
 
-        // ✅ Disparo de e-mail (mantido)
         const clienteNome = bilhete.clienteNome || bilhete.nomeCliente || bilhete.template?.data?.nomeCliente || null;
         const servico = bilhete.servico || bilhete.servicoNome || bilhete.template?.data?.servicoNome || null;
         const horario = bilhete.horario || bilhete.horarioAgendamento || bilhete.template?.data?.horarioAgendamento || null;
@@ -280,10 +283,7 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
             .catch(err => console.error("❌ Erro ao disparar e-mail:", err));
         }
 
-        // ✅ CORREÇÃO: NÃO marca como "processado" aqui.
-        // A Cloud Function enviarNotificacaoFCM é responsável por:
-        //   1. Enviar o push via FCM (funciona mesmo com app fechado)
-        //   2. Marcar como "processado"
+        // Importante: Mantivemos o log de correção para a Cloud Function
         console.log(`[Ouvinte] Bilhete ${bilheteId} será processado pela Cloud Function.`);
       }
     });
