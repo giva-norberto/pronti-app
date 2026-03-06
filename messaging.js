@@ -1,7 +1,8 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
 // ✅ VERSÃO INTEGRAL MANTIDA - Sem remoção de funcionalidades
-// ✅ CORREÇÃO: Registro focado no Service Worker do Firebase
+// ✅ AJUSTE MÍNIMO: usar o Service Worker ATIVO do app (PWA) para gerar token e gravar no Firebase
+//    (evita conflito com service-worker.js no app instalado; mantém todo o resto igual)
 // ======================================================================
 
 import { app, db } from './firebase-config.js';
@@ -53,14 +54,23 @@ class MessagingService {
         return false;
       }
 
-      // Registro explícito do Service Worker do Firebase para evitar conflitos
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      console.log('[DEBUG][messaging.js] Service Worker ÚNICO (Cache+Push) registrado:', registration);
-      
-      await this.waitForServiceWorker(registration);
+      // ✅ AJUSTE MÍNIMO:
+      // Em PWA instalado, o Service Worker que controla a página é o service-worker.js do app.
+      // Registrar um segundo SW (/firebase-messaging-sw.js) costuma causar token null.
+      // Então usamos o SW ativo/ready para gerar o token e salvar no Firebase.
+      const registration = await navigator.serviceWorker.ready;
+      console.log('[DEBUG][messaging.js] Usando Service Worker ativo (ready):', registration);
+
       await this.getMessagingToken(registration);
+
+      // ✅ AJUSTE MÍNIMO: não considerar sucesso se não obteve token (evita "Notificações ativas!" sem gravar)
+      if (!this.token) {
+        console.warn('[messaging.js] initialize: token não foi obtido (null).');
+        return false;
+      }
+
       this.setupForegroundMessageListener();
-      
+
       console.log('[DEBUG][messaging.js] Serviço de Messaging inicializado com sucesso!');
       return true;
     } catch (error) {
