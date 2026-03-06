@@ -52,7 +52,7 @@ class MessagingService {
         console.warn('[messaging.js] Permissão negada pelo usuário.');
         return false;
       }
-      const registration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       console.log('[DEBUG][messaging.js] Service Worker ÚNICO (Cache+Push) registrado:', registration);
       await this.waitForServiceWorker(registration);
       await this.getMessagingToken(registration);
