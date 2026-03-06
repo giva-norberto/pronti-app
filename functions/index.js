@@ -1,27 +1,25 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO ATUALIZADA: uso consistente de logger, inicialização do admin com projectId.
+ * VERSÃO CORRIGIDA: getFirestore com databaseId, trigger com database explícito.
  */
 
 // ============================ Imports principais ==============================
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const logger = require("firebase-functions/logger"); // logger compatível com v2
+const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
 // ========================= Inicialização do Firebase ==========================
-// Garanta que o Admin SDK inicialize corretamente.
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// ✅ CORREÇÃO: Conecta ao database "pronti-app" onde seus dados estão
-const db = admin.firestore();
-db.settings({ databaseId: 'pronti-app' });
-
+// ✅ CORREÇÃO: Usar getFirestore com databaseId explícito
+const db = getFirestore("pronti-app");
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
@@ -241,12 +239,13 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO (ATIVADA E PREENCHIDA)
+// FUNÇÃO DE NOTIFICAÇÃO — CORRIGIDA
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
     region: "southamerica-east1",
+    database: "pronti-app",  // ✅ CORREÇÃO CRÍTICA: escutar o database correto
   },
   async (event) => {
     const bilhete = event.data && event.data.data ? event.data.data() : null;
@@ -273,6 +272,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 
     logger.log(`Processando notificação para o dono: ${donoId}`);
 
+    // ✅ Usa a instância db correta (já conectada ao database 'pronti-app')
     const tokenRef = db.collection("mensagensTokens").doc(donoId);
     const tokenSnap = await tokenRef.get();
 
@@ -283,7 +283,9 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 
     const fcmToken = tokenSnap.data().fcmToken;
 
+    // ✅ Payload correto para admin.messaging().send()
     const payload = {
+      token: fcmToken,
       notification: {
         title: titulo,
         body: mensagem,
@@ -297,7 +299,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
           link: "https://prontiapp.com.br/agenda.html",
         },
       },
-      token: fcmToken,
     };
 
     try {
@@ -316,7 +317,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 );
 
 // ============================================================================
-// NOVA FUNÇÃO: rotinaLembreteAgendamento (SNIPER PARA CONTAGEM-MG)
+// rotinaLembreteAgendamento
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -348,6 +349,7 @@ exports.rotinaLembreteAgendamento = onSchedule(
 
         if (tokenSnap.exists && tokenSnap.data().fcmToken) {
           await fcm.send({
+            token: tokenSnap.data().fcmToken,
             notification: {
               title: "Lembrete Pronti ⏰",
               body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto}).`,
@@ -360,7 +362,6 @@ exports.rotinaLembreteAgendamento = onSchedule(
                 link: "https://prontiapp.com.br/agenda.html"
               }
             },
-            token: tokenSnap.data().fcmToken,
           });
           logger.info(`✅ Lembrete enviado para cliente ${lembrete.clienteId}`);
         } else {
