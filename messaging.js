@@ -9,33 +9,11 @@
 //  2) window.solicitarPermissaoParaNotificacoes agora aceita (userId, empresaId) opcionais,
 //     para a VITRINE conseguir salvar token sem depender do verificarAcesso().
 //     Se não vierem params, mantém o comportamento antigo usando verificarAcesso().
-//
-// ✅ MELHORIAS SOLICITADAS (sem mudar nada a mais):
-//  3) Salvar 1 token por APARELHO/NAVEGADOR (multi-dispositivo) em subcoleção:
-//       mensagensTokens/{userId}/tokens/{deviceId}
-//     - Mantém compatibilidade: ainda grava também o "último token" em mensagensTokens/{userId}
-//       para não quebrar seu backend atual.
-//  4) deviceId persistente em localStorage (1 por navegador/perfil)
-//  5) updatedAt usando serverTimestamp() (mais consistente)
-//
-// OBS IMPORTANTE:
-// - Para o backend passar a enviar para TODOS os aparelhos, ele deve ler a subcoleção tokens.
-// - Enquanto isso, como mantemos o fcmToken no doc raiz, nada quebra.
 // ======================================================================
 
 import { app, db } from '/firebase-config.js';
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-import {
-  doc,
-  setDoc,
-  collection,
-  addDoc,
-  query,
-  where,
-  onSnapshot,
-  updateDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { verificarAcesso } from '/userService.js';
 
 // --- INÍCIO DA MELHORIA DE ÁUDIO ---
@@ -67,29 +45,6 @@ class MessagingService {
     this.token = null;
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
-  }
-
-  // ✅ MELHORIA: deviceId persistente (1 por navegador/perfil)
-  getOrCreateDeviceId() {
-    try {
-      const KEY = 'pronti_device_id';
-      let id = localStorage.getItem(KEY);
-      if (id) return id;
-
-      // UUID quando disponível
-      if (crypto?.randomUUID) {
-        id = crypto.randomUUID();
-      } else {
-        // fallback simples (mantém compatibilidade)
-        id = `dev-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      }
-
-      localStorage.setItem(KEY, id);
-      return id;
-    } catch (e) {
-      // Se localStorage falhar, usa um id volátil (não ideal, mas não quebra)
-      return `dev-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    }
   }
 
   async initialize() {
@@ -208,7 +163,6 @@ class MessagingService {
     }
   }
 
-  // ✅ MELHORIA: salva token por aparelho (subcoleção) + mantém doc raiz para compatibilidade
   async sendTokenToServer(userId, empresaId) {
     if (!this.token) {
       console.warn('[messaging.js] Token não disponível.');
@@ -218,36 +172,18 @@ class MessagingService {
       console.error('[messaging.js] userId ou empresaId não fornecidos.');
       return false;
     }
-
     try {
-      const deviceId = this.getOrCreateDeviceId();
-
-      // 1) Mantém compatibilidade com seu backend atual (1 token "principal" no doc raiz)
-      const refRoot = doc(db, "mensagensTokens", userId);
-      await setDoc(refRoot, {
+      const ref = doc(db, "mensagensTokens", userId);
+      await setDoc(ref, {
         empresaId: empresaId,
         userId: userId,
-        fcmToken: this.token, // último token usado (compatibilidade)
-        updatedAt: serverTimestamp(),
-        ativo: true,
-        tipo: "web",
-        navegador: navigator.userAgent || "Não identificado",
-      }, { merge: true });
-
-      // 2) NOVO: grava 1 token por aparelho/navegador
-      const refDevice = doc(db, "mensagensTokens", userId, "tokens", deviceId);
-      await setDoc(refDevice, {
-        empresaId: empresaId,
-        userId: userId,
-        deviceId: deviceId,
         fcmToken: this.token,
-        updatedAt: serverTimestamp(),
+        updatedAt: new Date(),
         ativo: true,
         tipo: "web",
         navegador: navigator.userAgent || "Não identificado",
       }, { merge: true });
-
-      console.log('[messaging.js] Token salvo/atualizado no Firestore (root + tokens/device). deviceId=', deviceId);
+      console.log('[messaging.js] Token salvo/atualizado no Firestore.');
       return true;
     } catch (err) {
       console.error('[messaging.js] ERRO ao salvar token no Firestore:', err);
