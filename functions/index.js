@@ -317,7 +317,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 );
 
 // ============================================================================
-// rotinaLembreteAgendamento
+// rotinaLembreteAgendamento (CORRIGIDA SEM ALTERAR O RESTO)
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -326,14 +326,14 @@ exports.rotinaLembreteAgendamento = onSchedule(
     region: "southamerica-east1",
     memory: "256MiB",
   },
-  async (event) => {
+  async () => {
     const agora = admin.firestore.Timestamp.now();
-    const limiteJanela = new Date(agora.toDate().getTime() + 20 * 60 * 1000);
 
     try {
       const snapshot = await db.collection("lembretesPendentes")
         .where("enviado", "==", false)
-        .where("dataEnvio", "<=", admin.firestore.Timestamp.fromDate(limiteJanela))
+        // ✅ CORREÇÃO: somente lembretes cujo horário já chegou
+        .where("dataEnvio", "<=", agora)
         .get();
 
       if (snapshot.empty) {
@@ -345,29 +345,60 @@ exports.rotinaLembreteAgendamento = onSchedule(
 
       const envios = snapshot.docs.map(async (doc) => {
         const lembrete = doc.data();
-        const tokenSnap = await db.collection("mensagensTokens").doc(lembrete.clienteId).get();
+        const clienteId = lembrete.clienteId;
 
-        if (tokenSnap.exists && tokenSnap.data().fcmToken) {
-          await fcm.send({
-            token: tokenSnap.data().fcmToken,
-            notification: {
-              title: "Lembrete Pronti ⏰",
-              body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto}).`,
-            },
-            webpush: {
+        const tokenSnap = await db.collection("mensagensTokens").doc(clienteId).get();
+        const fcmToken = tokenSnap.exists ? tokenSnap.data().fcmToken : null;
+
+        if (fcmToken) {
+          try {
+            await fcm.send({
+              token: fcmToken,
               notification: {
-                icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
+                title: "Lembrete Pronti ⏰",
+                body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto}).`,
               },
-              fcmOptions: {
-                link: "https://prontiapp.com.br/agenda.html"
-              }
-            },
-          });
-          logger.info(`✅ Lembrete enviado para cliente ${lembrete.clienteId}`);
+              webpush: {
+                notification: {
+                  icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
+                },
+                fcmOptions: {
+                  link: "https://prontiapp.com.br/agenda.html"
+                }
+              },
+            });
+
+            logger.info(`✅ Lembrete enviado para cliente ${clienteId}`);
+
+            // ✅ CORREÇÃO: só marca enviado quando realmente enviou
+            return doc.ref.update({
+              enviado: true,
+              processadoEm: admin.firestore.FieldValue.serverTimestamp()
+            });
+          } catch (error) {
+            logger.error(`❌ Erro ao enviar lembrete para cliente ${clienteId}:`, error);
+
+            // opcional: limpa token inválido
+            if (error.code === "messaging/registration-token-not-registered") {
+              await db.collection("mensagensTokens").doc(clienteId).update({
+                fcmToken: admin.firestore.FieldValue.delete()
+              });
+            }
+
+            // ✅ não marca como enviado para tentar novamente na próxima execução
+            return doc.ref.update({
+              ultimoErro: error.code || error.message || String(error),
+              ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp()
+            });
+          }
         } else {
-          logger.warn(`Token FCM não encontrado para cliente ${lembrete.clienteId}`);
+          logger.warn(`Token FCM não encontrado para cliente ${clienteId}`);
+
+          // ✅ CORREÇÃO: não marca como enviado; só registra tentativa
+          return doc.ref.update({
+            ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp()
+          });
         }
-        return doc.ref.update({ enviado: true, processadoEm: admin.firestore.FieldValue.serverTimestamp() });
       });
 
       await Promise.all(envios);
