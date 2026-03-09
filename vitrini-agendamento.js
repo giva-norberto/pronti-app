@@ -314,10 +314,17 @@ async function enviarEmailViaPHP(agendamento, currentUser) {
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
         // --- 🚀 NOVO: GARANTE GERAÇÃO DO TOKEN NO ATO DO AGENDAMENTO ---
+        // ✅ CORREÇÃO MÍNIMA EXTRA (para não travar no celular):
+        // chama em background (não bloqueia o addDoc do agendamento)
         if (window.solicitarPermissaoParaNotificacoes) {
-            console.log("🔔 Solicitando/Atualizando token de notificação antes de salvar...");
-            // ✅ CORREÇÃO MÍNIMA: salva token no UID do CLIENTE (não usa fallback do painel)
-            await window.solicitarPermissaoParaNotificacoes(currentUser.uid, empresaId);
+            console.log("🔔 Solicitando/Atualizando token de notificação antes de salvar (em background)...");
+            (async () => {
+                try {
+                    await window.solicitarPermissaoParaNotificacoes(currentUser.uid, empresaId);
+                } catch (e) {
+                    console.warn("⚠️ Falha ao solicitar token (não bloqueia agendamento):", e);
+                }
+            })();
         }
 
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
