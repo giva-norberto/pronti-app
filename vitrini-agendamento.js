@@ -316,7 +316,8 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
         // --- 🚀 NOVO: GARANTE GERAÇÃO DO TOKEN NO ATO DO AGENDAMENTO ---
         if (window.solicitarPermissaoParaNotificacoes) {
             console.log("🔔 Solicitando/Atualizando token de notificação antes de salvar...");
-            await window.solicitarPermissaoParaNotificacoes();
+            // ✅ CORREÇÃO MÍNIMA: salva token no UID do CLIENTE (não usa fallback do painel)
+            await window.solicitarPermissaoParaNotificacoes(currentUser.uid, empresaId);
         }
 
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
