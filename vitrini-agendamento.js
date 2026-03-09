@@ -23,7 +23,8 @@ import {
     doc,
     updateDoc,
     serverTimestamp,
-    getDoc
+    getDoc,
+    Timestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { limparUIAgendamento } from './vitrini-ui.js';
 
@@ -92,13 +93,13 @@ async function criarLembreteAutomatico(empresaId, agendamento, currentUser) {
         // Parseia a data do agendamento (formato YYYY-MM-DD)
         const [ano, mes, dia] = agendamento.data.split('-').map(Number);
         const [hora, minuto] = agendamento.horario.split(':').map(Number);
-        
-        // Cria objeto Date com a data/hora do agendamento
+
+        // Cria objeto Date com a data/hora do agendamento (fuso local do dispositivo)
         const dataAgendamento = new Date(ano, mes - 1, dia, hora, minuto);
-        
+
         // Calcula 1 hora antes
         const dataLembrete = new Date(dataAgendamento.getTime() - 60 * 60 * 1000);
-        
+
         // Não cria lembrete se o horário já passou
         if (dataLembrete <= new Date()) {
             console.log('⏰ Lembrete não criado: horário já passou');
@@ -107,7 +108,7 @@ async function criarLembreteAutomatico(empresaId, agendamento, currentUser) {
 
         // Cria documento na coleção lembretesPendentes
         const lembreteRef = collection(db, 'lembretesPendentes');
-        
+
         await addDoc(lembreteRef, {
             clienteId: currentUser.uid,
             empresaId: empresaId,
@@ -115,9 +116,14 @@ async function criarLembreteAutomatico(empresaId, agendamento, currentUser) {
             profissionalNome: agendamento.profissional.nome,
             dataAgendamento: agendamento.data,
             horarioTexto: agendamento.horario,
-            dataEnvio: dataLembrete,
+
+            // ✅ CORREÇÃO: grava como Timestamp explícito (evita divergência/serialização)
+            dataEnvio: Timestamp.fromDate(dataLembrete),
+
             enviado: false,
-            criadoEm: new Date()
+
+            // ✅ CORREÇÃO: usa horário do servidor para auditoria (não depende do relógio do cliente)
+            criadoEm: serverTimestamp()
         });
 
         console.log('✅ Lembrete automático criado para:', dataLembrete);
@@ -220,7 +226,7 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 // ======================================================================
 async function enviarEmailNotificacao(agendamento, currentUser) {
     console.log("Tentando enviar e-mail...");
-    
+
     try {
         const emailDoDono = agendamento?.empresa?.emailDeNotificacao;
 
@@ -376,22 +382,24 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
 
+                // ✅ AJUSTE: criadoEm com serverTimestamp() (não depende do relógio do cliente)
                 await addDoc(filaRef, {
                     donoId: agendamento.empresa.donoId,
                     titulo: "🎉 Novo Agendamento!",
                     mensagem: `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`,
-                    criadoEm: new Date(),
+                    criadoEm: serverTimestamp(),
                     status: "pendente"
                 });
 
+                // ✅ AJUSTE: criadoEm com serverTimestamp() (não depende do relógio do cliente)
                 await addDoc(filaRef, {
                     donoId: currentUser.uid,
                     titulo: "✅ Agendamento Confirmado!",
                     mensagem: `Seu agendamento para ${agendamento.servico.nome} com ${agendamento.profissional.nome} foi confirmado para ${agendamento.data} às ${agendamento.horario}.`,
-                    criadoEm: new Date(),
+                    criadoEm: serverTimestamp(),
                     status: "pendente"
                 });
-                
+
             } catch (error) {
                 console.error("❌ Erro ao adicionar notificações à fila:", error);
             }
