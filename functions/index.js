@@ -1,22 +1,3 @@
-/**
- * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO CORRIGIDA: getFirestore com databaseId, trigger com database explícito.
- *
- * ✅ MELHORIAS (sem quebrar o que já funciona):
- * - filaDeNotificacoes:
- *   - Só marca status "processado" se fcm.send() der sucesso
- *   - Grava fcmMessageId (prova), processadoEm e ultimoErro quando aplicável
- * - rotinaLembreteAgendamento (aviso para cliente):
- *   - Grava fcmMessageId (prova) e processadoEm no sucesso
- *   - Envia payload.data com lembreteId/link para o Service Worker usar (não quebra: notification continua existindo)
- *   - Incrementa tentativas e grava ultimoErro no erro (mantém enviado=false)
- *
- * ✅ CORREÇÃO NOVA (pedido agora):
- * - rotinaLembreteAgendamento agora envia data.link/webpush.fcmOptions.link para:
- *   https://prontiapp.com.br/vitrine.html?empresa=<empresaId>
- *   (assim o firebase-messaging-sw.js abre a vitrine no clique)
- */
-
 // ============================ Imports principais ==============================
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
@@ -33,7 +14,7 @@ if (!admin.apps.length) {
 }
 
 // ✅ CORREÇÃO: Usar getFirestore com databaseId explícito
-const db = getFirestore("pronti-app");
+const db = getFirestore("pronti-app"); // <<< SOMENTE ESTA ALTERAÇÃO!
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
