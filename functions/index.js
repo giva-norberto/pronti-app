@@ -10,6 +10,11 @@
  *   - Grava fcmMessageId (prova) e processadoEm no sucesso
  *   - Envia payload.data com lembreteId/link para o Service Worker usar (não quebra: notification continua existindo)
  *   - Incrementa tentativas e grava ultimoErro no erro (mantém enviado=false)
+ *
+ * ✅ CORREÇÃO NOVA (pedido agora):
+ * - rotinaLembreteAgendamento agora envia data.link/webpush.fcmOptions.link para:
+ *   https://prontiapp.com.br/vitrine.html?empresa=<empresaId>
+ *   (assim o firebase-messaging-sw.js abre a vitrine no clique)
  */
 
 // ============================ Imports principais ==============================
@@ -63,14 +68,21 @@ exports.verificarEmpresa = onRequest(
       }
       if (req.method !== "POST") {
         logger.info("DEBUG: Método não permitido", { method: req.method });
-        return res.status(405).json({ error: "Método não permitido. Use POST." });
+        return res
+          .status(405)
+          .json({ error: "Método não permitido. Use POST." });
       }
       try {
-        logger.info("DEBUG: INICIO verificarEmpresa", { body: req.body, headers: req.headers });
+        logger.info("DEBUG: INICIO verificarEmpresa", {
+          body: req.body,
+          headers: req.headers,
+        });
         const { empresaId } = req.body;
         if (!empresaId) {
           logger.info("DEBUG: Falta empresaId no body");
-          return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
+          return res
+            .status(400)
+            .json({ error: "ID da empresa inválido ou não fornecido." });
         }
         const empresaDocRef = db.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
@@ -82,23 +94,38 @@ exports.verificarEmpresa = onRequest(
         const status = empresaDoc.get("status") || "";
         if (plano === "free" && status === "expirado") {
           logger.info("DEBUG: Plano free expirado", { empresaId });
-          return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
+          return res.status(403).json({
+            error:
+              "Assinatura gratuita expirada. Por favor, selecione um plano.",
+          });
         }
         let licencasNecessarias = 0;
         try {
-          const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
+          const profissionaisSnapshot = await empresaDocRef
+            .collection("profissionais")
+            .get();
           if (!profissionaisSnapshot.empty) {
             licencasNecessarias = profissionaisSnapshot.size;
           }
-          logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
+          logger.info("DEBUG: profissionaisSnapshot.size", {
+            size: licencasNecessarias,
+          });
         } catch (profErr) {
-          logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
+          logger.warn(
+            "DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.",
+            { error: profErr }
+          );
         }
-        logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
+        logger.info(
+          `Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`
+        );
         return res.status(200).json({ licencasNecessarias });
       } catch (error) {
         logger.error("Erro fatal em verificarEmpresa:", error);
-        return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message || error.toString() });
+        return res.status(500).json({
+          error: "Erro interno do servidor.",
+          detalhes: error.message || error.toString(),
+        });
       }
     });
   }
@@ -120,7 +147,9 @@ exports.createPreference = onRequest(
       try {
         const client = getMercadoPagoClient();
         if (!client) {
-          return res.status(500).json({ error: "Erro de configuração do servidor." });
+          return res
+            .status(500)
+            .json({ error: "Erro de configuração do servidor." });
         }
         const { userId, planoEscolhido } = req.body;
         if (!userId || !planoEscolhido) {
@@ -143,17 +172,28 @@ exports.createPreference = onRequest(
         };
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
-        await db.collection("empresarios").doc(userId).collection("assinatura").doc("dados").set({
-          mercadoPagoAssinaturaId: response.id,
-          status: "pendente",
-          planoContratado: planoEscolhido.totalFuncionarios,
-          valorPago: precoFinal,
-          dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+        await db
+          .collection("empresarios")
+          .doc(userId)
+          .collection("assinatura")
+          .doc("dados")
+          .set(
+            {
+              mercadoPagoAssinaturaId: response.id,
+              status: "pendente",
+              planoContratado: planoEscolhido.totalFuncionarios,
+              valorPago: precoFinal,
+              dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
         return res.status(200).json({ init_point: response.init_point });
       } catch (error) {
         logger.error("Erro em createPreference:", error);
-        return res.status(500).json({ error: "Erro ao criar preferência de pagamento.", detalhes: error.message || error.toString() });
+        return res.status(500).json({
+          error: "Erro ao criar preferência de pagamento.",
+          detalhes: error.message || error.toString(),
+        });
       }
     });
   }
@@ -178,7 +218,9 @@ exports.receberWebhookMercadoPago = onRequest(
           }
           const preapproval = new Preapproval(client);
           const subscription = await preapproval.get({ id: id });
-          const query = db.collectionGroup("assinatura").where("mercadoPagoAssinaturaId", "==", subscription.id);
+          const query = db
+            .collectionGroup("assinatura")
+            .where("mercadoPagoAssinaturaId", "==", subscription.id);
           const snapshot = await query.get();
           if (snapshot.empty) {
             return res.status(200).send("OK");
@@ -193,7 +235,8 @@ exports.receberWebhookMercadoPago = onRequest(
             await doc.ref.update({
               status: novoStatus,
               ultimoStatusMP: subscription.status,
-              ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp(),
+              ultimaAtualizacaoWebhook:
+                admin.firestore.FieldValue.serverTimestamp(),
             });
           }
         } catch (error) {
@@ -212,7 +255,9 @@ exports.receberWebhookMercadoPago = onRequest(
 function getMercadoPagoClient() {
   const mpToken = process.env.MERCADOPAGO_TOKEN;
   if (!mpToken) {
-    logger.error("FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!");
+    logger.error(
+      "FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!"
+    );
     return null;
   }
   return new MercadoPagoConfig({ accessToken: mpToken });
@@ -228,9 +273,11 @@ function calcularPreco(totalFuncionarios) {
     ],
   };
   if (totalFuncionarios <= 0) return 0;
-  if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
+  if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos)
+    return configuracaoPrecos.precoBase;
   let precoTotal = configuracaoPrecos.precoBase;
-  const funcionariosExtras = totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
+  const funcionariosExtras =
+    totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
   let funcionariosJaPrecificados = 0;
   for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
     const funcionariosNaFaixa = faixa.ate - faixa.de + 1;
@@ -258,7 +305,8 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
   },
   async (event) => {
     const bilhete = event.data && event.data.data ? event.data.data() : null;
-    const bilheteId = event.params && event.params.bilheteId ? event.params.bilheteId : null;
+    const bilheteId =
+      event.params && event.params.bilheteId ? event.params.bilheteId : null;
 
     if (!bilhete) {
       logger.log("Bilhete vazio, encerrando.");
@@ -313,7 +361,8 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       webpush: {
         notification: {
           icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-          badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+          badge:
+            "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
         },
         fcmOptions: {
           link: "https://prontiapp.com.br/agenda.html",
@@ -322,11 +371,17 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     };
 
     try {
-      logger.log(`Enviando push para o token (final): ${String(fcmToken).slice(-12)}`);
+      logger.log(
+        `Enviando push para o token (final): ${String(fcmToken).slice(-12)}`
+      );
 
       const messageId = await fcm.send(payload);
 
-      logger.log("✅ Notificação Push enviada com sucesso!", { messageId, donoId, bilheteId });
+      logger.log("✅ Notificação Push enviada com sucesso!", {
+        messageId,
+        donoId,
+        bilheteId,
+      });
 
       return event.data.ref.update({
         status: "processado",
@@ -363,7 +418,8 @@ exports.rotinaLembreteAgendamento = onSchedule(
     const agora = admin.firestore.Timestamp.now();
 
     try {
-      const snapshot = await db.collection("lembretesPendentes")
+      const snapshot = await db
+        .collection("lembretesPendentes")
         .where("enviado", "==", false)
         .where("dataEnvio", "<=", agora)
         .get();
@@ -384,6 +440,11 @@ exports.rotinaLembreteAgendamento = onSchedule(
 
         if (fcmToken) {
           try {
+            // ✅ CORREÇÃO: link aponta para a vitrine da empresa do agendamento
+            const link = `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(
+              String(lembrete.empresaId || "")
+            )}`;
+
             const payload = {
               token: fcmToken,
               notification: {
@@ -396,7 +457,7 @@ exports.rotinaLembreteAgendamento = onSchedule(
                 lembreteId: doc.id,
                 clienteId: String(clienteId || ""),
                 empresaId: String(lembrete.empresaId || ""),
-                link: "https://prontiapp.com.br/agendamentos",
+                link, // ✅ agora abre a vitrine
               },
               webpush: {
                 notification: {
@@ -404,14 +465,18 @@ exports.rotinaLembreteAgendamento = onSchedule(
                 },
                 // mantém também o link por fcmOptions (não quebra)
                 fcmOptions: {
-                  link: "https://prontiapp.com.br/agendamentos",
+                  link, // ✅ agora abre a vitrine
                 },
               },
             };
 
             const messageId = await fcm.send(payload);
 
-            logger.info(`✅ Lembrete enviado para cliente ${clienteId}`, { messageId, lembreteId: doc.id });
+            logger.info(`✅ Lembrete enviado para cliente ${clienteId}`, {
+              messageId,
+              lembreteId: doc.id,
+              link,
+            });
 
             return doc.ref.update({
               enviado: true,
@@ -423,7 +488,7 @@ exports.rotinaLembreteAgendamento = onSchedule(
 
             if (error.code === "messaging/registration-token-not-registered") {
               await db.collection("mensagensTokens").doc(clienteId).update({
-                fcmToken: admin.firestore.FieldValue.delete()
+                fcmToken: admin.firestore.FieldValue.delete(),
               });
             }
 
