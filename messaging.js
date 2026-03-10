@@ -3,12 +3,7 @@
 // ✅ VERSÃO INTEGRAL MANTIDA - Sem remoção de funcionalidades
 // ✅ AJUSTE MÍNIMO: usar o Service Worker ATIVO do app (PWA) para gerar token e gravar no Firebase
 //    (evita conflito com service-worker.js no app instalado; mantém todo o resto igual)
-//
-// ✅ CORREÇÕES CIRÚRGICAS (sem mudar a lógica existente):
-//  1) Imports com caminho ABSOLUTO para funcionar em qualquer página (vitrine/painel)
-//  2) window.solicitarPermissaoParaNotificacoes agora aceita (userId, empresaId) opcionais,
-//     para a VITRINE conseguir salvar token sem depender do verificarAcesso().
-//     Se não vierem params, mantém o comportamento antigo usando verificarAcesso().
+// ✅ AJUSTE DEFINITIVO: Garante que está aguardando o Service Worker estar ACTIVE para mobile/browser
 // ======================================================================
 
 import { app, db } from '/firebase-config.js';
@@ -60,16 +55,16 @@ class MessagingService {
         return false;
       }
 
-      // ✅ AJUSTE MÍNIMO:
-      // Em PWA instalado, o Service Worker que controla a página é o service-worker.js do app.
-      // Registrar um segundo SW (/firebase-messaging-sw.js) costuma causar token null.
-      // Então usamos o SW ativo/ready para gerar o token e salvar no Firebase.
+      // AJUSTE DEFINITIVO: aguarda Service Worker ativo ANTES de pedir o token
       const registration = await navigator.serviceWorker.ready;
-      console.log('[DEBUG][messaging.js] Usando Service Worker ativo (ready):', registration);
+      if (registration.installing || registration.waiting) {
+        console.log('[messaging.js] Aguardando ativação do worker para celular...');
+        await this.waitForServiceWorker(registration);
+      }
+      console.log('[DEBUG][messaging.js] Service Worker pronto e ativo:', registration);
 
       await this.getMessagingToken(registration);
 
-      // ✅ AJUSTE MÍNIMO: não considerar sucesso se não obteve token (evita "Notificações ativas!" sem gravar)
       if (!this.token) {
         console.warn('[messaging.js] initialize: token não foi obtido (null).');
         return false;
