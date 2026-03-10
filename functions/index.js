@@ -1,6 +1,15 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
  * VERSÃO CORRIGIDA: getFirestore com databaseId, trigger com database explícito.
+ *
+ * ✅ MELHORIAS (sem quebrar o que já funciona):
+ * - filaDeNotificacoes:
+ *   - Só marca status "processado" se fcm.send() der sucesso
+ *   - Grava fcmMessageId (prova), processadoEm e ultimoErro quando aplicável
+ * - rotinaLembreteAgendamento (aviso para cliente):
+ *   - Grava fcmMessageId (prova) e processadoEm no sucesso
+ *   - Envia payload.data com lembreteId/link para o Service Worker usar (não quebra: notification continua existindo)
+ *   - Incrementa tentativas e grava ultimoErro no erro (mantém enviado=false)
  */
 
 // ============================ Imports principais ==============================
@@ -239,13 +248,13 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO — CORRIGIDA
+// FUNÇÃO DE NOTIFICAÇÃO — CORRIGIDA / AUDITÁVEL
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
     region: "southamerica-east1",
-    database: "pronti-app",  // ✅ CORREÇÃO CRÍTICA: escutar o database correto
+    database: "pronti-app", // ✅ escutar o database correto
   },
   async (event) => {
     const bilhete = event.data && event.data.data ? event.data.data() : null;
@@ -267,28 +276,39 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 
     if (!donoId) {
       logger.error(`Bilhete ${bilheteId} não tem donoId.`);
-      return event.data.ref.update({ status: "processado_com_erro" });
+      return event.data.ref.update({
+        status: "processado_com_erro",
+        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        ultimoErro: "sem_donoId",
+      });
     }
 
     logger.log(`Processando notificação para o dono: ${donoId}`);
 
-    // ✅ Usa a instância db correta (já conectada ao database 'pronti-app')
     const tokenRef = db.collection("mensagensTokens").doc(donoId);
     const tokenSnap = await tokenRef.get();
 
     if (!tokenSnap.exists || !tokenSnap.data().fcmToken) {
       logger.warn(`Token FCM não encontrado para o dono: ${donoId}.`);
-      return event.data.ref.update({ status: "processado_sem_token" });
+      return event.data.ref.update({
+        status: "processado_sem_token",
+        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+      });
     }
 
     const fcmToken = tokenSnap.data().fcmToken;
 
-    // ✅ Payload correto para admin.messaging().send()
     const payload = {
       token: fcmToken,
       notification: {
         title: titulo,
         body: mensagem,
+      },
+      // ✅ data opcional (não quebra nada): útil para SW usar link/tag se você quiser no futuro
+      data: {
+        tipo: "fila",
+        bilheteId: bilheteId || "",
+        link: "https://prontiapp.com.br/agenda.html",
       },
       webpush: {
         notification: {
@@ -302,22 +322,35 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     };
 
     try {
-      logger.log(`Enviando push para o token: ${fcmToken}`);
-      await fcm.send(payload);
-      logger.log("✅ Notificação Push enviada com sucesso!");
+      logger.log(`Enviando push para o token (final): ${String(fcmToken).slice(-12)}`);
+
+      const messageId = await fcm.send(payload);
+
+      logger.log("✅ Notificação Push enviada com sucesso!", { messageId, donoId, bilheteId });
+
+      return event.data.ref.update({
+        status: "processado",
+        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        fcmMessageId: messageId, // ✅ prova
+      });
     } catch (error) {
       logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
+
       if (error.code === "messaging/registration-token-not-registered") {
         await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
       }
-    }
 
-    return event.data.ref.update({ status: "processado" });
+      return event.data.ref.update({
+        status: "processado_com_erro",
+        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        ultimoErro: error.code || error.message || String(error),
+      });
+    }
   }
 );
 
 // ============================================================================
-// rotinaLembreteAgendamento (CORRIGIDA SEM ALTERAR O RESTO)
+// rotinaLembreteAgendamento (AVISO AO CLIENTE) — AUDITÁVEL
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -332,7 +365,6 @@ exports.rotinaLembreteAgendamento = onSchedule(
     try {
       const snapshot = await db.collection("lembretesPendentes")
         .where("enviado", "==", false)
-        // ✅ CORREÇÃO: somente lembretes cujo horário já chegou
         .where("dataEnvio", "<=", agora)
         .get();
 
@@ -352,51 +384,62 @@ exports.rotinaLembreteAgendamento = onSchedule(
 
         if (fcmToken) {
           try {
-            await fcm.send({
+            const payload = {
               token: fcmToken,
               notification: {
                 title: "Lembrete Pronti ⏰",
                 body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto}).`,
               },
+              // ✅ data para o Service Worker conseguir usar link/tag sem depender de URL fixa
+              data: {
+                tipo: "lembrete_cliente",
+                lembreteId: doc.id,
+                clienteId: String(clienteId || ""),
+                empresaId: String(lembrete.empresaId || ""),
+                link: "https://prontiapp.com.br/agendamentos",
+              },
               webpush: {
                 notification: {
-                  icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
+                  icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
                 },
+                // mantém também o link por fcmOptions (não quebra)
                 fcmOptions: {
-                  link: "https://prontiapp.com.br/agenda.html"
-                }
+                  link: "https://prontiapp.com.br/agendamentos",
+                },
               },
-            });
+            };
 
-            logger.info(`✅ Lembrete enviado para cliente ${clienteId}`);
+            const messageId = await fcm.send(payload);
 
-            // ✅ CORREÇÃO: só marca enviado quando realmente enviou
+            logger.info(`✅ Lembrete enviado para cliente ${clienteId}`, { messageId, lembreteId: doc.id });
+
             return doc.ref.update({
               enviado: true,
-              processadoEm: admin.firestore.FieldValue.serverTimestamp()
+              processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+              fcmMessageId: messageId, // ✅ prova
             });
           } catch (error) {
             logger.error(`❌ Erro ao enviar lembrete para cliente ${clienteId}:`, error);
 
-            // opcional: limpa token inválido
             if (error.code === "messaging/registration-token-not-registered") {
               await db.collection("mensagensTokens").doc(clienteId).update({
                 fcmToken: admin.firestore.FieldValue.delete()
               });
             }
 
-            // ✅ não marca como enviado para tentar novamente na próxima execução
             return doc.ref.update({
               ultimoErro: error.code || error.message || String(error),
-              ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp()
+              tentativas: admin.firestore.FieldValue.increment(1),
+              ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
             });
           }
         } else {
           logger.warn(`Token FCM não encontrado para cliente ${clienteId}`);
 
-          // ✅ CORREÇÃO: não marca como enviado; só registra tentativa
           return doc.ref.update({
-            ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp()
+            tentativas: admin.firestore.FieldValue.increment(1),
+            ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+            ultimoErro: "sem_token",
           });
         }
       });
