@@ -55,15 +55,26 @@ class MessagingService {
         return false;
       }
 
-      // AJUSTE DEFINITIVO: aguarda Service Worker ativo ANTES de pedir o token
-      const registration = await navigator.serviceWorker.ready;
-      if (registration.installing || registration.waiting) {
-        console.log('[messaging.js] Aguardando ativação do worker para celular...');
-        await this.waitForServiceWorker(registration);
+      // ✅ AJUSTE PARA CELULAR: Garante que o Service Worker está registrado e pronto
+      let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+      
+      if (!registration) {
+        console.log('[messaging.js] Registrando SW manualmente para celular...');
+        registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       }
-      console.log('[DEBUG][messaging.js] Service Worker pronto e ativo:', registration);
 
-      await this.getMessagingToken(registration);
+      // Aguarda o worker estar pronto
+      const activeReg = await navigator.serviceWorker.ready;
+
+      if (activeReg.installing || activeReg.waiting) {
+        console.log('[messaging.js] Aguardando ativação do worker para celular...');
+        await this.waitForServiceWorker(activeReg);
+      }
+      
+      console.log('[DEBUG][messaging.js] Service Worker pronto e ativo:', activeReg);
+
+      // Pede o token passando a registration confirmada
+      await this.getMessagingToken(activeReg);
 
       if (!this.token) {
         console.warn('[messaging.js] initialize: token não foi obtido (null).');
@@ -100,6 +111,9 @@ class MessagingService {
 
   async getMessagingToken(registration) {
     try {
+      // ✅ ADICIONADO DELAY PARA CELULAR: Evita token null por tempo de resposta do navegador mobile
+      await new Promise(r => setTimeout(r, 1000));
+
       const currentToken = await getToken(messaging, {
         vapidKey: this.vapidKey,
         serviceWorkerRegistration: registration
