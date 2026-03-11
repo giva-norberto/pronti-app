@@ -276,28 +276,125 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO — CORRIGIDA / AUDITÁVEL
+// ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO (SEM AGENDADOR)
+// ============================================================================
+// NOVA FUNÇÃO: Quando cria agendamento, envia PUSH para o dono da empresa imediatamente
+exports.notificarDonoInstantaneo = onDocumentCreated(
+  {
+    document: "empresarios/{empresaId}/agendamentos/{agendamentoId}",
+    region: "southamerica-east1",
+    database: "pronti-app",
+  },
+  async (event) => {
+    const agendamento = event.data && event.data.data ? event.data.data() : null;
+    const empresaId = event.params && event.params.empresaId ? event.params.empresaId : null;
+    if (!agendamento || !empresaId) {
+      logger.info("Dados insuficientes para notificar o dono.");
+      return;
+    }
+
+    // Busca o dono da empresa (deve estar salvo no doc empresarios/{empresaId})
+    const empresaDoc = await db.collection("empresarios").doc(empresaId).get();
+    const donoId = empresaDoc.exists ? empresaDoc.data().donoId : null;
+    if (!donoId) {
+      logger.info("Dono da empresa não definido.");
+      return;
+    }
+
+    // Busca token do dono ativo
+    const tokenSnap = await db
+      .collection("mensagensTokens")
+      .where("userId", "==", donoId)
+      .where("ativo", "==", true)
+      .limit(1)
+      .get();
+
+    if (tokenSnap.empty) {
+      logger.info(`Dono (${donoId}) não possui token ativo para push.`);
+      return;
+    }
+
+    const fcmToken = tokenSnap.docs[0]?.data().fcmToken;
+    if (!fcmToken) {
+      logger.info("Token do dono não encontrado.");
+      return;
+    }
+
+    const payload = {
+      token: fcmToken,
+      notification: {
+        title: "🚨 Novo agendamento!",
+        body: `${agendamento.clienteNome || "Cliente"} agendou ${agendamento.servicoNome || ""} para ${agendamento.data || ""} às ${agendamento.horario || ""}.`
+      },
+      data: {
+        tipo: "novo_agendamento",
+        agendamentoId: event.params?.agendamentoId || "",
+        empresaId,
+        link: "https://prontiapp.com.br/agenda.html"
+      },
+      webpush: {
+        notification: {
+          icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+        },
+        fcmOptions: {
+          link: "https://prontiapp.com.br/agenda.html",
+        },
+      },
+    };
+
+    try {
+      logger.info(`Enviando push imediato de novo agendamento para dono (${donoId})`);
+      const messageId = await fcm.send(payload);
+      logger.info(`✅ Notificação de novo agendamento enviada para o dono!`, {
+        messageId,
+        donoId,
+        agendamentoId: event.params?.agendamentoId,
+      });
+    } catch (error) {
+      logger.error(`❌ Erro ao enviar push de novo agendamento para dono:`, error);
+    }
+  }
+);
+
+// ============================================================================
+// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
     region: "southamerica-east1",
-    database: "pronti-app", // ✅ escutar o database correto
+    database: "pronti-app", // escutar database correto
   },
   async (event) => {
     const bilhete = event.data && event.data.data ? event.data.data() : null;
-    const bilheteId =
-      event.params && event.params.bilheteId ? event.params.bilheteId : null;
+    const bilheteId = event.params && event.params.bilheteId ? event.params.bilheteId : null;
 
     if (!bilhete) {
       logger.log("Bilhete vazio, encerrando.");
       return;
     }
-
     if (bilhete.status === "processado") {
       logger.log(`Bilhete ${bilheteId} já processado, ignorando.`);
       return;
     }
+
+    // --- Trava evitar duplicidade: só envia se aquele agendamento não tiver outro bilhete pendente para esse dono
+    if (bilhete.agendamentoId) {
+      const existentes = await db
+        .collection("filaDeNotificacoes")
+        .where("agendamentoId", "==", bilhete.agendamentoId)
+        .where("donoId", "==", bilhete.donoId)
+        .where("status", "==", "pendente")
+        .get();
+      if (existentes.size > 1) {
+        logger.log(`Ignorando bilhete duplicado para agendamentoId=${bilhete.agendamentoId}, donoId=${bilhete.donoId}`);
+        return event.data.ref.update({
+          status: "ignorado_duplicado",
+          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
+    // --- fim trava duplicidade ---
 
     const donoId = bilhete.donoId;
     const titulo = bilhete.titulo || "Notificação Pronti";
@@ -333,7 +430,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         title: titulo,
         body: mensagem,
       },
-      // ✅ data opcional (não quebra nada): útil para SW usar link/tag se você quiser no futuro
       data: {
         tipo: "fila",
         bilheteId: bilheteId || "",
@@ -342,8 +438,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       webpush: {
         notification: {
           icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-          badge:
-            "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+          badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
         },
         fcmOptions: {
           link: "https://prontiapp.com.br/agenda.html",
@@ -352,22 +447,17 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     };
 
     try {
-      logger.log(
-        `Enviando push para o token (final): ${String(fcmToken).slice(-12)}`
-      );
-
+      logger.log(`Enviando push para o token (final): ${String(fcmToken).slice(-12)}`);
       const messageId = await fcm.send(payload);
-
       logger.log("✅ Notificação Push enviada com sucesso!", {
         messageId,
         donoId,
         bilheteId,
       });
-
       return event.data.ref.update({
         status: "processado",
         processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-        fcmMessageId: messageId, // ✅ prova
+        fcmMessageId: messageId,
       });
     } catch (error) {
       logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
@@ -375,7 +465,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       if (error.code === "messaging/registration-token-not-registered") {
         await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
       }
-
       return event.data.ref.update({
         status: "processado_com_erro",
         processadoEm: admin.firestore.FieldValue.serverTimestamp(),
@@ -421,48 +510,41 @@ exports.rotinaLembreteAgendamento = onSchedule(
 
         if (fcmToken) {
           try {
-            // ✅ CORREÇÃO: link aponta para a vitrine da empresa do agendamento
             const link = `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(
               String(lembrete.empresaId || "")
             )}`;
-
             const payload = {
               token: fcmToken,
               notification: {
                 title: "Lembrete Pronti ⏰",
                 body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto}).`,
               },
-              // ✅ data para o Service Worker conseguir usar link/tag sem depender de URL fixa
               data: {
                 tipo: "lembrete_cliente",
                 lembreteId: doc.id,
                 clienteId: String(clienteId || ""),
                 empresaId: String(lembrete.empresaId || ""),
-                link, // ✅ agora abre a vitrine
+                link,
               },
               webpush: {
                 notification: {
                   icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
                 },
-                // mantém também o link por fcmOptions (não quebra)
                 fcmOptions: {
-                  link, // ✅ agora abre a vitrine
+                  link,
                 },
               },
             };
-
             const messageId = await fcm.send(payload);
-
             logger.info(`✅ Lembrete enviado para cliente ${clienteId}`, {
               messageId,
               lembreteId: doc.id,
               link,
             });
-
             return doc.ref.update({
               enviado: true,
               processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-              fcmMessageId: messageId, // ✅ prova
+              fcmMessageId: messageId,
             });
           } catch (error) {
             logger.error(`❌ Erro ao enviar lembrete para cliente ${clienteId}:`, error);
