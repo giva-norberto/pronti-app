@@ -116,8 +116,13 @@ async function criarLembreteAutomatico(empresaId, agendamento, currentUser) {
             profissionalNome: agendamento.profissional.nome,
             dataAgendamento: agendamento.data,
             horarioTexto: agendamento.horario,
+
+            // ✅ CORREÇÃO: grava como Timestamp explícito (evita divergência/serialização)
             dataEnvio: Timestamp.fromDate(dataLembrete),
+
             enviado: false,
+
+            // ✅ CORREÇÃO: usa horário do servidor para auditoria (não depende do relógio do cliente)
             criadoEm: serverTimestamp()
         });
 
@@ -370,14 +375,14 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
 
         await addDoc(agendamentosRef, payload);
 
-        // ✨ NOVO: Criar lembrete automático (para o CLIENTE)
+        // ✨ NOVO: Criar lembrete automático
         await criarLembreteAutomatico(empresaId, agendamento, currentUser);
 
         if (agendamento.empresa && agendamento.empresa.donoId) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
 
-                // ✅ Somente o dono recebe notificação instantânea da fila:
+                // ✅ AJUSTE: criadoEm com serverTimestamp() (não depende do relógio do cliente)
                 await addDoc(filaRef, {
                     donoId: agendamento.empresa.donoId,
                     titulo: "🎉 Novo Agendamento!",
@@ -386,14 +391,14 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                     status: "pendente"
                 });
 
-                // 🚨 Removido: bilhete de confirmação para o cliente (VAI apenas pelo lembrete!)
-                // await addDoc(filaRef, {
-                //     donoId: currentUser.uid,
-                //     titulo: "✅ Agendamento Confirmado!",
-                //     mensagem: `Seu agendamento para ${agendamento.servico.nome} com ${agendamento.profissional.nome} foi confirmado para ${agendamento.data} às ${agendamento.horario}.`,
-                //     criadoEm: serverTimestamp(),
-                //     status: "pendente"
-                // });
+                // ✅ AJUSTE: criadoEm com serverTimestamp() (não depende do relógio do cliente)
+                await addDoc(filaRef, {
+                    donoId: currentUser.uid,
+                    titulo: "✅ Agendamento Confirmado!",
+                    mensagem: `Seu agendamento para ${agendamento.servico.nome} com ${agendamento.profissional.nome} foi confirmado para ${agendamento.data} às ${agendamento.horario}.`,
+                    criadoEm: serverTimestamp(),
+                    status: "pendente"
+                });
 
             } catch (error) {
                 console.error("❌ Erro ao adicionar notificações à fila:", error);
@@ -448,4 +453,23 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-        console.error("Erro ao buscar ag
+        console.error("Erro ao buscar agendamentos do cliente:", error);
+        if (error.code === 'failed-precondition' && error.message.includes("The query requires an index")) {
+            throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
+        }
+        throw error;
+    }
+}
+
+export async function cancelarAgendamento(empresaId, agendamentoId) {
+    try {
+        const agendamentoRef = doc(db, 'empresarios', empresaId, 'agendamentos', agendamentoId);
+        await updateDoc(agendamentoRef, {
+            status: 'cancelado_pelo_cliente',
+            canceladoEm: serverTimestamp()
+        });
+    } catch (error) {
+        console.error("Erro ao cancelar agendamento:", error);
+        throw new Error("Ocorreu um erro ao cancelar o agendamento.");
+    }
+}
