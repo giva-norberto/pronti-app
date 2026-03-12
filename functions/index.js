@@ -277,8 +277,8 @@ function calcularPreco(totalFuncionarios) {
 
 // ============================================================================
 // ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO (SEM AGENDADOR)
+// CORRIGIDO: BUSCA DIRETA DO TOKEN DO DONO PELO ID, SUPORTE APNS
 // ============================================================================
-// Corrigido: Suporte a APNs/Apple/iPhone
 exports.notificarDonoInstantaneo = onDocumentCreated(
   {
     document: "empresarios/{empresaId}/agendamentos/{agendamentoId}",
@@ -286,88 +286,63 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
     database: "pronti-app",
   },
   async (event) => {
-    const agendamento = event.data && event.data.data ? event.data.data() : null;
-    const empresaId = event.params && event.params.empresaId ? event.params.empresaId : null;
-    if (!agendamento || !empresaId) {
-      logger.info("Dados insuficientes para notificar o dono.");
-      return;
-    }
+    const agendamento = event.data?.data();
+    const empresaId = event.params?.empresaId;
 
-    // Busca o dono da empresa (deve estar salvo no doc empresarios/{empresaId})
-    const empresaDoc = await db.collection("empresarios").doc(empresaId).get();
-    const donoId = empresaDoc.exists ? empresaDoc.data().donoId : null;
-    if (!donoId) {
-      logger.info("Dono da empresa não definido.");
-      return;
-    }
-
-    // Busca token do dono ativo
-    const tokenSnap = await db
-      .collection("mensagensTokens")
-      .where("userId", "==", donoId)
-      .where("ativo", "==", true)
-      .limit(1)
-      .get();
-
-    if (tokenSnap.empty) {
-      logger.info(`Dono (${donoId}) não possui token ativo para push.`);
-      return;
-    }
-
-    const fcmToken = tokenSnap.docs[0]?.data().fcmToken;
-    if (!fcmToken) {
-      logger.info("Token do dono não encontrado.");
-      return;
-    }
-
-    // 🍎 SUPORTE APNs no payload, para iPhone exibir/emitir som mesmo fechado
-    const payload = {
-      token: fcmToken,
-      notification: {
-        title: "📝 Novo Agendamento!",
-        body: `${agendamento.clienteNome || "Cliente"} agendou ${agendamento.servicoNome || ""} para as ${agendamento.horario || ""}`,
-      },
-      data: {
-        tipo: "novo_agendamento",
-        agendamentoId: event.params?.agendamentoId || "",
-        empresaId,
-        link: "https://prontiapp.com.br/agenda.html"
-      },
-      webpush: {
-        notification: {
-          icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
-        },
-        fcmOptions: {
-          link: "https://prontiapp.com.br/agenda.html"
-        }
-      },
-      apns: {
-        payload: {
-          aps: {
-            sound: "default",
-            badge: 1,
-            "content-available": 1
-          }
-        }
-      }
-    };
+    if (!agendamento || !empresaId) return;
 
     try {
-      logger.info(`Enviando push de novo agendamento para dono (${donoId})`);
-      const messageId = await fcm.send(payload);
-      logger.info(`✅ Notificação de novo agendamento enviada para o dono!`, {
-        messageId,
-        donoId,
-        agendamentoId: event.params?.agendamentoId,
-      });
+      // 1. Busca donoId direto no doc da empresa
+      const empresaDoc = await db.collection("empresarios").doc(empresaId).get();
+      const donoId = empresaDoc.exists ? empresaDoc.data().donoId : null;
+
+      if (!donoId) {
+        logger.warn(`Dono não encontrado para a empresa ${empresaId}`);
+        return;
+      }
+
+      // 2. Busca token do dono direto pelo ID do documento
+      const tokenDoc = await db.collection("mensagensTokens").doc(donoId).get();
+
+      if (!tokenDoc.exists || !tokenDoc.data().fcmToken) {
+        logger.info(`Dono ${donoId} não tem token registrado.`);
+        return;
+      }
+
+      const fcmToken = tokenDoc.data().fcmToken;
+
+      // 3. Payload para suporte total (Android/iOS/iPhone)
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: "📝 Novo Agendamento!",
+          body: `${agendamento.clienteNome || "Alguém"} marcou ${agendamento.servicoNome || "um serviço"} às ${agendamento.horario}`
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+              "content-available": 1
+            }
+          }
+        },
+        data: {
+          link: "https://prontiapp.com.br/agenda.html"
+        }
+      };
+
+      const response = await fcm.send(message);
+      logger.info(`✅ Sucesso! Notificação enviada ao dono ${donoId}. ID: ${response}`);
+
     } catch (error) {
-      logger.error(`❌ Erro ao enviar push de novo agendamento para dono:`, error);
+      logger.error("❌ Erro fatal ao notificar o dono:", error);
     }
   }
 );
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA)
+// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) [SEM ALTERAÇÃO]
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
