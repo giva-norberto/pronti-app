@@ -278,7 +278,7 @@ function calcularPreco(totalFuncionarios) {
 // ============================================================================
 // ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO (SEM AGENDADOR)
 // ============================================================================
-// Corrigido: TÍTULO ajustado, campos confirmados conforme seu modelo de agendamento, log detalhado.
+// Corrigido: Suporte a APNs/Apple/iPhone
 exports.notificarDonoInstantaneo = onDocumentCreated(
   {
     document: "empresarios/{empresaId}/agendamentos/{agendamentoId}",
@@ -319,9 +319,8 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
       logger.info("Token do dono não encontrado.");
       return;
     }
-    // Usa nomes dos campos confirmados no seu agendamento:
-    // clienteNome, servicoNome, horario - para garantir push funcionando.
 
+    // 🍎 SUPORTE APNs no payload, para iPhone exibir/emitir som mesmo fechado
     const payload = {
       token: fcmToken,
       notification: {
@@ -340,6 +339,15 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
         },
         fcmOptions: {
           link: "https://prontiapp.com.br/agenda.html"
+        }
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+            "content-available": 1
+          }
         }
       }
     };
@@ -554,4 +562,4 @@ exports.rotinaLembreteAgendamento = onSchedule(
 // ============================================================================
 // OUTRAS FUNÇÕES
 // ============================================================================
-exports.notificarClientes = require("./notifyClientes").notificarClientes;;
+exports.notificarClientes = require("./notifyClientes").notificarClientes;
