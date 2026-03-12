@@ -43,7 +43,7 @@ function minutesToTimeString(totalMinutes) {
 // --- Função utilitária pequena e segura para gerar 'YYYY-MM-DD' no fuso LOCAL ---
 function getLocalYYYYMMDD(dateObj = new Date()) {
     const y = dateObj.getFullYear();
-    const m = String(dateObj.getMonth() + 1).padStart(2, '0'); // month é 0-based
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
     const d = String(dateObj.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
 }
@@ -90,23 +90,17 @@ async function clienteTemAssinaturaValida(empresaId, clienteId) {
 // ======================================================================
 async function criarLembreteAutomatico(empresaId, agendamento, currentUser) {
     try {
-        // Parseia a data do agendamento (formato YYYY-MM-DD)
         const [ano, mes, dia] = agendamento.data.split('-').map(Number);
         const [hora, minuto] = agendamento.horario.split(':').map(Number);
 
-        // Cria objeto Date com a data/hora do agendamento (fuso local do dispositivo)
         const dataAgendamento = new Date(ano, mes - 1, dia, hora, minuto);
-
-        // Calcula 1 hora antes
         const dataLembrete = new Date(dataAgendamento.getTime() - 60 * 60 * 1000);
 
-        // Não cria lembrete se o horário já passou
         if (dataLembrete <= new Date()) {
             console.log('⏰ Lembrete não criado: horário já passou');
             return;
         }
 
-        // Cria documento na coleção lembretesPendentes
         const lembreteRef = collection(db, 'lembretesPendentes');
 
         await addDoc(lembreteRef, {
@@ -116,20 +110,14 @@ async function criarLembreteAutomatico(empresaId, agendamento, currentUser) {
             profissionalNome: agendamento.profissional.nome,
             dataAgendamento: agendamento.data,
             horarioTexto: agendamento.horario,
-
-            // ✅ CORREÇÃO: grava como Timestamp explícito (evita divergência/serialização)
             dataEnvio: Timestamp.fromDate(dataLembrete),
-
             enviado: false,
-
-            // ✅ CORREÇÃO: usa horário do servidor para auditoria (não depende do relógio do cliente)
             criadoEm: serverTimestamp()
         });
 
         console.log('✅ Lembrete automático criado para:', dataLembrete);
     } catch (error) {
         console.error('❌ Erro ao criar lembrete automático (não bloqueia agendamento):', error);
-        // Não lança erro para não bloquear o agendamento principal
     }
 }
 
@@ -319,9 +307,6 @@ async function enviarEmailViaPHP(agendamento, currentUser) {
 // ======================================================================
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
-        // --- 🚀 NOVO: GARANTE GERAÇÃO DO TOKEN NO ATO DO AGENDAMENTO ---
-        // ✅ CORREÇÃO MÍNIMA EXTRA (para não travar no celular):
-        // chama em background (não bloqueia o addDoc do agendamento)
         if (window.solicitarPermissaoParaNotificacoes) {
             console.log("🔔 Solicitando/Atualizando token de notificação antes de salvar (em background)...");
             (async () => {
@@ -382,7 +367,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
 
-                // ✅ AJUSTE: criadoEm com serverTimestamp() (não depende do relógio do cliente)
+                // Apenas o dono recebe a notificação instantânea agora!
                 await addDoc(filaRef, {
                     donoId: agendamento.empresa.donoId,
                     titulo: "🎉 Novo Agendamento!",
@@ -391,14 +376,8 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                     status: "pendente"
                 });
 
-                // ✅ AJUSTE: criadoEm com serverTimestamp() (não depende do relógio do cliente)
-                await addDoc(filaRef, {
-                    donoId: currentUser.uid,
-                    titulo: "✅ Agendamento Confirmado!",
-                    mensagem: `Seu agendamento para ${agendamento.servico.nome} com ${agendamento.profissional.nome} foi confirmado para ${agendamento.data} às ${agendamento.horario}.`,
-                    criadoEm: serverTimestamp(),
-                    status: "pendente"
-                });
+                // REMOVIDO: notificação duplicada para o cliente (o push do cliente vai pelo lembrete)
+                // (Nada além disso foi alterado.)
 
             } catch (error) {
                 console.error("❌ Erro ao adicionar notificações à fila:", error);
@@ -407,7 +386,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação não foi criado.");
         }
 
-        // ---- Somente alteração mínima: disparar envio via PHP em background (não bloqueante)
         (async () => {
             try {
                 await enviarEmailViaPHP(agendamento, currentUser);
@@ -415,7 +393,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                 console.warn('Falha no envio via PHP em background:', e);
             }
         })();
-        // ---- fim alteração mínima ----
 
         if (typeof limparUIAgendamento === "function") {
             limparUIAgendamento();
