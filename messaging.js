@@ -81,8 +81,7 @@ class MessagingService {
         return false;
       }
 
-      // ✅ CORRIGIDO: Não exibir notificação manual no foreground (apenas SW exibe!)
-      // this.setupForegroundMessageListener(); // Removido para eliminar duplicidade
+      this.setupForegroundMessageListener();
 
       console.log('[DEBUG][messaging.js] Serviço de Messaging inicializado com sucesso!');
       return true;
@@ -134,7 +133,44 @@ class MessagingService {
     }
   }
 
-  // Removido: setupForegroundMessageListener e showForegroundNotification
+  setupForegroundMessageListener() {
+    onMessage(messaging, (payload) => {
+      console.log('[messaging.js] Mensagem recebida em primeiro plano:', payload);
+      this.showForegroundNotification(payload);
+    });
+  }
+
+  showForegroundNotification(payload) {
+    const title = payload.notification?.title || payload.data?.title || 'Nova Notificação';
+    const body = payload.notification?.body || payload.data?.body || 'Você recebeu uma nova mensagem.';
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: body,
+        icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
+        badge: '/badge.png',
+        tag: `notif-${Date.now()}`,
+        renotify: true
+      });
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+      try {
+        if (audioUnlocked) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const ctx = new AudioContext();
+          const oscillator = ctx.createOscillator();
+          oscillator.type = 'square';
+          oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+          oscillator.connect(ctx.destination);
+          oscillator.start();
+          oscillator.stop(ctx.currentTime + 0.15);
+        }
+      } catch (err) {
+        console.error('[Audio] Falha ao tocar som da notificação:', err);
+      }
+    }
+  }
 
   async sendTokenToServer(userId, empresaId) {
     if (!this.token) {
@@ -254,10 +290,16 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
         const bilheteId = change.doc.id;
         console.log("✅ [Ouvinte] Novo bilhete recebido:", bilhete);
 
-        // Corrigido: Não exibir notificação browser em duplicidade, só loga ou pode mostrar toast
-        // (Você pode substituir abaixo por um toast, badge, ou apenas o log!)
-        // Exemplo: window.mostrarMensagemNotificacao(bilhete.titulo, 'info');
-        // console.log("✅ [Ouvinte] Notificação local exibida com som.");
+        if (window.messagingService) {
+          const payload = {
+            data: {
+              title: bilhete.titulo,
+              body: bilhete.mensagem
+            }
+          };
+          window.messagingService.showForegroundNotification(payload);
+          console.log("✅ [Ouvinte] Notificação local exibida com som.");
+        }
 
         const clienteNome = bilhete.clienteNome || bilhete.nomeCliente || bilhete.template?.data?.nomeCliente || null;
         const servico = bilhete.servico || bilhete.servicoNome || bilhete.template?.data?.servicoNome || null;
