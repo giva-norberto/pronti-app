@@ -1,4 +1,4 @@
-// ======================================================================
+// =====================================================================
 // firebase-messaging-sw.js  (Firebase v10.x)
 // PRONTI APP - Push Notifications + Cache Offline (PWA)
 // ✅ UNIFICADO: Junta o antigo service-worker.js (cache) com o firebase-messaging-sw.js (push)
