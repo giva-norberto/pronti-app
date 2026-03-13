@@ -276,8 +276,8 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO (SEM AGENDADOR)
-// CORRIGIDO: BUSCA DIRETA DO TOKEN DO DONO PELO ID, SUPORTE APNS
+// ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO
+// CORRIGIDO: Melhor tratamento de erros e logging, suporte completo APNS/Android/Web
 // ============================================================================
 exports.notificarDonoInstantaneo = onDocumentCreated(
   {
@@ -288,61 +288,126 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
   async (event) => {
     const agendamento = event.data?.data();
     const empresaId = event.params?.empresaId;
+    const agendamentoId = event.params?.agendamentoId;
 
-    if (!agendamento || !empresaId) return;
+    if (!agendamento || !empresaId) {
+      logger.warn("Dados insuficientes para notificar dono", { agendamento, empresaId });
+      return;
+    }
 
     try {
-      // 1. Busca donoId direto no doc da empresa
       const empresaDoc = await db.collection("empresarios").doc(empresaId).get();
-      const donoId = empresaDoc.exists ? empresaDoc.data().donoId : null;
 
-      if (!donoId) {
-        logger.warn(`Dono não encontrado para a empresa ${empresaId}`);
+      if (!empresaDoc.exists) {
+        logger.warn(`Empresa ${empresaId} não encontrada`);
         return;
       }
 
-      // 2. Busca token do dono direto pelo ID do documento
+      const empresaData = empresaDoc.data();
+      const donoId = empresaData.donoId || empresaData.userId || empresaId;
+
+      logger.info(`Buscando token do dono: ${donoId}`);
+
       const tokenDoc = await db.collection("mensagensTokens").doc(donoId).get();
 
-      if (!tokenDoc.exists || !tokenDoc.data().fcmToken) {
-        logger.info(`Dono ${donoId} não tem token registrado.`);
+      if (!tokenDoc.exists) {
+        logger.warn(`Documento de token não encontrado para dono ${donoId}`);
         return;
       }
 
-      const fcmToken = tokenDoc.data().fcmToken;
+      const tokenData = tokenDoc.data();
+      const fcmToken = tokenData?.fcmToken;
 
-      // 3. Payload para suporte total (Android/iOS/iPhone)
+      if (!fcmToken) {
+        logger.warn(`FCM Token vazio para dono ${donoId}`);
+        return;
+      }
+
+      logger.info(`Token obtido. Enviando notificação ao dono ${donoId}`);
+
+      const notificationTitle = "📝 Novo Agendamento!";
+      const notificationBody = `${agendamento.clienteNome || "Alguém"} marcou ${agendamento.servicoNome || "um serviço"} às ${agendamento.horario || "horário indefinido"}`;
+
       const message = {
         token: fcmToken,
         notification: {
-          title: "📝 Novo Agendamento!",
-          body: `${agendamento.clienteNome || "Alguém"} marcou ${agendamento.servicoNome || "um serviço"} às ${agendamento.horario}`
+          title: notificationTitle,
+          body: notificationBody,
+        },
+        data: {
+          tipo: "novo_agendamento",
+          empresaId: empresaId,
+          agendamentoId: agendamentoId,
+          link: "https://prontiapp.com.br/agenda.html",
+        },
+        android: {
+          priority: "high",
+          notification: {
+            sound: "default",
+            priority: "high",
+            clickAction: "FLUTTER_NOTIFICATION_CLICK",
+          },
         },
         apns: {
+          headers: {
+            "apns-priority": "10",
+          },
           payload: {
             aps: {
               sound: "default",
               badge: 1,
-              "content-available": 1
-            }
-          }
+              "content-available": 0,
+              "mutable-content": 1,
+            },
+          },
         },
-        data: {
-          link: "https://prontiapp.com.br/agenda.html"
-        }
+        webpush: {
+          notification: {
+            title: notificationTitle,
+            body: notificationBody,
+            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+            tag: `agendamento_${agendamentoId}`,
+          },
+          fcmOptions: {
+            link: "https://prontiapp.com.br/agenda.html",
+          },
+          headers: {
+            Urgency: "high",
+          },
+        },
       };
 
       const response = await fcm.send(message);
-      logger.info(`✅ Sucesso! Notificação enviada ao dono ${donoId}. ID: ${response}`);
+      logger.info(`✅ Push enviado com sucesso ao dono ${donoId}`, {
+        messageId: response,
+        agendamentoId,
+      });
 
     } catch (error) {
-      logger.error("❌ Erro fatal ao notificar o dono:", error);
+      logger.error(`❌ Erro ao notificar dono:`, {
+        error: error.message,
+        code: error.code,
+        empresaId,
+        agendamentoId,
+      });
+
+      if (error.code === "messaging/registration-token-not-registered") {
+        logger.warn(`Token inválido para dono. Removendo...`);
+        try {
+          await db.collection("mensagensTokens").doc(empresaId).update({
+            fcmToken: admin.firestore.FieldValue.delete(),
+          });
+        } catch (deleteError) {
+          logger.error("Erro ao remover token:", deleteError);
+        }
+      }
     }
   }
 );
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) [SEM ALTERAÇÃO]
+// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) [CORRIGIDO PARA EVITAR DUPLICIDADE]
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
@@ -363,104 +428,126 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       return;
     }
 
-    // --- Trava evitar duplicidade: só envia se aquele agendamento não tiver outro bilhete pendente para esse dono
-    if (bilhete.agendamentoId) {
-      const existentes = await db
-        .collection("filaDeNotificacoes")
-        .where("agendamentoId", "==", bilhete.agendamentoId)
-        .where("donoId", "==", bilhete.donoId)
-        .where("status", "==", "pendente")
-        .get();
-      if (existentes.size > 1) {
-        logger.log(`Ignorando bilhete duplicado para agendamentoId=${bilhete.agendamentoId}, donoId=${bilhete.donoId}`);
-        return event.data.ref.update({
-          status: "ignorado_duplicado",
-          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-        });
+    return db.runTransaction(async (transaction) => {
+      const freshDoc = await transaction.get(event.data.ref);
+      const bilheteAtualizado = freshDoc.data();
+
+      if (!bilheteAtualizado || bilheteAtualizado.status !== "pendente" || bilheteAtualizado.processando === true) {
+        logger.log(`Bilhete ${bilheteId} já processado ou em processamento`);
+        return;
       }
-    }
-    // --- fim trava duplicidade ---
 
-    const donoId = bilhete.donoId;
-    const titulo = bilhete.titulo || "Notificação Pronti";
-    const mensagem = bilhete.mensagem || "Você tem uma nova atividade.";
+      transaction.update(event.data.ref, { processando: true });
 
-    if (!donoId) {
-      logger.error(`Bilhete ${bilheteId} não tem donoId.`);
-      return event.data.ref.update({
-        status: "processado_com_erro",
-        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-        ultimoErro: "sem_donoId",
-      });
-    }
+      const donoId = bilheteAtualizado.donoId;
+      const titulo = bilheteAtualizado.titulo || "Notificação Pronti";
+      const mensagem = bilheteAtualizado.mensagem || "Você tem uma nova atividade.";
 
-    logger.log(`Processando notificação para o dono: ${donoId}`);
+      if (!donoId) {
+        logger.error(`Bilhete ${bilheteId} não tem donoId.`);
+        transaction.update(event.data.ref, {
+          status: "processado_com_erro",
+          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          ultimoErro: "sem_donoId",
+          processando: false,
+        });
+        return;
+      }
 
-    const tokenRef = db.collection("mensagensTokens").doc(donoId);
-    const tokenSnap = await tokenRef.get();
+      const tokenRef = db.collection("mensagensTokens").doc(donoId);
+      const tokenSnap = await tokenRef.get();
 
-    if (!tokenSnap.exists || !tokenSnap.data().fcmToken) {
-      logger.warn(`Token FCM não encontrado para o dono: ${donoId}.`);
-      return event.data.ref.update({
-        status: "processado_sem_token",
-        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
+      if (!tokenSnap.exists || !tokenSnap.data().fcmToken) {
+        logger.warn(`Token FCM não encontrado para dono: ${donoId}`);
+        transaction.update(event.data.ref, {
+          status: "processado_sem_token",
+          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          processando: false,
+        });
+        return;
+      }
 
-    const fcmToken = tokenSnap.data().fcmToken;
+      const fcmToken = tokenSnap.data().fcmToken;
 
-    const payload = {
-      token: fcmToken,
-      notification: {
-        title: titulo,
-        body: mensagem,
-      },
-      data: {
-        tipo: "fila",
-        bilheteId: bilheteId || "",
-        link: "https://prontiapp.com.br/agenda.html",
-      },
-      webpush: {
+      const payload = {
+        token: fcmToken,
         notification: {
-          icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-          badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+          title: titulo,
+          body: mensagem,
         },
-        fcmOptions: {
+        data: {
+          tipo: "fila",
+          bilheteId: bilheteId || "",
           link: "https://prontiapp.com.br/agenda.html",
         },
-      },
-    };
+        android: {
+          priority: "high",
+          notification: {
+            sound: "default",
+            priority: "high",
+          },
+        },
+        apns: {
+          headers: {
+            "apns-priority": "10",
+          },
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+              "mutable-content": 1,
+            },
+          },
+        },
+        webpush: {
+          notification: {
+            title: titulo,
+            body: mensagem,
+            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+          },
+          fcmOptions: {
+            link: "https://prontiapp.com.br/agenda.html",
+          },
+          headers: {
+            Urgency: "high",
+          },
+        },
+      };
 
-    try {
-      logger.log(`Enviando push para o token (final): ${String(fcmToken).slice(-12)}`);
-      const messageId = await fcm.send(payload);
-      logger.log("✅ Notificação Push enviada com sucesso!", {
-        messageId,
-        donoId,
-        bilheteId,
-      });
-      return event.data.ref.update({
-        status: "processado",
-        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-        fcmMessageId: messageId,
-      });
-    } catch (error) {
-      logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
+      try {
+        const messageId = await fcm.send(payload);
+        logger.log("✅ Notificação Push enviada com sucesso!", {
+          messageId,
+          donoId,
+          bilheteId,
+        });
+        transaction.update(event.data.ref, {
+          status: "processado",
+          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          fcmMessageId: messageId,
+          processando: false,
+        });
+      } catch (error) {
+        logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
 
-      if (error.code === "messaging/registration-token-not-registered") {
-        await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
+        if (error.code === "messaging/registration-token-not-registered") {
+          await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
+        }
+
+        transaction.update(event.data.ref, {
+          status: "processado_com_erro",
+          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          ultimoErro: error.code || error.message || String(error),
+          processando: false,
+        });
       }
-      return event.data.ref.update({
-        status: "processado_com_erro",
-        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-        ultimoErro: error.code || error.message || String(error),
-      });
-    }
+    });
   }
 );
 
 // ============================================================================
-// rotinaLembreteAgendamento (AVISO AO CLIENTE) — DE-DUPLICAÇÃO FORTE!
+// rotinaLembreteAgendamento (AVISO AO CLIENTE) — CORRIGIDO PARA EVITAR DUPLICIDADE
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -477,6 +564,7 @@ exports.rotinaLembreteAgendamento = onSchedule(
         .collection("lembretesPendentes")
         .where("enviado", "==", false)
         .where("dataEnvio", "<=", agora)
+        .limit(100)
         .get();
 
       if (snapshot.empty) {
@@ -484,59 +572,132 @@ exports.rotinaLembreteAgendamento = onSchedule(
         return;
       }
 
-      // Processa com trava usando transação + flag "processando"
-      await Promise.all(snapshot.docs.map(async (docLembrete) => {
-        return db.runTransaction(async (transaction) => {
-          const freshDoc = await transaction.get(docLembrete.ref);
-          const lembrete = freshDoc.data();
+      const resultados = await Promise.allSettled(
+        snapshot.docs.map((docLembrete) =>
+          db.runTransaction(async (transaction) => {
+            const freshDoc = await transaction.get(docLembrete.ref);
+            const lembrete = freshDoc.data();
 
-          // TRAVA 1: Se já enviado ou em processamento, retorna.
-          if (!lembrete || lembrete.enviado !== false || lembrete.processando === true) {
-            return;
-          }
+            if (!lembrete || lembrete.enviado !== false) {
+              logger.info(`Lembrete ${docLembrete.id} já foi processado`);
+              return { status: "já_processado" };
+            }
 
-          // TRAVA 2: Marca documento como "em processamento" imediatamente.
-          transaction.update(docLembrete.ref, { processando: true });
+            if (lembrete.processando === true) {
+              logger.info(`Lembrete ${docLembrete.id} já está em processamento`);
+              return { status: "em_processamento" };
+            }
 
-          const tokenSnap = await db.collection("mensagensTokens").doc(lembrete.clienteId).get();
-          const fcmToken = tokenSnap.exists ? tokenSnap.data().fcmToken : null;
+            transaction.update(docLembrete.ref, {
+              processando: true,
+              processandoEm: admin.firestore.FieldValue.serverTimestamp(),
+            });
 
-          if (fcmToken) {
-            const link = `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(String(lembrete.empresaId || ""))}`;
+            const tokenSnap = await db
+              .collection("mensagensTokens")
+              .doc(lembrete.clienteId)
+              .get();
+
+            const fcmToken = tokenSnap.exists ? tokenSnap.data().fcmToken : null;
+
+            if (!fcmToken) {
+              logger.warn(`Token FCM não encontrado para cliente ${lembrete.clienteId}`);
+              transaction.update(docLembrete.ref, {
+                enviado: "sem_token",
+                processando: false,
+                processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+              });
+              return { status: "sem_token" };
+            }
+
+            const link = `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(
+              String(lembrete.empresaId || "")
+            )}`;
+
             try {
-              await fcm.send({
+              const messageId = await fcm.send({
                 token: fcmToken,
                 notification: {
                   title: "Lembrete Pronti ⏰",
-                  body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto || lembrete.horario}).`,
+                  body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${
+                    lembrete.horarioTexto || lembrete.horario
+                  }).`,
+                },
+                data: {
+                  tipo: "lembrete",
+                  agendamentoId: lembrete.agendamentoId || "",
+                  link: link,
+                },
+                android: {
+                  priority: "high",
+                  notification: {
+                    sound: "default",
+                    priority: "high",
+                  },
+                },
+                apns: {
+                  headers: {
+                    "apns-priority": "10",
+                  },
+                  payload: {
+                    aps: {
+                      sound: "default",
+                      badge: 1,
+                      "mutable-content": 1,
+                    },
+                  },
                 },
                 webpush: {
+                  notification: {
+                    title: "Lembrete Pronti ⏰",
+                    body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${
+                      lembrete.horarioTexto || lembrete.horario
+                    }).`,
+                  },
                   fcmOptions: { link },
-                  headers: { Urgency: "high" }
-                }
+                  headers: { Urgency: "high" },
+                },
               });
 
               transaction.update(docLembrete.ref, {
                 enviado: true,
                 processando: false,
-                processadoEm: admin.firestore.FieldValue.serverTimestamp()
+                processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+                messageId: messageId,
               });
+
               logger.info(`✅ Lembrete enviado para cliente ${lembrete.clienteId}`, {
                 lembreteId: docLembrete.id,
-                link,
+                messageId,
               });
-            } catch (err) {
-              logger.error("Erro no envio FCM:", err);
-              transaction.update(docLembrete.ref, { processando: false });
-            }
-          } else {
-            logger.warn(`Token FCM não encontrado para cliente ${lembrete.clienteId}`);
-            transaction.update(docLembrete.ref, { enviado: "sem_token", processando: false });
-          }
-        });
-      }));
 
-      logger.info("✅ Lembretes processados sem duplicidade.");
+              return { status: "enviado" };
+            } catch (err) {
+              logger.error("Erro ao enviar FCM:", err);
+
+              if (err.code === "messaging/registration-token-not-registered") {
+                await db
+                  .collection("mensagensTokens")
+                  .doc(lembrete.clienteId)
+                  .update({ fcmToken: admin.firestore.FieldValue.delete() });
+              }
+
+              transaction.update(docLembrete.ref, {
+                enviado: false,
+                processando: false,
+                ultimoErro: err.code || err.message,
+              });
+
+              return { status: "erro_envio", erro: err.message };
+            }
+          })
+        )
+      );
+
+      const sucesso = resultados.filter((r) => r.status === "fulfilled").length;
+      const erros = resultados.filter((r) => r.status === "rejected").length;
+      logger.info(`✅ Rotina de lembretes concluída: ${sucesso} sucesso, ${erros} erros`);
+
     } catch (error) {
       logger.error("Erro na rotina de lembretes:", error);
     }
