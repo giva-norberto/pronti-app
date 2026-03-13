@@ -8,7 +8,7 @@ const { getFirestore } = require("firebase-admin/firestore");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-// ========================= Inicialização do Firebase ==========================
+// ========================= Inicialização do Firebase =========================
 if (!admin.apps.length) {
   admin.initializeApp();
 }
