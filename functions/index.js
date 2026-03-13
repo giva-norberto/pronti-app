@@ -461,6 +461,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 
 // ============================================================================
 // rotinaLembreteAgendamento (AVISO AO CLIENTE) — AUDITÁVEL e agora SEM DUPLICIDADE
+// AJUSTE: Força prioridade máxima em Web Push (Android/Chrome)
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -508,7 +509,12 @@ exports.rotinaLembreteAgendamento = onSchedule(
                   title: "Lembrete Pronti ⏰",
                   body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto || lembrete.horario}).`,
                 },
-                webpush: { fcmOptions: { link } }
+                webpush: {
+                  fcmOptions: { link },
+                  headers: { Urgency: "high" },
+                },
+                android: { priority: "high" },
+                priority: "high"
               });
               transaction.update(doc.ref, {
                 enviado: true,
