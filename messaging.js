@@ -1,3 +1,5 @@
+
+pasted_content.txt
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
 // ✅ VERSÃO INTEGRAL MANTIDA - Sem remoção de funcionalidades
@@ -290,16 +292,17 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
         const bilheteId = change.doc.id;
         console.log("✅ [Ouvinte] Novo bilhete recebido:", bilhete);
 
-        if (window.messagingService) {
-          const payload = {
-            data: {
-              title: bilhete.titulo,
-              body: bilhete.mensagem
-            }
-          };
-          window.messagingService.showForegroundNotification(payload);
-          console.log("✅ [Ouvinte] Notificação local exibida com som.");
-        }
+        // A chamada para showForegroundNotification() foi removida daqui para evitar duplicação.
+        // if (window.messagingService) {
+        //   const payload = {
+        //     data: {
+        //       title: bilhete.titulo,
+        //       body: bilhete.mensagem
+        //     }
+        //   };
+        //   window.messagingService.showForegroundNotification(payload);
+        //   console.log("✅ [Ouvinte] Notificação local exibida com som.");
+        // }
 
         const clienteNome = bilhete.clienteNome || bilhete.nomeCliente || bilhete.template?.data?.nomeCliente || null;
         const servico = bilhete.servico || bilhete.servicoNome || bilhete.template?.data?.servicoNome || null;
