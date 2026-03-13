@@ -277,7 +277,6 @@ function calcularPreco(totalFuncionarios) {
 
 // ============================================================================
 // ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO (SEM AGENDADOR)
-// CORRIGIDO: BUSCA DIRETA DO TOKEN DO DONO PELO ID, SUPORTE APNS
 // ============================================================================
 exports.notificarDonoInstantaneo = onDocumentCreated(
   {
@@ -292,7 +291,6 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
     if (!agendamento || !empresaId) return;
 
     try {
-      // 1. Busca donoId direto no doc da empresa
       const empresaDoc = await db.collection("empresarios").doc(empresaId).get();
       const donoId = empresaDoc.exists ? empresaDoc.data().donoId : null;
 
@@ -301,7 +299,6 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
         return;
       }
 
-      // 2. Busca token do dono direto pelo ID do documento
       const tokenDoc = await db.collection("mensagensTokens").doc(donoId).get();
 
       if (!tokenDoc.exists || !tokenDoc.data().fcmToken) {
@@ -311,7 +308,6 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
 
       const fcmToken = tokenDoc.data().fcmToken;
 
-      // 3. Payload para suporte total (Android/iOS/iPhone)
       const message = {
         token: fcmToken,
         notification: {
@@ -334,7 +330,6 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
 
       const response = await fcm.send(message);
       logger.info(`✅ Sucesso! Notificação enviada ao dono ${donoId}. ID: ${response}`);
-
     } catch (error) {
       logger.error("❌ Erro fatal ao notificar o dono:", error);
     }
@@ -342,7 +337,7 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
 );
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) [SEM ALTERAÇÃO]
+// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
@@ -363,7 +358,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       return;
     }
 
-    // --- Trava evitar duplicidade: só envia se aquele agendamento não tiver outro bilhete pendente para esse dono
     if (bilhete.agendamentoId) {
       const existentes = await db
         .collection("filaDeNotificacoes")
@@ -379,7 +373,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         });
       }
     }
-    // --- fim trava duplicidade ---
 
     const donoId = bilhete.donoId;
     const titulo = bilhete.titulo || "Notificação Pronti";
@@ -484,18 +477,15 @@ exports.rotinaLembreteAgendamento = onSchedule(
         return;
       }
 
-      // Processa com trava usando transação + flag "processando"
       await Promise.all(snapshot.docs.map(async (docLembrete) => {
         return db.runTransaction(async (transaction) => {
           const freshDoc = await transaction.get(docLembrete.ref);
           const lembrete = freshDoc.data();
 
-          // TRAVA 1: Se já enviado ou em processamento, retorna.
           if (!lembrete || lembrete.enviado !== false || lembrete.processando === true) {
             return;
           }
 
-          // TRAVA 2: Marca documento como "em processamento" imediatamente.
           transaction.update(docLembrete.ref, { processando: true });
 
           const tokenSnap = await db.collection("mensagensTokens").doc(lembrete.clienteId).get();
@@ -546,4 +536,5 @@ exports.rotinaLembreteAgendamento = onSchedule(
 // ============================================================================
 // OUTRAS FUNÇÕES
 // ============================================================================
-exports.notificarClientes = require("./notifyClientes").notificarClientes;
+// REMOVIDA linha que exporta notificarClientes para não causar duplicidade!
+// exports.notificarClientes = require("./notifyClientes").notificarClientes;
