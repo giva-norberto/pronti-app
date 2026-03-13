@@ -460,8 +460,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 );
 
 // ============================================================================
-// rotinaLembreteAgendamento (AVISO AO CLIENTE) — AUDITÁVEL e agora SEM DUPLICIDADE
-// AJUSTE CORRETO: Urgency HIGH no Webpush, sem campo priority na raiz
+// rotinaLembreteAgendamento (AVISO AO CLIENTE) — DE-DUPLICAÇÃO FORTE!
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -485,23 +484,25 @@ exports.rotinaLembreteAgendamento = onSchedule(
         return;
       }
 
-      logger.info(`Encontrados ${snapshot.size} lembrete(s) pendente(s).`);
-
-      // Garante um único envio usando transação.
-      for (const doc of snapshot.docs) {
-        await db.runTransaction(async (transaction) => {
-          const freshDoc = await transaction.get(doc.ref);
+      // Processa com trava usando transação + flag "processando"
+      await Promise.all(snapshot.docs.map(async (docLembrete) => {
+        return db.runTransaction(async (transaction) => {
+          const freshDoc = await transaction.get(docLembrete.ref);
           const lembrete = freshDoc.data();
 
-          if (lembrete.enviado !== false) return;
+          // TRAVA 1: Se já enviado ou em processamento, retorna.
+          if (!lembrete || lembrete.enviado !== false || lembrete.processando === true) {
+            return;
+          }
+
+          // TRAVA 2: Marca documento como "em processamento" imediatamente.
+          transaction.update(docLembrete.ref, { processando: true });
 
           const tokenSnap = await db.collection("mensagensTokens").doc(lembrete.clienteId).get();
           const fcmToken = tokenSnap.exists ? tokenSnap.data().fcmToken : null;
 
           if (fcmToken) {
-            const link = `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(
-              String(lembrete.empresaId || "")
-            )}`;
+            const link = `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(String(lembrete.empresaId || ""))}`;
             try {
               await fcm.send({
                 token: fcmToken,
@@ -514,24 +515,28 @@ exports.rotinaLembreteAgendamento = onSchedule(
                   headers: { Urgency: "high" }
                 }
               });
-              transaction.update(doc.ref, {
+
+              transaction.update(docLembrete.ref, {
                 enviado: true,
-                processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+                processando: false,
+                processadoEm: admin.firestore.FieldValue.serverTimestamp()
               });
               logger.info(`✅ Lembrete enviado para cliente ${lembrete.clienteId}`, {
-                lembreteId: doc.id,
+                lembreteId: docLembrete.id,
                 link,
               });
             } catch (err) {
-              logger.error("Erro ao enviar lembrete ao cliente:", err);
+              logger.error("Erro no envio FCM:", err);
+              transaction.update(docLembrete.ref, { processando: false });
             }
           } else {
             logger.warn(`Token FCM não encontrado para cliente ${lembrete.clienteId}`);
-            transaction.update(doc.ref, { enviado: "sem_token" });
+            transaction.update(docLembrete.ref, { enviado: "sem_token", processando: false });
           }
         });
-      }
-      logger.info("✅ Todos os lembretes foram processados com sucesso!");
+      }));
+
+      logger.info("✅ Lembretes processados sem duplicidade.");
     } catch (error) {
       logger.error("Erro na rotina de lembretes:", error);
     }
