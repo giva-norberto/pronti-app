@@ -267,8 +267,8 @@ function calcularPreco(totalFuncionarios) {
   return Number(precoTotal.toFixed(2));
 }
 // ============================================================================
-// ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO
-// ✅ CORREÇÃO: Adicionado webpush com Urgency "high" para funcionar com app fechado
+// ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO (SEM AGENDADOR)
+// ⚠️ REVERTIDO AO ORIGINAL — sem nenhuma alteração
 // ============================================================================
 exports.notificarDonoInstantaneo = onDocumentCreated(
   {
@@ -296,23 +296,8 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
       const message = {
         token: fcmToken,
         notification: {
-          title: "Novo Agendamento!",
+          title: "📝 Novo Agendamento!",
           body: `${agendamento.clienteNome || "Alguém"} marcou ${agendamento.servicoNome || "um serviço"} às ${agendamento.horario}`
-        },
-        webpush: {
-          headers: {
-            Urgency: "high"
-          },
-          notification: {
-            title: "Novo Agendamento!",
-            body: `${agendamento.clienteNome || "Alguém"} marcou ${agendamento.servicoNome || "um serviço"} às ${agendamento.horario}`,
-            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            requireInteraction: true
-          },
-          fcmOptions: {
-            link: "https://prontiapp.com.br/agenda.html"
-          }
         },
         apns: {
           payload: {
@@ -328,14 +313,15 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
         }
       };
       const response = await fcm.send(message);
-      logger.info(`Sucesso! Notificação enviada ao dono ${donoId}. ID: ${response}`);
+      logger.info(`✅ Sucesso! Notificação enviada ao dono ${donoId}. ID: ${response}`);
     } catch (error) {
-      logger.error("Erro fatal ao notificar o dono:", error);
+      logger.error("❌ Erro fatal ao notificar o dono:", error);
     }
   }
 );
 // ============================================================================
 // FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA)
+// ⚠️ SEM ALTERAÇÕES — idêntico ao original
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
@@ -415,7 +401,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     try {
       logger.log(`Enviando push para o token (final): ${String(fcmToken).slice(-12)}`);
       const messageId = await fcm.send(payload);
-      logger.log("Notificação Push enviada com sucesso!", {
+      logger.log("✅ Notificação Push enviada com sucesso!", {
         messageId,
         donoId,
         bilheteId,
@@ -426,7 +412,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         fcmMessageId: messageId,
       });
     } catch (error) {
-      logger.error(`Erro ao enviar Notificação Push para ${donoId}:`, error);
+      logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
       if (error.code === "messaging/registration-token-not-registered") {
         await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
       }
@@ -439,8 +425,11 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
   }
 );
 // ============================================================================
-// rotinaLembreteAgendamento (AVISO AO CLIENTE)
-// ✅ CORREÇÃO: fcm.send() movido para FORA da transação para evitar duplicidade
+// rotinaLembreteAgendamento (AVISO AO CLIENTE) — ANTI-DUPLICIDADE v3
+// ✅ CORREÇÕES:
+//    1. fcm.send() movido para FORA da transação (evita envio duplo por retry)
+//    2. Deduplicação por agendamentoId+clienteId (evita envio duplo por docs duplicados)
+//    3. Proteção contra scheduler disparando 2x (concorrência)
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -461,9 +450,34 @@ exports.rotinaLembreteAgendamento = onSchedule(
         logger.info("Nenhum lembrete pendente encontrado.");
         return;
       }
+      // PASSO 1: Deduplicar — se existem 2+ lembretes para o mesmo agendamento+cliente,
+      // processar apenas o primeiro e marcar os demais como duplicados
+      const jaVistos = new Map();
+      const lembretesUnicos = [];
+      const lembretesDuplicados = [];
       for (const docLembrete of snapshot.docs) {
+        const data = docLembrete.data();
+        const chave = `${data.agendamentoId || docLembrete.id}_${data.clienteId || ""}`;
+        if (!jaVistos.has(chave)) {
+          jaVistos.set(chave, true);
+          lembretesUnicos.push(docLembrete);
+        } else {
+          lembretesDuplicados.push(docLembrete);
+        }
+      }
+      // Marcar duplicados
+      await Promise.all(lembretesDuplicados.map(async (docDup) => {
+        logger.info(`Marcando lembrete duplicado: ${docDup.id}`);
+        await docDup.ref.update({
+          enviado: "duplicado",
+          processando: false,
+          processadoEm: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }));
+      // PASSO 2: Processar lembretes únicos
+      await Promise.all(lembretesUnicos.map(async (docLembrete) => {
+        // PASSO 2a: Transação apenas para "travar" o documento (sem efeitos colaterais!)
         let lembrete = null;
-        // PASSO 1: Transação apenas para "travar" o documento (sem efeitos colaterais)
         try {
           lembrete = await db.runTransaction(async (transaction) => {
             const freshDoc = await transaction.get(docLembrete.ref);
@@ -476,11 +490,11 @@ exports.rotinaLembreteAgendamento = onSchedule(
           });
         } catch (txErr) {
           logger.warn(`Transação falhou para lembrete ${docLembrete.id}, pulando.`, txErr);
-          continue;
+          return;
         }
-        // Se a transação retornou null, o lembrete já foi tratado
-        if (!lembrete) continue;
-        // PASSO 2: Enviar push FORA da transação (sem risco de re-execução)
+        // Se a transação retornou null, o lembrete já foi tratado por outra instância
+        if (!lembrete) return;
+        // PASSO 2b: Enviar push FORA da transação (sem risco de re-execução por retry)
         const tokenSnap = await db.collection("mensagensTokens").doc(lembrete.clienteId).get();
         const fcmToken = tokenSnap.exists ? tokenSnap.data().fcmToken : null;
         if (fcmToken) {
@@ -489,7 +503,7 @@ exports.rotinaLembreteAgendamento = onSchedule(
             await fcm.send({
               token: fcmToken,
               notification: {
-                title: "Lembrete Pronti",
+                title: "Lembrete Pronti ⏰",
                 body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${lembrete.horarioTexto || lembrete.horario}).`,
               },
               webpush: {
@@ -497,26 +511,27 @@ exports.rotinaLembreteAgendamento = onSchedule(
                 headers: { Urgency: "high" }
               }
             });
-            // PASSO 3: Marcar como enviado após sucesso
+            // PASSO 2c: Marcar como enviado somente após sucesso do envio
             await docLembrete.ref.update({
               enviado: true,
               processando: false,
               processadoEm: admin.firestore.FieldValue.serverTimestamp()
             });
-            logger.info(`Lembrete enviado para cliente ${lembrete.clienteId}`, {
+            logger.info(`✅ Lembrete enviado para cliente ${lembrete.clienteId}`, {
               lembreteId: docLembrete.id,
               link,
             });
           } catch (err) {
             logger.error("Erro no envio FCM:", err);
+            // Destravar para tentar de novo na próxima execução
             await docLembrete.ref.update({ processando: false });
           }
         } else {
           logger.warn(`Token FCM não encontrado para cliente ${lembrete.clienteId}`);
           await docLembrete.ref.update({ enviado: "sem_token", processando: false });
         }
-      }
-      logger.info("Lembretes processados sem duplicidade.");
+      }));
+      logger.info("✅ Lembretes processados sem duplicidade.");
     } catch (error) {
       logger.error("Erro na rotina de lembretes:", error);
     }
