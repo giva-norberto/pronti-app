@@ -1,4 +1,4 @@
-// relatorios.js (VERSÃO FINAL - sem declarar safeVerificarAcesso)
+// relatorios.js (VERSÃO FINAL - corrigido para usar servicoPrecoCobrado)
 // Mantive sua lógica de negócio e queries. Garantia: popularFiltroProfissionais e setDatasPadrao
 // estão definidos antes do uso. Não declaro safeVerificarAcesso aqui para evitar duplicate declaration.
 
@@ -167,7 +167,7 @@ function carregarAbaPlaceholder(abaId) {
   container.innerHTML = `<p>Conteúdo não disponível.</p>`;
 }
 
-// (Seguem as funções de relatório -- mantive sua lógica original sem alterações funcionais)
+// CORRIGIDO: Usa servicoPrecoCobrado
 async function carregarRelatorioServicos() {
   const container = document.getElementById("servicos");
   container.innerHTML = "<p>Carregando...</p>";
@@ -183,7 +183,7 @@ async function carregarRelatorioServicos() {
       if (!ag.servicoNome) return;
       if (!servicos[ag.servicoNome]) servicos[ag.servicoNome] = { qtd: 0, total: 0 };
       servicos[ag.servicoNome].qtd += 1;
-      servicos[ag.servicoNome].total += parseFloat(ag.servicoPreco) || 0;
+      servicos[ag.servicoNome].total += parseFloat(ag.servicoPrecoCobrado) || 0;
     });
     const linhas = Object.entries(servicos)
       .sort((a, b) => b[1].qtd - a[1].qtd)
@@ -195,6 +195,7 @@ async function carregarRelatorioServicos() {
   }
 }
 
+// CORRIGIDO: Usa servicoPrecoCobrado
 async function carregarRelatorioProfissionais() {
   const container = document.getElementById("profissionais");
   container.innerHTML = "<p>Carregando...</p>";
@@ -210,7 +211,7 @@ async function carregarRelatorioProfissionais() {
       if (!ag.profissionalNome) return;
       if (!profs[ag.profissionalNome]) profs[ag.profissionalNome] = { qtd: 0, total: 0 };
       profs[ag.profissionalNome].qtd += 1;
-      profs[ag.profissionalNome].total += parseFloat(ag.servicoPreco) || 0;
+      profs[ag.profissionalNome].total += parseFloat(ag.servicoPrecoCobrado) || 0;
     });
     const linhas = Object.entries(profs)
       .sort((a, b) => b[1].qtd - a[1].qtd)
@@ -222,6 +223,7 @@ async function carregarRelatorioProfissionais() {
   }
 }
 
+// CORRIGIDO: Usa servicoPrecoCobrado
 async function carregarRelatorioFaturamento() {
   const container = document.getElementById("faturamento");
   container.innerHTML = "<p>Carregando...</p>";
@@ -232,12 +234,12 @@ async function carregarRelatorioFaturamento() {
       profissionalId: document.getElementById("filtro-profissional").value,
       statusFiltro: ["realizado"]
     });
-    const totalFaturamento = ags.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
+    const totalFaturamento = ags.reduce((tot, ag) => tot + (parseFloat(ag.servicoPrecoCobrado) || 0), 0);
     const servicos = {};
     ags.forEach(ag => {
       if (!ag.servicoNome) return;
       if (!servicos[ag.servicoNome]) servicos[ag.servicoNome] = 0;
-      servicos[ag.servicoNome] += parseFloat(ag.servicoPreco) || 0;
+      servicos[ag.servicoNome] += parseFloat(ag.servicoPrecoCobrado) || 0;
     });
     const linhas = Object.entries(servicos)
       .sort((a, b) => b[1] - a[1])
@@ -447,7 +449,8 @@ async function calculateCommissionAggregatesLocal(empresaId, from, to, profissio
   for (const a of ags) {
     const pid = a.profissionalId || '(sem)';
     const profData = profMap.get(pid) || null;
-    const preco = Number(a.servicoPreco || a.preco || a.valor || 0);
+    // CORRIGIDO: Usa servicoPrecoCobrado
+    const preco = Number(a.servicoPrecoCobrado || a.preco || a.valor || 0);
 
     let commissionPct = 0;
     if (profData) {
@@ -523,9 +526,6 @@ window.addEventListener("DOMContentLoaded", () => {
   popularFiltroProfissionais();
 
   // ligar handlers de abas (garantir que as abas existam no DOM)
-  // ==================
-  // LINHA CORRIGIDA
-  // ==================
   const abasBtns = document.querySelectorAll(".aba");
   const conteudos = document.querySelectorAll(".aba-conteudo");
   abasBtns.forEach(btn => {
