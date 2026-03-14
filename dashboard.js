@@ -1,5 +1,5 @@
 // ======================================================================
-//          DASHBOARD.JS (FINAL, CORRIGIDO E ALINHADO AO MÊS ATUAL)
+//          DASHBOARD.JS (FINAL, CORRIGIDO E ALINHADO AO MÊS ATUAL - COM DEBUGS)
 // =====================================================================
 
 import { db } from "./firebase-config.js";
@@ -53,19 +53,17 @@ function resetDashboardUI() {
 }
 
 function preencherPainel(resumoDia, resumoMes, servicosContagem) {
-    // Preenche dados do dia
+    console.log("[DEBUG] preenchendo painel", {resumoDia, resumoMes, servicosContagem});
     document.getElementById('faturamento-realizado').textContent = resumoDia.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     document.getElementById('faturamento-previsto').textContent = resumoDia.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     document.getElementById('total-agendamentos-dia').textContent = resumoDia.totalAgendamentosDia;
     document.getElementById('agendamentos-pendentes').textContent = resumoDia.agendamentosPendentes;
 
-    // Preenche dados do mês
     const fatMensalEl = document.getElementById('faturamento-mensal');
     const agMesEl = document.getElementById('agendamentos-mes');
     if (fatMensalEl) fatMensalEl.textContent = resumoMes.faturamentoMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     if (agMesEl) agMesEl.textContent = resumoMes.agendamentosMes;
 
-    // Preenche Resumo Inteligente
     if (resumoDia.agsParaIA && resumoDia.agsParaIA.length > 0) {
         const resumoInteligente = gerarResumoDiarioInteligente(resumoDia.agsParaIA);
         document.getElementById('resumo-inteligente').innerHTML = resumoInteligente?.mensagem || "<ul><li>Não foi possível gerar o resumo.</li></ul>";
@@ -73,7 +71,6 @@ function preencherPainel(resumoDia, resumoMes, servicosContagem) {
         document.getElementById('resumo-inteligente').innerHTML = "<ul><li>Nenhum agendamento no dia para resumir.</li></ul>";
     }
 
-    // Preenche Gráfico (Serviços mais vendidos do Mês)
     const graficoContainer = document.getElementById('grafico-container');
     graficoContainer.innerHTML = '<canvas id="servicos-mais-vendidos"></canvas>';
     const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
@@ -103,11 +100,12 @@ function preencherPainel(resumoDia, resumoMes, servicosContagem) {
 
 // --- FUNÇÕES DE BUSCA DE DADOS ---
 
-// CORRIGIDO: Usa servicoPrecoCobrado
 async function buscarDadosDoDia(empresaId, data) {
     const agRef = collection(db, "empresarios", empresaId, "agendamentos");
     const q = query(agRef, where("data", "==", data), where("status", "in", STATUS_VALIDOS));
     const snapshot = await getDocs(q);
+
+    console.log("[DEBUG] buscarDadosDoDia:", { empresaId, data, qtdDocs: snapshot.size });
 
     let faturamentoRealizado = 0, faturamentoPrevisto = 0, totalAgendamentosDia = 0, agendamentosPendentes = 0;
     const agsParaIA = [];
@@ -116,6 +114,8 @@ async function buscarDadosDoDia(empresaId, data) {
 
     snapshot.forEach(doc => {
         const ag = doc.data();
+        console.log("[DEBUG] agendamento DIA:", doc.id, ag);
+
         totalAgendamentosDia++;
         faturamentoPrevisto += Number(ag.servicoPrecoCobrado) || 0;
         if (ag.status === "realizado") {
@@ -135,13 +135,13 @@ async function buscarDadosDoDia(empresaId, data) {
         });
     });
 
+    console.log("[DEBUG] resultado buscarDadosDoDia:", { faturamentoRealizado, faturamentoPrevisto, totalAgendamentosDia, agendamentosPendentes, agsParaIA });
+
     return { faturamentoRealizado, faturamentoPrevisto, totalAgendamentosDia, agendamentosPendentes, agsParaIA };
 }
 
-// CORRIGIDO: Usa servicoPrecoCobrado
 async function buscarDadosDoMes(empresaId) {
     const hoje = new Date();
-    // 🔑 O cálculo abaixo garante que a busca seja sempre pelo mês atual, independentemente do filtro de dia do Dashboard.
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
 
@@ -152,14 +152,20 @@ async function buscarDadosDoMes(empresaId) {
     const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim), where("status", "==", "realizado"));
     const snapshot = await getDocs(q);
 
+    console.log("[DEBUG] buscarDadosDoMes:", { empresaId, dataISOInicio, dataISOFim, qtdDocs: snapshot.size });
+
     let faturamentoMensal = 0;
     let servicosContagem = {};
     snapshot.forEach(doc => {
         const ag = doc.data();
+        console.log("[DEBUG] agendamento MES:", doc.id, ag);
+
         faturamentoMensal += Number(ag.servicoPrecoCobrado) || 0;
         const nome = ag.servicoNome || "Serviço";
         servicosContagem[nome] = (servicosContagem[nome] || 0) + 1;
     });
+
+    console.log("[DEBUG] resultado buscarDadosDoMes:", { faturamentoMensal, agendamentosMes: snapshot.size, servicosContagem });
 
     return { faturamentoMensal, agendamentosMes: snapshot.size, servicosContagem };
 }
@@ -169,15 +175,18 @@ async function buscarDadosDoMes(empresaId) {
 async function carregarDashboard(empresaId, data) {
     console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
     resetDashboardUI();
+
     try {
         const [resumoDoDia, resumoDoMes] = await Promise.all([
             buscarDadosDoDia(empresaId, data),
             buscarDadosDoMes(empresaId)
         ]);
-        
-        preencherPainel(resumoDoDia, resumoDoMes, resumoDoMes.servicosContagem);
+
+        preencherPainel(resumoDia, resumoDoMes, resumoDoMes.servicosContagem);
+
+        console.log("[DEBUG] painel preenchido");
     } catch (error) {
-        console.error("Erro ao carregar dados do dashboard:", error);
+        console.error("[DEBUG] Erro ao carregar dados do dashboard:", error);
         document.getElementById('resumo-inteligente').innerHTML = "<p style='color: red;'>Erro ao carregar dados.</p>";
     }
 }
@@ -195,16 +204,14 @@ export async function inicializarDashboard(sessao) {
         const empresaId = sessao.empresaId;
         const filtroDataEl = document.getElementById('filtro-data');
 
-        // GARANTIA DE "MÊS ATUAL": O filtro de data é sempre inicializado para o dia de HOJE.
         filtroDataEl.value = new Date().toISOString().split('T')[0];
 
-        // Aguarde o preenchimento do filtro (se for necessário) antes de carregar o dashboard
-        // Se o filtro de data ou outros forem assíncronos, aguarde aqui
+        console.log("[DEBUG] inicializarDashboard, empresaId:", empresaId, "data:", filtroDataEl.value);
 
-        // Carrega o dashboard após o filtro ser definido
         await carregarDashboard(empresaId, filtroDataEl.value);
 
         filtroDataEl.addEventListener('change', debounce(() => {
+            console.log("[DEBUG] filtroDataEl change, novo valor:", filtroDataEl.value);
             carregarDashboard(empresaId, filtroDataEl.value);
         }, 300));
 
@@ -213,7 +220,7 @@ export async function inicializarDashboard(sessao) {
         });
 
     } catch (error) {
-        console.error("Falha na inicialização do dashboard:", error);
+        console.error("[DEBUG] Falha na inicialização do dashboard:", error);
         const mainContent = document.querySelector('.dashboard-main');
         if (mainContent) {
             mainContent.innerHTML = '<p class="erro">Falha ao carregar os componentes do dashboard.</p>';
@@ -227,8 +234,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     // Aqui é necessário obter o objeto sessao e inicializar só após
     // Exemplo fictício, adapte conforme seu fluxo de autenticação.
     const sessao = await obterSessao(); // troque para sua função real!
+    console.log("[DEBUG] Obteve sessão:", sessao);
     if (sessao) {
-        await inicializarDashboard(sessao); // Isso garante que só carrega depois do DOM e filtros!
+        await inicializarDashboard(sessao);
     }
 });
 
