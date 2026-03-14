@@ -2,7 +2,6 @@
 //          DASHBOARD.JS (FINAL, CORRIGIDO E ALINHADO AO MÊS ATUAL)
 // =====================================================================
 
-// ✅ ALTERAÇÃO: A importação de 'verificarAcesso' foi REMOVIDA daqui.
 import { db } from "./firebase-config.js";
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
@@ -104,6 +103,7 @@ function preencherPainel(resumoDia, resumoMes, servicosContagem) {
 
 // --- FUNÇÕES DE BUSCA DE DADOS ---
 
+// CORRIGIDO: Usa servicoPrecoCobrado
 async function buscarDadosDoDia(empresaId, data) {
     const agRef = collection(db, "empresarios", empresaId, "agendamentos");
     const q = query(agRef, where("data", "==", data), where("status", "in", STATUS_VALIDOS));
@@ -117,9 +117,9 @@ async function buscarDadosDoDia(empresaId, data) {
     snapshot.forEach(doc => {
         const ag = doc.data();
         totalAgendamentosDia++;
-        faturamentoPrevisto += Number(ag.servicoPreco) || 0;
+        faturamentoPrevisto += Number(ag.servicoPrecoCobrado) || 0;
         if (ag.status === "realizado") {
-            faturamentoRealizado += Number(ag.servicoPreco) || 0;
+            faturamentoRealizado += Number(ag.servicoPrecoCobrado) || 0;
         } else if (ag.status === "ativo") {
             const minutosAg = timeStringToMinutes(ag.horario);
             if (minutosAg >= minutosAgora) {
@@ -130,7 +130,7 @@ async function buscarDadosDoDia(empresaId, data) {
             inicio: `${ag.data}T${ag.horario}:00`,
             cliente: ag.clienteNome,
             servico: ag.servicoNome,
-            servicoPreco: Number(ag.servicoPreco) || 0,
+            servicoPreco: Number(ag.servicoPrecoCobrado) || 0,
             status: ag.status
         });
     });
@@ -138,6 +138,7 @@ async function buscarDadosDoDia(empresaId, data) {
     return { faturamentoRealizado, faturamentoPrevisto, totalAgendamentosDia, agendamentosPendentes, agsParaIA };
 }
 
+// CORRIGIDO: Usa servicoPrecoCobrado
 async function buscarDadosDoMes(empresaId) {
     const hoje = new Date();
     // 🔑 O cálculo abaixo garante que a busca seja sempre pelo mês atual, independentemente do filtro de dia do Dashboard.
@@ -155,7 +156,7 @@ async function buscarDadosDoMes(empresaId) {
     let servicosContagem = {};
     snapshot.forEach(doc => {
         const ag = doc.data();
-        faturamentoMensal += Number(ag.servicoPreco) || 0;
+        faturamentoMensal += Number(ag.servicoPrecoCobrado) || 0;
         const nome = ag.servicoNome || "Serviço";
         servicosContagem[nome] = (servicosContagem[nome] || 0) + 1;
     });
@@ -174,9 +175,7 @@ async function carregarDashboard(empresaId, data) {
             buscarDadosDoMes(empresaId)
         ]);
         
-        // CORREÇÃO APLICADA: Passa resumoDoMes e resumoDoMes.servicosContagem diretamente.
         preencherPainel(resumoDoDia, resumoDoMes, resumoDoMes.servicosContagem);
-        
     } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
         document.getElementById('resumo-inteligente').innerHTML = "<p style='color: red;'>Erro ao carregar dados.</p>";
