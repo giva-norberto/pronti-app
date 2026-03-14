@@ -189,15 +189,19 @@ async function carregarDashboard(empresaId, data) {
  * Ponto de entrada do dashboard, EXPORTADO para ser chamado pelo HTML.
  * @param {object} sessao - O objeto de sessão do usuário vindo do verificarAcesso.
  */
+
 export async function inicializarDashboard(sessao) {
     try {
         const empresaId = sessao.empresaId;
         const filtroDataEl = document.getElementById('filtro-data');
-        
-        // 🔑 GARANTIA DE "MÊS ATUAL": O filtro de data é sempre inicializado para o dia de HOJE.
-        // A lógica de busca do mês (buscarDadosDoMes) se encarrega de filtrar o MÊS INTEIRO.
+
+        // GARANTIA DE "MÊS ATUAL": O filtro de data é sempre inicializado para o dia de HOJE.
         filtroDataEl.value = new Date().toISOString().split('T')[0];
-        
+
+        // Aguarde o preenchimento do filtro (se for necessário) antes de carregar o dashboard
+        // Se o filtro de data ou outros forem assíncronos, aguarde aqui
+
+        // Carrega o dashboard após o filtro ser definido
         await carregarDashboard(empresaId, filtroDataEl.value);
 
         filtroDataEl.addEventListener('change', debounce(() => {
@@ -216,6 +220,18 @@ export async function inicializarDashboard(sessao) {
         }
     }
 }
+
+// Se o dashboard é inicializado automaticamente via script externo:
+// Aguarde o DOM estar pronto e chame a inicialização apenas depois
+window.addEventListener("DOMContentLoaded", async () => {
+    // Aqui é necessário obter o objeto sessao e inicializar só após
+    // Exemplo fictício, adapte conforme seu fluxo de autenticação.
+    const sessao = await obterSessao(); // troque para sua função real!
+    if (sessao) {
+        await inicializarDashboard(sessao); // Isso garante que só carrega depois do DOM e filtros!
+    }
+});
+
 // ==================================================================
 // ✅ FIM DA CORREÇÃO DEFINITIVA
 // ==================================================================
