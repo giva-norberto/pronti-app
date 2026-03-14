@@ -182,7 +182,7 @@ async function carregarDashboard(empresaId, data) {
             buscarDadosDoMes(empresaId)
         ]);
 
-        preencherPainel(resumoDia, resumoDoMes, resumoDoMes.servicosContagem);
+        preencherPainel(resumoDoDia, resumoDoMes, resumoDoMes.servicosContagem); // <- corrigido aqui
 
         console.log("[DEBUG] painel preenchido");
     } catch (error) {
