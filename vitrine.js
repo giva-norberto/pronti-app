@@ -449,6 +449,12 @@ async function handleDataChange(e) {
         const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
         const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, duracaoTotal);
         UI.renderizarHorarios(slots);
+        
+        // ✅ BLINDAGEM DO BOTÃO DE FILA: Garante exibição apenas quando não há slots
+        const containerFila = document.getElementById('container-fila-espera');
+        if (containerFila) {
+            containerFila.style.display = (slots.length === 0) ? 'block' : 'none';
+        }
     } catch (error) {
         console.error("Erro ao buscar agendamentos do dia:", error);
         UI.renderizarHorarios([], 'Erro ao carregar horários. Tente outra data.');
@@ -576,35 +582,39 @@ async function entrarNaFilaDeAgendamento() {
         return;
     }
 
-    const { profissional, servicos } = state.agendamento;
-    if (!profissional || !servicos || servicos.length === 0) {
-        await UI.mostrarAlerta("Atenção", "Selecione o profissional e os serviços antes de entrar na fila.");
+    // ✅ VALIDAÇÃO DE SEGURANÇA: Evita erro de 'id' de undefined
+    if (!state.agendamento?.profissional?.id) {
+        await UI.mostrarAlerta("Atenção", "Profissional não identificado. Por favor, selecione-o novamente.");
         return;
     }
 
-    // Pergunta as preferências via Prompt (Didático e Independente)
+    // Usa confirmação padrão Pronti para ser didático
+    const querEntrar = await UI.mostrarConfirmacao("Fila de Espera", "Deseja entrar na fila de espera para este profissional?");
+    if (!querEntrar) return;
+
+    // Pergunta as preferências via Prompt (Didático)
     const turno = prompt("Qual período você prefere? (Manhã, Tarde ou Noite)", "Qualquer horário");
-    if (turno === null) return; // Cliente cancelou
+    if (turno === null) return; 
 
     try {
-        UI.toggleLoader(true);
+        UI.toggleLoader(true, "Registrando na fila...");
         
-        // Chama o FilaService (o arquivo independente que você criou)
+        // Chama o FilaService independente
         await FilaService.entrarNaLista(state, state.currentUser, { turno });
 
-        await UI.mostrarAlerta("Sucesso!", "Você está na fila de espera. Se alguém cancelar, você será avisado via Push!");
+        await UI.mostrarAlerta("Sucesso!", "Você está na fila de espera! Se uma vaga surgir, avisaremos você via Push.");
         
-        // Limpa a seleção para evitar confusão visual
-        resetarAgendamento();
-        UI.mostrarContainerForm(false);
+        // Esconde o botão após o sucesso
+        const containerFila = document.getElementById('container-fila-espera');
+        if (containerFila) containerFila.style.display = 'none';
 
     } catch (err) {
         console.error("Erro ao entrar na fila:", err);
-        await UI.mostrarAlerta("Erro", "Não foi possível te colocar na fila agora.");
+        await UI.mostrarAlerta("Erro", "Falha ao registrar interesse: " + err.message);
     } finally {
         UI.toggleLoader(false);
     }
 }
 
-// Torna a função acessível globalmente para o botão na interface (HTML)
+// Torna a função acessível globalmente para o botão no HTML
 window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
