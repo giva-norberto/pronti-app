@@ -1,52 +1,42 @@
-import { db } from './vitrini-firebase.js';
-import { collection, addDoc, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+async entrarNaLista(state, usuario, preferencias) {
+    if (this.isProcessing) return;
+    this.isProcessing = true;
 
-export const FilaService = {
-    // Evita disparos duplos usando uma trava de processamento simples
-    isProcessing: false,
-
-    async entrarNaLista(dadosAgendamento, usuario, preferencias) {
-        if (this.isProcessing) return;
-        this.isProcessing = true;
-
-        try {
-            const filaRef = collection(db, "fila_agendamentos");
-            
-            const novoRegistro = {
-                clienteId: usuario.uid,
-                clienteNome: usuario.displayName || "Cliente",
-                clienteToken: localStorage.getItem('fcm_token') || null, // Para o Push
-                profissionalId: dadosAgendamento.profissional.id,
-                profissionalNome: dadosAgendamento.profissional.nome,
-                servicos: dadosAgendamento.servicos.map(s => ({ id: s.id, nome: s.nome, duracao: s.duracao })),
-                preferencias: preferencias, // { turno: 'manha', observacao: '' }
-                status: "aguardando",
-                criadoEm: new Date().toISOString()
-            };
-
-            const docRef = await addDoc(filaRef, novoRegistro);
-            console.log("✅ Inserido na fila com ID:", docRef.id);
-            return { sucesso: true, id: docRef.id };
-
-        } catch (error) {
-            console.error("❌ Erro ao inserir na fila:", error);
-            throw error;
-        } finally {
-            this.isProcessing = false;
+    try {
+        // ✅ PROTEÇÃO: Verifica se o profissional existe antes de ler o ID
+        const profissional = state.agendamento?.profissional;
+        if (!profissional || !profissional.id) {
+            throw new Error("Profissional não identificado no estado da aplicação.");
         }
-    },
 
-    async buscarProximoDaFila(profissionalId, duracaoNecessaria) {
-        // Lógica para encontrar quem está esperando por esse tempo vago
-        const q = query(
-            collection(db, "fila_agendamentos"),
-            where("profissionalId", "==", profissionalId),
-            where("status", "==", "aguardando"),
-            orderBy("criadoEm", "asc"),
-            limit(1)
-        );
-        
-        const snapshot = await getDocs(q);
-        return snapshot.empty ? null : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+        const servicos = state.agendamento?.servicos || [];
+        const filaRef = collection(db, "fila_agendamentos");
+
+        const novoRegistro = {
+            clienteId: usuario.uid,
+            clienteNome: usuario.displayName || "Cliente",
+            clienteEmail: usuario.email,
+            fcmToken: localStorage.getItem('fcm_token') || null, 
+            profissionalId: profissional.id,
+            profissionalNome: profissional.nome,
+            servicos: servicos.map(s => ({ 
+                id: s.id, 
+                nome: s.nome, 
+                duracao: s.duracao 
+            })),
+            preferencias: preferencias,
+            status: "aguardando",
+            empresaId: state.empresaId || localStorage.getItem("empresaAtivaId"),
+            criadoEm: new Date().toISOString()
+        };
+
+        const docRef = await addDoc(filaRef, novoRegistro);
+        return { sucesso: true, id: docRef.id };
+
+    } catch (error) {
+        console.error("❌ Erro ao inserir na fila:", error.message);
+        throw error;
+    } finally {
+        this.isProcessing = false;
     }
-};
+}
