@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-        /* === SEU CSS ORIGINAL - SEM ALTERAÇÕES ESSENCIAIS AQUI === */
+        /* === SEU CSS ORIGINAL - PRESERVADO === */
         body {
             font-family: 'Poppins', sans-serif;
             margin: 0;
@@ -91,13 +91,9 @@
             display: none;
         }
 
-        /* ===================================================================== */
-        /* ✅ CORREÇÃO: A CLASSE .card VOLTOU AO NORMAL (PUXANDO DO VITRINE.CSS) */
-        /* ===================================================================== */
         .card {
             background-color: #fff;
             color: #374151;
-            /* Seus outros estilos de .card do vitrine.css serão aplicados aqui */
         }
 
         .vitrine-card[data-menu-card="assinatura"] {
@@ -108,7 +104,6 @@
             color: #fff;
         }
         
-        /* --- ESTILOS PARA OS CARDS DE PLANO (Sem alterar .card) --- */
         #menu-assinatura {
             display: none;
             margin-top: 36px;
@@ -188,7 +183,6 @@
         .card-plano-vitrine .btn-assinar-plano:hover {
             opacity: 0.9;
         }
-        /* --- FIM DOS ESTILOS DE PLANO --- */
 
         .badge-incluso { background: #10b981; color: #fff; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
         .servico-card { background: #fff; color: #374151; padding: 14px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
@@ -234,7 +228,6 @@
             
             <div id="menu-assinatura" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                
                 <h2>Planos de Assinatura</h2> 
                 <div id="cards-planos-vitrine">
                     <p class="info" style="color: #fff;">A carregar planos disponíveis...</p>
@@ -248,10 +241,30 @@
                     <div class="form-group"><label>1. Escolha um profissional</label><div id="lista-profissionais" class="profissionais-container"></div></div>
                     <div id="agendamento-form-container" style="display: none;">
                         <div class="form-group"><label id="label-servicos">2. Escolha o(s) serviço(s)</label><div id="lista-servicos" class="servicos-container-cards"></div><div id="servicos-resumo-container" style="display: none; margin-top: 20px;"><div class="servicos-resumo"><p id="resumo-texto"></p></div><button id="btn-prosseguir-data" class="btn-prosseguir">Escolher Data e Horário</button></div></div>
-                        <div id="data-e-horario-container" style="display:none;"><div class="form-group"><label for="data-agendamento">3. Escolha uma data</label><input type="date" id="data-agendamento" required disabled></div><div class="form-group"><label>4. Escolha um horário</label><div id="grade-horarios" class="horarios-container-grid"><p class="aviso-horarios">Selecione um profissional e um serviço.</p></div></div><div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div><button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button></div>
+                        <div id="data-e-horario-container" style="display:none;">
+                            <div class="form-group"><label for="data-agendamento">3. Escolha uma data</label><input type="date" id="data-agendamento" required disabled></div>
+                            <div class="form-group"><label>4. Escolha um horário</label>
+                                <div id="grade-horarios" class="horarios-container-grid">
+                                    <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
+                                </div>
+                            </div>
+
+                            <div id="container-fila-espera" style="display:none; margin: 20px 0; padding: 20px; border: 2px dashed #6366f1; border-radius: 15px; text-align: center; background-color: #f5f3ff;">
+                                <p style="color: #4338ca; font-weight: bold; margin-bottom: 5px;">📅 Dia lotado? Não fique de fora!</p>
+                                <p style="color: #6366f1; font-size: 0.85em; margin-bottom: 15px;">Entre na fila! Se alguém cancelar, avisaremos você.</p>
+                                <button onclick="entrarNaFilaDeAgendamento()" 
+                                        style="background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 10px 22px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);">
+                                    Entrar na Fila de Espera
+                                </button>
+                            </div>
+
+                            <div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div>
+                            <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
+                        </div>
                     </div>
                 </div>
             </div>
+
             <div id="menu-informacoes" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card"><h2>Sobre o Negócio</h2><div id="info-negocio"></div></div>
@@ -316,18 +329,16 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
 
-        // =====================================================================
-        // ✅ FUNÇÃO ALTERADA PARA USAR OS NOVOS ESTILOS
-        // =====================================================================
+        // LÓGICA DE PLANOS PRESERVADA
         async function renderizarPlanosVitrine(empresaId) {
             const container = document.getElementById('cards-planos-vitrine');
             if (!container) return;
-            container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>'; // Corrigi a cor
+            container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>';
             try {
                 const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
                 const snapshot = await getDocs(planosRef);
                 if (snapshot.empty) {
-                    container.innerHTML = '<p style="color: #fff;">Nenhum plano disponível no momento.</p>'; // Corrigi a cor
+                    container.innerHTML = '<p style="color: #fff;">Nenhum plano disponível no momento.</p>';
                     return;
                 }
                 container.innerHTML = '';
@@ -339,9 +350,8 @@
                             ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
                             : '';
                         const card = document.createElement('div');
-                        card.className = 'card-plano-vitrine'; // Usa a nova classe CSS
+                        card.className = 'card-plano-vitrine';
 
-                        // Não usa mais 'style=' inline, usa a folha de estilo
                         card.innerHTML = `
                             <h3>${plano.nome}</h3>
                             <p class="preco">${precoFormatado} / mês</p>
@@ -363,11 +373,10 @@
                 });
             } catch (err) {
                 console.error("Erro ao carregar planos:", err);
-                container.innerHTML = '<p style="color: #fff;">Ocorreu um erro ao carregar os planos.</p>'; // Corrigi a cor
+                container.innerHTML = '<p style="color: #fff;">Ocorreu um erro ao carregar os planos.</p>';
             }
         }
 
-        // SUA LÓGICA ORIGINAL DE NAVEGAÇÃO, 100% INALTERADA
         document.addEventListener('DOMContentLoaded', () => {
             const cardsGrid = document.getElementById('vitrine-cards-grid');
             const menuAssinatura = document.getElementById('menu-assinatura');
@@ -404,7 +413,6 @@
     <script type="module">
         import { auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // SUA LÓGICA ORIGINAL DE AUTENTICAÇÃO NO AGENDAMENTO, 100% INALTERADA
         document.addEventListener('DOMContentLoaded', ( ) => {
             const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
             const modalAuth = document.getElementById('modal-auth-janela');
@@ -417,7 +425,6 @@
                         modalAuth.style.display = 'flex';
                         const unsubscribe = onAuthStateChanged(auth, (user) => {
                             if (user) {
-                                // console.log('Login detectado! Fechando modal e continuando agendamento.'); // DEBUG REMOVIDO
                                 unsubscribe(); fecharModal();
                                 setTimeout(() => { btnConfirmarAgendamento.click(); }, 150);
                             }
@@ -434,9 +441,7 @@
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
 
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         function getHojeDiaSemana( ) { return new Date().getDay(); }
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
             if (!empresaId) return;
             const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
@@ -455,7 +460,6 @@
             });
         }
         
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA (JÁ COM A LÓGICA DO PREÇO ZERO)
         async function renderizarServicosVitrine(empresaId) {
             const servicosRef = collection(db, "empresarios", empresaId, "servicos");
             const snapshot = await getDocs(servicosRef);
@@ -466,7 +470,7 @@
             try {
                 await marcarServicosInclusosParaUsuario(listaServicos, empresaId); 
             } catch (err) {
-                console.info('Não foi possível ler assinaturas do cliente (permissão?). Serviços exibidos normalmente.');
+                console.info('Não foi possível ler assinaturas do cliente.');
             }
 
             const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
@@ -493,7 +497,6 @@
             });
         }
         
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO, CHAMANDO A FUNÇÃO
         let empresaId = localStorage.getItem("empresaAtivaId") || null;
         if (empresaId) { renderizarServicosVitrine(empresaId); }
     </script>
@@ -502,7 +505,6 @@
         import { state } from './vitrini-state.js';
         import { fazerLogin } from './vitrini-auth.js';
         
-        // SUA LÓGICA ORIGINAL DE NAVEGAÇÃO, 100% INALTERADA
         document.addEventListener('DOMContentLoaded', () => {
             const mainNavigationContainer = document.getElementById('main-navigation-container');
             const contentSections = document.querySelectorAll('.main-content-vitrine > .menu-content');
@@ -540,7 +542,6 @@
         import { db, auth } from './vitrini-firebase.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // SUA LÓGICA ORIGINAL DE ATUALIZAÇÃO DO HEADER, 100% INALTERADA
         function atualizarHeaderCard(dadosEmpresa, usuario) {
             const logoEl = document.getElementById('logo-publico');
             const nomeNegocioEl = document.getElementById('nome-negocio-publico');
@@ -565,7 +566,6 @@
                 nomeUsuarioEl.textContent = '';
             }
         }
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO DA PÁGINA, 100% INALTERADA
         async function inicializarPagina() {
             const loader = document.getElementById('vitrine-loader');
             const content = document.getElementById('vitrine-content');
@@ -577,14 +577,10 @@
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
                         dadosEmpresa = docSnap.data();
-                    } else {
-                        console.error("Empresa não encontrada:", empresaId);
                     }
                 } catch (error) {
                     console.error("Erro ao buscar dados da empresa:", error);
                 }
-            } else {
-                console.error("ID da empresa não encontrado no localStorage.");
             }
             onAuthStateChanged(auth, (usuario) => {
                 atualizarHeaderCard(dadosEmpresa, usuario);
@@ -595,64 +591,21 @@
         document.addEventListener('DOMContentLoaded', inicializarPagina);
     </script>
 
-    <!-- =========================
-         NOVO: Listener para atualizar a tela AUTOMATICAMENTE
-         após confirmação do agendamento (sem alterar a lógica existente)
-         ========================= -->
     <script type="module">
-        // Este pequeno trecho apenas escuta o evento 'agendamento:salvo'
-        // (emitido pela função salvarAgendamento no seu módulo de agendamento)
-        // e então navega para a aba "Minhas Reservas" e dispara o botão "Ver Ativos".
-        // Não altera nenhuma lógica de negócio; apenas dispara os mesmos handlers UI
-        // que o clique manual do usuário faria.
-
         document.addEventListener('DOMContentLoaded', () => {
             document.addEventListener('agendamento:salvo', (e) => {
-                // 1) opcional: mostrar uma confirmação rápida (UI existente)
-                try {
-                    if (window.UI && typeof UI.mostrarToast === 'function') {
-                        UI.mostrarToast('Agendamento confirmado!', 'success');
-                    } else if (typeof window.alert === 'function') {
-                        // pequeno fallback não intrusivo (remova se não quiser)
-                        // alert('Agendamento confirmado!');
-                    }
-                } catch (err) {
-                    // não interrompe fluxo por erro em UI
-                    console.warn('Erro ao mostrar toast de confirmação:', err);
-                }
-
-                // 2) navegar para a aba "visualizacao" (mesma ação do clique do usuário)
                 const visualCard = document.querySelector('.vitrine-card[data-menu-card="visualizacao"]');
                 if (visualCard) {
-                    // Dispara o clique para reutilizar toda a lógica de navegação já existente
                     visualCard.click();
-
-                    // 3) garantir que o botão "Ver Ativos" seja acionado para carregar os agendamentos
-                    //    com pequeno delay para permitir que a aba seja exibida
                     setTimeout(() => {
                         const btnAtivos = document.getElementById('btn-ver-ativos');
-                        if (btnAtivos) {
-                            // Simula clique para acionar handleFiltroAgendamentos
-                            btnAtivos.click();
-                        } else {
-                            // fallback: se handleFiltroAgendamentos estiver exposto globalmente, chama diretamente
-                            try {
-                                if (typeof window.handleFiltroAgendamentos === 'function') {
-                                    window.handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
-                                }
-                            } catch (err) {
-                                console.warn('Não foi possível disparar carregamento dos agendamentos automaticamente:', err);
-                            }
-                        }
+                        if (btnAtivos) btnAtivos.click();
                     }, 200);
-                } else {
-                    console.warn('Elemento de navegação para "Minhas Reservas" não encontrado.');
                 }
             });
         });
     </script>
 
-    <!-- ✅ ADICIONADO: carrega o módulo de notificações para expor window.solicitarPermissaoParaNotificacoes -->
     <script type="module" src="/messaging.js"></script>
 </body>
 </html>
