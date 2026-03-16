@@ -203,18 +203,28 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
 
 /**
  * Renderiza os horários disponíveis.
+ * ADIÇÃO: Gerenciamento automático do botão de Fila de Espera.
  */
 export function renderizarHorarios(slots, mensagem = '') {
     const container = document.getElementById('grade-horarios');
+    const containerFila = document.getElementById('container-fila-espera'); // Pega o novo container de fila
     container.innerHTML = '';
+
     if (mensagem) {
         container.innerHTML = `<p class="aviso-horarios">${mensagem}</p>`;
+        if (containerFila) containerFila.style.display = 'block'; // Mostra fila se houver erro/mensagem
         return;
     }
+
     if (!slots || slots.length === 0) {
         container.innerHTML = '<p class="aviso-horarios">Nenhum horário disponível para esta data.</p>';
+        if (containerFila) containerFila.style.display = 'block'; // Mostra botão da fila se estiver lotado
         return;
     }
+
+    // Se chegou aqui, tem slots, então esconde o botão da fila
+    if (containerFila) containerFila.style.display = 'none';
+
     slots.forEach(horario => {
         container.innerHTML += `<button class="btn-horario" data-horario="${horario}">${horario}</button>`;
     });
