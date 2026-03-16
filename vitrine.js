@@ -11,7 +11,7 @@ import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES ---
 import { db } from './vitrini-firebase.js';
-import { collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, query, where, getDocs, limit, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 // =====================================================================
 // ✅ 1. IMPORTAÇÃO NECESSÁRIA ADICIONADA (SE JÁ NÃO ESTIVER LÁ)
 // =====================================================================
@@ -607,3 +607,43 @@ async function handleCancelarClick(e) {
         }
     }
 }
+
+// =====================================================================
+// ✅ NOVA FUNÇÃO: GERENCIAR FILA DE AGENDAMENTO
+// =====================================================================
+/**
+ * Adiciona um cliente na fila de agendamento.
+ * @param {Array<{id, nome, duracao}>} servicos - Serviços selecionados.
+ * @param {string} profissionalId - ID do profissional.
+ * @param {string} usuarioId - ID do usuário/cliente.
+ */
+async function adicionarNaFilaDeAgendamento(servicos, profissionalId, usuarioId) {
+    if (!servicos || servicos.length === 0 || !profissionalId || !usuarioId) {
+        console.warn("Dados insuficientes para adicionar à fila de agendamento.");
+        return;
+    }
+
+    try {
+        const filaRef = collection(db, "fila_agendamentos");
+        const agendamentoFila = {
+            usuarioId,
+            profissionalId,
+            servicos: servicos.map(s => ({
+                id: s.id,
+                nome: s.nome,
+                duracao: s.duracao
+            })),
+            timestamp: new Date().toISOString(),
+            status: "aguardando"
+        };
+        await addDoc(filaRef, agendamentoFila);
+        console.log("Agendamento adicionado à fila com sucesso!");
+    } catch (err) {
+        console.error("Erro ao adicionar agendamento na fila:", err);
+    }
+}
+// =====================================================================
+// Como usar:
+// adicionarNaFilaDeAgendamento(state.agendamento.servicos, profissional.id, state.currentUser.uid);
+//*
+
