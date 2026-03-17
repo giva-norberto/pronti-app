@@ -98,54 +98,6 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
   return filtrarSlotsPorTurno(slots, turnoPreferido);
 }
 
-async function buscarPrecoDosServicos(empresaId, servicos) {
-  const lista = Array.isArray(servicos) ? servicos : [];
-  let precoTotal = 0;
-
-  for (const servico of lista) {
-    const servicoId = servico?.id;
-    if (!servicoId) continue;
-
-    try {
-      const servicoRef = db
-        .collection("empresarios")
-        .doc(empresaId)
-        .collection("servicos")
-        .doc(servicoId);
-
-      const servicoSnap = await servicoRef.get();
-
-      if (servicoSnap.exists) {
-        const dados = servicoSnap.data() || {};
-        const preco =
-          Number(dados.precoPromocional) ||
-          Number(dados.preco) ||
-          Number(dados.valor) ||
-          0;
-
-        precoTotal += preco;
-      }
-    } catch (error) {
-      console.error(`❌ Erro ao buscar preço do serviço ${servicoId}:`, error.message);
-    }
-  }
-
-  return precoTotal;
-}
-
-async function montarServicoAgendamento(empresaId, servicos, duracaoTotal) {
-  const lista = Array.isArray(servicos) ? servicos : [];
-  const precoTotal = await buscarPrecoDosServicos(empresaId, lista);
-
-  return {
-    servicoId: lista.map((s) => s.id).filter(Boolean).join(","),
-    servicoNome: lista.map((s) => s.nome).filter(Boolean).join(" + "),
-    servicoDuracao: Number(duracaoTotal) || 0,
-    servicoPrecoCobrado: precoTotal,
-    servicoPrecoOriginal: precoTotal,
-  };
-}
-
 async function buscarTokenDoCliente(item) {
   if (item?.fcmToken) return item.fcmToken;
   if (!item?.clienteId) return null;
@@ -162,16 +114,21 @@ async function buscarTokenDoCliente(item) {
   }
 }
 
-async function enviarPushCliente(item, dataAgendada, horarioAgendado) {
+function construirLinkConfirmacao(filaId, empresaId) {
+  return `https://prontiapp.com.br/confirmar-fila.html?filaId=${encodeURIComponent(String(filaId || ""))}&empresa=${encodeURIComponent(String(empresaId || ""))}`;
+}
+
+async function enviarPushOferta(item, filaId, dataOferta, horarioOferta) {
   const token = await buscarTokenDoCliente(item);
+  const link = construirLinkConfirmacao(filaId, item?.empresaId);
 
   if (!token) {
-    console.log(`ℹ️ Cliente ${item?.clienteId || "desconhecido"} sem token. Push ignorado.`);
-    return;
+    console.log(`ℹ️ Cliente ${item?.clienteId || "desconhecido"} sem token. Oferta ficará salva sem push.`);
+    return false;
   }
 
-  const title = "Horário encontrado no Pronti 🎉";
-  const body = `Seu encaixe foi confirmado para ${dataAgendada} às ${horarioAgendado}.`;
+  const title = "Encontramos um horário para você 🎉";
+  const body = `Temos um horário em ${dataOferta} às ${horarioOferta}. Toque para confirmar sua vaga.`;
 
   try {
     const response = await fcm.send({
@@ -181,12 +138,13 @@ async function enviarPushCliente(item, dataAgendada, horarioAgendado) {
         body,
       },
       data: {
-        tipo: "fila_agendada",
+        tipo: "fila_oferta",
+        filaId: String(filaId || ""),
         empresaId: String(item.empresaId || ""),
         profissionalId: String(item.profissionalId || ""),
-        data: String(dataAgendada || ""),
-        horario: String(horarioAgendado || ""),
-        link: `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(String(item.empresaId || ""))}`,
+        dataOferta: String(dataOferta || ""),
+        horarioOferta: String(horarioOferta || ""),
+        link,
       },
       android: {
         priority: "high",
@@ -213,7 +171,7 @@ async function enviarPushCliente(item, dataAgendada, horarioAgendado) {
           body,
         },
         fcmOptions: {
-          link: `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(String(item.empresaId || ""))}`,
+          link,
         },
         headers: {
           Urgency: "high",
@@ -221,13 +179,16 @@ async function enviarPushCliente(item, dataAgendada, horarioAgendado) {
       },
     });
 
-    console.log(`✅ Push enviado ao cliente ${item.clienteId}:`, response);
+    console.log(`✅ Push de oferta enviado ao cliente ${item.clienteId}:`, response);
+    return true;
   } catch (error) {
-    console.error(`❌ Erro ao enviar push para cliente ${item.clienteId}:`, error.message);
+    console.error(`❌ Erro ao enviar push de oferta para cliente ${item.clienteId}:`, error.message);
 
     if (error.code === "messaging/registration-token-not-registered") {
       console.warn(`⚠️ Token inválido do cliente ${item.clienteId}.`);
     }
+
+    return false;
   }
 }
 
@@ -254,7 +215,7 @@ async function reservarFilaParaProcessamento(docFila) {
   }
 }
 
-async function liberarFilaSemEncaixe(docFila) {
+async function liberarFilaSemOferta(docFila) {
   await docFila.ref.update({
     processando: false,
     ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
@@ -332,45 +293,32 @@ async function processarItemFila(docFila) {
 
   if (!slotsDisponiveis.length) {
     console.log(`❌ Nenhum slot disponível para a fila ${filaId}`);
-    await liberarFilaSemEncaixe(docFila);
+    await liberarFilaSemOferta(docFila);
     return;
   }
 
   const horarioEscolhido = slotsDisponiveis[0];
-  const servicoInfo = await montarServicoAgendamento(empresaId, item.servicos, duracaoTotal);
+  const dataOferta = dataFila;
+  const expiraEm = admin.firestore.Timestamp.fromDate(
+    new Date(Date.now() + 5 * 60 * 1000)
+  );
 
-  const novoAgendamento = {
-    clienteFoto: item.clienteFoto || null,
-    clienteId: item.clienteId || null,
-    clienteNome: item.clienteNome || "Cliente",
-    criadoEm: admin.firestore.FieldValue.serverTimestamp(),
-    data: dataFila,
-    empresaId,
-    horario: horarioEscolhido,
-    profissionalId,
-    profissionalNome: item.profissionalNome || "Profissional",
-    servicoDuracao: servicoInfo.servicoDuracao,
-    servicoId: servicoInfo.servicoId,
-    servicoNome: servicoInfo.servicoNome,
-    servicoPrecoCobrado: servicoInfo.servicoPrecoCobrado,
-    servicoPrecoOriginal: servicoInfo.servicoPrecoOriginal,
-    status: "ativo",
-  };
-
-  const agendamentoCriadoRef = await agendamentosRef.add(novoAgendamento);
+  const linkConfirmacao = construirLinkConfirmacao(filaId, empresaId);
+  const pushEnviado = await enviarPushOferta(item, filaId, dataOferta, horarioEscolhido);
 
   await docFila.ref.update({
-    status: "agendado",
+    status: "oferta_enviada",
     processando: false,
-    agendamentoId: agendamentoCriadoRef.id,
-    dataAgendada: dataFila,
-    horarioAgendado: horarioEscolhido,
-    agendadoEm: admin.firestore.FieldValue.serverTimestamp(),
+    dataOferta,
+    horarioOferta: horarioEscolhido,
+    ofertaExpiraEm: expiraEm,
+    linkConfirmacao,
+    pushOfertaEnviado: pushEnviado,
+    ofertaEnviadaEm: admin.firestore.FieldValue.serverTimestamp(),
+    ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  await enviarPushCliente(item, dataFila, horarioEscolhido);
-
-  console.log(`✅ Fila ${filaId} encaixada com sucesso em ${horarioEscolhido}`);
+  console.log(`✅ Oferta criada para fila ${filaId} em ${horarioEscolhido}`);
 }
 
 async function processarFila() {
