@@ -208,7 +208,7 @@ async function processarOfertaFilaDaURL() {
 
         const servicoParaSalvar = {
             id: servicosOferta.map(s => s.id).filter(Boolean).join(','),
-            nome: servicosOferta.map(s => s.nome).filter(Boolean).join(' + '),
+            nome: servicosOferta.map(s => s.nome).join(' + '),
             duracao: Number(filaAtual.duracaoTotal) || servicosOferta.reduce((total, s) => total + (Number(s.duracao) || 0), 0),
             preco: precoTotalCalculado
         };
