@@ -7,6 +7,7 @@ const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
+const { processarFila } = require("./processarFila");
 
 // ========================= Inicialização do Firebase =========================
 if (!admin.apps.length) {
@@ -700,6 +701,26 @@ exports.rotinaLembreteAgendamento = onSchedule(
 
     } catch (error) {
       logger.error("Erro na rotina de lembretes:", error);
+    }
+  }
+);
+
+// ============================================================================
+// rotinaProcessarFila — JOB AUTOMÁTICO DA FILA
+// ============================================================================
+exports.rotinaProcessarFila = onSchedule(
+  {
+    schedule: "*/5 * * * *",
+    timeZone: "America/Sao_Paulo",
+    region: "southamerica-east1",
+    memory: "256MiB",
+  },
+  async () => {
+    try {
+      await processarFila();
+      logger.info("✅ Rotina de processamento da fila executada com sucesso.");
+    } catch (error) {
+      logger.error("❌ Erro na rotina de processamento da fila:", error);
     }
   }
 );
