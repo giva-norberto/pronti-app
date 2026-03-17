@@ -8,8 +8,16 @@ import {
   limit,
   serverTimestamp,
   updateDoc,
-  doc
+  doc,
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import {
+  getMessaging,
+  getToken,
+  isSupported
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 export const FilaService = {
   isProcessing: false,
@@ -28,7 +36,7 @@ export const FilaService = {
       day: "2-digit"
     });
 
-    return formatter.format(agora); // ex: 2026-03-17
+    return formatter.format(agora);
   },
 
   /**
@@ -47,6 +55,157 @@ export const FilaService = {
    */
   calcularDuracaoTotal(servicos = []) {
     return servicos.reduce((total, servico) => total + (Number(servico.duracao) || 0), 0);
+  },
+
+  /**
+   * Busca token salvo no Firestore.
+   */
+  async buscarTokenSalvoDoUsuario(usuarioId) {
+    if (!usuarioId) return null;
+
+    try {
+      const tokenRef = doc(db, "mensagensTokens", usuarioId);
+      const tokenSnap = await getDoc(tokenRef);
+
+      if (!tokenSnap.exists()) return null;
+
+      const dados = tokenSnap.data() || {};
+      if (!dados.ativo) return null;
+
+      return dados.fcmToken || null;
+    } catch (error) {
+      console.error("❌ Erro ao buscar token salvo do usuário:", error.message);
+      return null;
+    }
+  },
+
+  /**
+   * Salva token do usuário na coleção central de tokens.
+   */
+  async salvarTokenDoUsuario({ usuarioId, empresaId, token }) {
+    if (!usuarioId || !token) return;
+
+    try {
+      const tokenRef = doc(db, "mensagensTokens", usuarioId);
+
+      await setDoc(tokenRef, {
+        ativo: true,
+        empresaId: empresaId || null,
+        fcmToken: token,
+        navegador: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        tipo: "web",
+        updatedAt: serverTimestamp(),
+        userId: usuarioId
+      }, { merge: true });
+
+      try {
+        localStorage.setItem("fcm_token", token);
+      } catch (_) {}
+    } catch (error) {
+      console.error("❌ Erro ao salvar token do usuário:", error.message);
+    }
+  },
+
+  /**
+   * Tenta obter VAPID key de locais comuns sem quebrar o fluxo.
+   */
+  obterVapidKey() {
+    try {
+      return (
+        window?.PRONTI_FIREBASE_VAPID_KEY ||
+        window?.__FIREBASE_VAPID_KEY ||
+        localStorage.getItem("firebase_vapid_key") ||
+        localStorage.getItem("vapidKey") ||
+        null
+      );
+    } catch (_) {
+      return null;
+    }
+  },
+
+  /**
+   * Tenta gerar token web do Firebase Messaging.
+   * Não quebra o fluxo se o navegador não suportar ou se o usuário negar permissão.
+   */
+  async gerarTokenWebSePossivel(usuarioId, empresaId) {
+    try {
+      const suporte = await isSupported();
+      if (!suporte) return null;
+
+      if (typeof window === "undefined" || typeof Notification === "undefined") {
+        return null;
+      }
+
+      let permissao = Notification.permission;
+
+      if (permissao === "default") {
+        permissao = await Notification.requestPermission();
+      }
+
+      if (permissao !== "granted") {
+        return null;
+      }
+
+      const vapidKey = this.obterVapidKey();
+      if (!vapidKey) {
+        console.warn("⚠️ VAPID key não encontrada para gerar token web.");
+        return null;
+      }
+
+      const app = getApp();
+      const messaging = getMessaging(app);
+      const token = await getToken(messaging, { vapidKey });
+
+      if (!token) return null;
+
+      await this.salvarTokenDoUsuario({
+        usuarioId,
+        empresaId,
+        token
+      });
+
+      return token;
+    } catch (error) {
+      console.error("❌ Erro ao gerar token web:", error.message);
+      return null;
+    }
+  },
+
+  /**
+   * Garante o melhor token possível para o cliente:
+   * 1. Firestore
+   * 2. localStorage
+   * 3. gera token novo se possível
+   */
+  async garantirTokenDoCliente(usuarioId, empresaId) {
+    if (!usuarioId) return null;
+
+    // 1) tenta token já salvo
+    const tokenSalvo = await this.buscarTokenSalvoDoUsuario(usuarioId);
+    if (tokenSalvo) return tokenSalvo;
+
+    // 2) tenta localStorage
+    let tokenLocal = null;
+    try {
+      tokenLocal = localStorage.getItem("fcm_token") || null;
+    } catch (_) {
+      tokenLocal = null;
+    }
+
+    if (tokenLocal) {
+      await this.salvarTokenDoUsuario({
+        usuarioId,
+        empresaId,
+        token: tokenLocal
+      });
+      return tokenLocal;
+    }
+
+    // 3) tenta gerar novo token web
+    const tokenGerado = await this.gerarTokenWebSePossivel(usuarioId, empresaId);
+    if (tokenGerado) return tokenGerado;
+
+    return null;
   },
 
   /**
@@ -73,7 +232,6 @@ export const FilaService = {
       const dados = item.data();
       const dataFila = dados?.dataFila || null;
 
-      // Se já existir uma fila aberta HOJE, bloqueia
       if (dataFila === hoje) {
         return {
           duplicado: true,
@@ -82,7 +240,6 @@ export const FilaService = {
         };
       }
 
-      // Se existir fila aberta de outro dia, expira automaticamente
       if (dataFila && dataFila !== hoje) {
         await updateDoc(doc(db, "fila_agendamentos", item.id), {
           status: "expirado",
@@ -90,8 +247,6 @@ export const FilaService = {
         });
       }
 
-      // Segurança extra:
-      // se existir registro antigo sem dataFila, também expira
       if (!dataFila) {
         await updateDoc(doc(db, "fila_agendamentos", item.id), {
           status: "expirado",
@@ -123,7 +278,6 @@ export const FilaService = {
       const empresaId = state?.empresaId || localStorage.getItem("empresaAtivaId");
       const hoje = this.getDataLocalBR();
 
-      // Validações principais
       if (!usuario?.uid) {
         throw new Error("Usuário não autenticado.");
       }
@@ -149,7 +303,6 @@ export const FilaService = {
 
       const filaRef = collection(db, "fila_agendamentos");
 
-      // Verifica duplicidade real / expira antigas
       const validacao = await this.validarDuplicidadeOuExpirarAntigas({
         filaRef,
         usuarioId: usuario.uid,
@@ -167,12 +320,13 @@ export const FilaService = {
         };
       }
 
-      // Monta o novo registro
+      const tokenCliente = await this.garantirTokenDoCliente(usuario.uid, empresaId);
+
       const novoRegistro = {
         clienteId: usuario.uid,
         clienteNome: usuario.displayName || "Cliente",
         clienteEmail: usuario.email || null,
-        fcmToken: localStorage.getItem("fcm_token") || null,
+        fcmToken: tokenCliente || null,
 
         empresaId,
 
@@ -196,6 +350,14 @@ export const FilaService = {
       const docRef = await addDoc(filaRef, novoRegistro);
 
       console.log("✅ Sucesso! ID na fila:", docRef.id);
+
+      if (!tokenCliente) {
+        return {
+          sucesso: true,
+          id: docRef.id,
+          mensagem: "Você entrou na fila, mas as notificações não estão ativas neste dispositivo. Para receber a oferta mais rápido, permita notificações no navegador."
+        };
+      }
 
       return {
         sucesso: true,
