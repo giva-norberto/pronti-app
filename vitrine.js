@@ -33,6 +33,15 @@ function parseDataISO(dateStr) {
     return new Date(dateStr);
 }
 
+// ✅ MELHORIA ÚNICA: sugere automaticamente o turno com base na hora atual
+function sugerirTurnoAtual() {
+    const hora = new Date().getHours();
+
+    if (hora < 12) return "Manhã";
+    if (hora < 18) return "Tarde";
+    return "Noite";
+}
+
 // --- INICIALIZAÇÃO DA PÁGINA ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -592,9 +601,8 @@ async function entrarNaFilaDeAgendamento() {
     const querEntrar = await UI.mostrarConfirmacao("Fila de Espera", "Deseja entrar na fila de espera para este profissional?");
     if (!querEntrar) return;
 
-    // Pergunta as preferências via Prompt (Didático)
-    const turno = prompt("Qual período você prefere? (Manhã, Tarde ou Noite)", "Qualquer horário");
-    if (turno === null) return; 
+    // ✅ MELHORIA: substitui o prompt feio por sugestão automática de turno
+    const turno = sugerirTurnoAtual();
 
     try {
         UI.toggleLoader(true, "Registrando na fila...");
