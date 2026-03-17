@@ -167,7 +167,7 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
 // --- FUNÇÃO PARA RENDERIZAR PLANOS (SUA ORIGINAL, INALTERADA) ---
 async function renderizarPlanosDeAssinatura(empresaId) {
     // ... SUA LÓGICA ORIGINAL AQUI ...
-    const planosDiv = document.getElementById('lista-de-planos'); // Certifique-se que esse ID existe no HTML
+   const planosDiv = document.getElementById('cards-planos-vitrine'); // Certifique-se que esse ID existe no HTML
     if (!planosDiv) {
         console.warn("Elemento 'lista-de-planos' não encontrado para renderizar planos.");
         return;
