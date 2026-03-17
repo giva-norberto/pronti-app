@@ -607,3 +607,293 @@ async function handleCancelarClick(e) {
         }
     }
 }
+
+// =====================================================================
+// ✅ PROJETO FILA - ADICIONADO SOMENTE NO FINAL DO ARQUIVO
+// =====================================================================
+
+function sugerirTurnoAtual() {
+    const hora = new Date().getHours();
+    if (hora < 12) return "Manhã";
+    if (hora < 18) return "Tarde";
+    return "Noite";
+}
+
+function obterContextoOfertaFilaDaURL() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        filaId: params.get('filaId'),
+        modo: params.get('modo')
+    };
+}
+
+function limparParametrosOfertaDaURL() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('filaId');
+    url.searchParams.delete('modo');
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}`);
+}
+
+function formatarDataOfertaFila(dataISO) {
+    const data = parseDataISO(dataISO);
+    if (!data || isNaN(data.getTime())) return dataISO || '';
+    return data.toLocaleDateString('pt-BR');
+}
+
+function timestampFilaExpirou(ts) {
+    if (!ts) return true;
+
+    let dataExpiracao = null;
+
+    if (typeof ts.toDate === 'function') {
+        dataExpiracao = ts.toDate();
+    } else if (ts.seconds) {
+        dataExpiracao = new Date(ts.seconds * 1000);
+    } else {
+        dataExpiracao = new Date(ts);
+    }
+
+    if (!dataExpiracao || isNaN(dataExpiracao.getTime())) return true;
+
+    return Date.now() > dataExpiracao.getTime();
+}
+
+async function carregarDependenciasFila() {
+    const [{ FilaService }, firestore] = await Promise.all([
+        import('./vitrine-fila-service.js'),
+        import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js")
+    ]);
+
+    return {
+        FilaService,
+        docRef: firestore.doc,
+        getDocRef: firestore.getDoc,
+        updateDocRef: firestore.updateDoc,
+        serverTimestampRef: firestore.serverTimestamp
+    };
+}
+
+async function calcularPrecoTotalOfertaFila(servicosOferta = []) {
+    let total = 0;
+
+    for (const servicoOferta of servicosOferta) {
+        const servicoCompleto = state.todosOsServicos.find(s => s.id === servicoOferta.id);
+
+        if (servicoCompleto) {
+            if (servicoCompleto.precoCobrado === 0) {
+                total += 0;
+            } else if (servicoCompleto.promocao?.precoComDesconto != null) {
+                total += Number(servicoCompleto.promocao.precoComDesconto) || 0;
+            } else {
+                total += Number(servicoCompleto.preco) || 0;
+            }
+            continue;
+        }
+
+        total += Number(servicoOferta.preco) || Number(servicoOferta.valor) || 0;
+    }
+
+    return total;
+}
+
+let ofertaFilaJaTratada = false;
+let ofertaFilaEmProcessamento = false;
+
+async function processarOfertaFilaDaURL() {
+    if (ofertaFilaJaTratada || ofertaFilaEmProcessamento) return;
+
+    const { filaId, modo } = obterContextoOfertaFilaDaURL();
+    if (!filaId || modo !== 'fila') return;
+    if (!state.empresaId || !state.dadosEmpresa) return;
+    if (!state.currentUser) return;
+
+    const {
+        docRef,
+        getDocRef,
+        updateDocRef,
+        serverTimestampRef
+    } = await carregarDependenciasFila();
+
+    const filaRef = docRef(db, "fila_agendamentos", filaId);
+    const filaSnap = await getDocRef(filaRef);
+
+    if (!filaSnap.exists()) {
+        ofertaFilaJaTratada = true;
+        await UI.mostrarAlerta("Oferta indisponível", "Essa oferta não foi encontrada ou já não está mais disponível.");
+        limparParametrosOfertaDaURL();
+        return;
+    }
+
+    const fila = filaSnap.data();
+
+    if (fila.empresaId !== state.empresaId) {
+        ofertaFilaJaTratada = true;
+        await UI.mostrarAlerta("Oferta inválida", "Essa oferta não pertence a esta empresa.");
+        limparParametrosOfertaDaURL();
+        return;
+    }
+
+    if (fila.clienteId && state.currentUser.uid !== fila.clienteId) {
+        ofertaFilaJaTratada = true;
+        await UI.mostrarAlerta("Acesso negado", "Essa oferta pertence a outro cliente.");
+        limparParametrosOfertaDaURL();
+        return;
+    }
+
+    if (fila.status === "agendado") {
+        ofertaFilaJaTratada = true;
+        await UI.mostrarAlerta("Oferta já utilizada", "Esse horário já foi confirmado anteriormente.");
+        limparParametrosOfertaDaURL();
+        return;
+    }
+
+    if (fila.status !== "oferta_enviada") {
+        ofertaFilaJaTratada = true;
+        await UI.mostrarAlerta("Oferta indisponível", "Essa oferta não está mais disponível para confirmação.");
+        limparParametrosOfertaDaURL();
+        return;
+    }
+
+    if (timestampFilaExpirou(fila.ofertaExpiraEm)) {
+        await updateDocRef(filaRef, {
+            status: "oferta_expirada",
+            expiradoEm: serverTimestampRef()
+        });
+
+        ofertaFilaJaTratada = true;
+        await UI.mostrarAlerta("Oferta expirada", "O prazo dessa oferta terminou. Entre novamente na fila para receber uma nova oportunidade.");
+        limparParametrosOfertaDaURL();
+        return;
+    }
+
+    const dataOferta = fila.dataOferta || fila.dataFila;
+    const horarioOferta = fila.horarioOferta;
+    const profissionalNome = fila.profissionalNome || "Profissional";
+    const textoConfirmacao = `Encontramos um horário para você com ${profissionalNome} em ${formatarDataOfertaFila(dataOferta)} às ${horarioOferta}. Deseja confirmar agora?`;
+
+    const confirmou = await UI.mostrarConfirmacao("Confirmar horário encontrado", textoConfirmacao);
+    if (!confirmou) return;
+
+    try {
+        ofertaFilaEmProcessamento = true;
+        UI.toggleLoader(true, "Confirmando seu horário...");
+
+        const filaSnapAtual = await getDocRef(filaRef);
+        if (!filaSnapAtual.exists()) {
+            throw new Error("A oferta não foi encontrada.");
+        }
+
+        const filaAtual = filaSnapAtual.data();
+
+        if (filaAtual.status !== "oferta_enviada") {
+            throw new Error("Essa oferta não está mais disponível.");
+        }
+
+        if (timestampFilaExpirou(filaAtual.ofertaExpiraEm)) {
+            await updateDocRef(filaRef, {
+                status: "oferta_expirada",
+                expiradoEm: serverTimestampRef()
+            });
+            throw new Error("O prazo dessa oferta expirou.");
+        }
+
+        const servicosOferta = Array.isArray(filaAtual.servicos) ? filaAtual.servicos : [];
+        const precoTotalCalculado = await calcularPrecoTotalOfertaFila(servicosOferta);
+
+        const servicoParaSalvar = {
+            id: servicosOferta.map(s => s.id).filter(Boolean).join(','),
+            nome: servicosOferta.map(s => s.nome).filter(Boolean).join(' + '),
+            duracao: Number(filaAtual.duracaoTotal) || servicosOferta.reduce((total, s) => total + (Number(s.duracao) || 0), 0),
+            preco: precoTotalCalculado
+        };
+
+        const agendamentoParaSalvar = {
+            profissional: {
+                id: filaAtual.profissionalId,
+                nome: filaAtual.profissionalNome
+            },
+            data: filaAtual.dataOferta || filaAtual.dataFila,
+            horario: filaAtual.horarioOferta,
+            servico: servicoParaSalvar,
+            empresa: state.dadosEmpresa
+        };
+
+        await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
+
+        await updateDocRef(filaRef, {
+            status: "agendado",
+            confirmadoEm: serverTimestampRef(),
+            clienteConfirmou: true
+        });
+
+        ofertaFilaJaTratada = true;
+        limparParametrosOfertaDaURL();
+
+        const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
+        await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
+        resetarAgendamento();
+
+        UI.trocarAba('menu-visualizacao');
+        handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+
+    } catch (error) {
+        console.error("Erro ao confirmar oferta da fila:", error);
+        await UI.mostrarAlerta("Erro", error.message || "Não foi possível confirmar essa oferta.");
+    } finally {
+        ofertaFilaEmProcessamento = false;
+        UI.toggleLoader(false);
+    }
+}
+
+async function entrarNaFilaDeAgendamento() {
+    if (!state.currentUser) {
+        await UI.mostrarAlerta("Login Necessário", "Por favor, faça login para entrar na fila.");
+        if (UI.abrirModalLogin) UI.abrirModalLogin();
+        return;
+    }
+
+    if (!state.agendamento?.profissional?.id) {
+        await UI.mostrarAlerta("Atenção", "Profissional não identificado. Por favor, selecione-o novamente.");
+        return;
+    }
+
+    const querEntrar = await UI.mostrarConfirmacao("Fila de Espera", "Deseja entrar na fila de espera para este profissional?");
+    if (!querEntrar) return;
+
+    const turno = sugerirTurnoAtual();
+
+    try {
+        UI.toggleLoader(true, "Registrando na fila...");
+
+        const { FilaService } = await carregarDependenciasFila();
+        const resultado = await FilaService.entrarNaLista(state, state.currentUser, { turno });
+
+        if (!resultado?.sucesso) {
+            await UI.mostrarAlerta("Atenção", resultado?.mensagem || "Não foi possível entrar na fila.");
+            return;
+        }
+
+        await UI.mostrarAlerta("Sucesso!", "Você está na fila de espera! Se uma vaga surgir, enviaremos um link do Pronti para você confirmar em até 5 minutos.");
+
+        const containerFila = document.getElementById('container-fila-espera');
+        if (containerFila) containerFila.style.display = 'none';
+
+    } catch (err) {
+        console.error("Erro ao entrar na fila:", err);
+        await UI.mostrarAlerta("Erro", "Falha ao registrar interesse: " + err.message);
+    } finally {
+        UI.toggleLoader(false);
+    }
+}
+
+window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupAuthListener(async () => {
+        try {
+            await processarOfertaFilaDaURL();
+        } catch (err) {
+            console.error("Erro ao processar oferta da fila:", err);
+        }
+    });
+});
