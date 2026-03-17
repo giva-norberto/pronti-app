@@ -1,5 +1,10 @@
 const admin = require("firebase-admin");
 
+// 🔥 GARANTE INICIALIZAÇÃO (SEM DUPLICAR)
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
 const db = admin.firestore();
 
 async function processarFila() {
