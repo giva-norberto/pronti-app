@@ -107,6 +107,8 @@ async function buscarTokenDoCliente(item) {
     if (!tokenSnap.exists) return null;
 
     const dados = tokenSnap.data() || {};
+    if (dados.ativo === false) return null;
+
     return dados.fcmToken || null;
   } catch (error) {
     console.error(`❌ Erro ao buscar token do cliente ${item.clienteId}:`, error.message);
@@ -115,7 +117,7 @@ async function buscarTokenDoCliente(item) {
 }
 
 function construirLinkConfirmacao(filaId, empresaId) {
-  return `https://prontiapp.com.br/confirmar-fila.html?filaId=${encodeURIComponent(String(filaId || ""))}&empresa=${encodeURIComponent(String(empresaId || ""))}`;
+  return `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(String(empresaId || ""))}&filaId=${encodeURIComponent(String(filaId || ""))}&modo=fila`;
 }
 
 async function enviarPushOferta(item, filaId, dataOferta, horarioOferta) {
