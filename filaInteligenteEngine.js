@@ -1,7 +1,5 @@
 // filaInteligenteEngine.js
-import {
-  db
-} from "./firebase-config.js";
+import { db } from "./vitrini-firebase.js";
 
 import {
   collection,
@@ -18,16 +16,23 @@ import {
   Timestamp,
   runTransaction,
   onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 /* =========================================================
    CONFIG
 ========================================================= */
+const BASE_COLLECTION = "empresarios";
 const FILA_COLLECTION = "fila_espera";
 const OFERTAS_COLLECTION = "ofertas_fila";
 const AGENDAMENTOS_COLLECTION = "agendamentos";
 
 const TEMPO_OFERTA_MINUTOS = 5;
+const STATUS_OCUPADOS = [
+  "ativo",
+  "confirmado",
+  "pendente_confirmacao",
+  "aguardando_pagamento"
+];
 
 /* =========================================================
    HELPERS
@@ -64,17 +69,21 @@ function horarioDentroDoPeriodo(horario, periodo) {
   return true;
 }
 
+function getEmpresarioPath(empresaId) {
+  return [BASE_COLLECTION, empresaId];
+}
+
 /* =========================================================
    VERIFICA SE SLOT JÁ FOI OCUPADO
 ========================================================= */
 async function slotJaOcupado(empresaId, { data, horario, profissionalId }) {
-  const agRef = collection(db, "empresas", empresaId, AGENDAMENTOS_COLLECTION);
+  const agRef = collection(db, ...getEmpresarioPath(empresaId), AGENDAMENTOS_COLLECTION);
 
   let qBase = query(
     agRef,
     where("data", "==", data),
     where("horario", "==", horario),
-    where("status", "in", ["confirmado", "pendente_confirmacao", "aguardando_pagamento"])
+    where("status", "in", STATUS_OCUPADOS)
   );
 
   if (profissionalId) {
@@ -83,7 +92,7 @@ async function slotJaOcupado(empresaId, { data, horario, profissionalId }) {
       where("data", "==", data),
       where("horario", "==", horario),
       where("profissionalId", "==", profissionalId),
-      where("status", "in", ["confirmado", "pendente_confirmacao", "aguardando_pagamento"])
+      where("status", "in", STATUS_OCUPADOS)
     );
   }
 
@@ -95,7 +104,7 @@ async function slotJaOcupado(empresaId, { data, horario, profissionalId }) {
    BUSCA PRÓXIMO DA FILA
 ========================================================= */
 async function buscarProximoDaFila(empresaId, vaga) {
-  const filaRef = collection(db, "empresas", empresaId, FILA_COLLECTION);
+  const filaRef = collection(db, ...getEmpresarioPath(empresaId), FILA_COLLECTION);
 
   const qFila = query(
     filaRef,
@@ -151,8 +160,8 @@ export async function ofertarVagaParaFila(empresaId, vaga) {
       return { ok: false, motivo: "ninguem_na_fila" };
     }
 
-    const ofertaRef = collection(db, "empresas", empresaId, OFERTAS_COLLECTION);
-    const filaDocRef = doc(db, "empresas", empresaId, FILA_COLLECTION, candidato.id);
+    const ofertaRef = collection(db, ...getEmpresarioPath(empresaId), OFERTAS_COLLECTION);
+    const filaDocRef = doc(db, ...getEmpresarioPath(empresaId), FILA_COLLECTION, candidato.id);
 
     const slotKey = montarSlotKey({
       data: vaga.data,
@@ -192,9 +201,6 @@ export async function ofertarVagaParaFila(empresaId, vaga) {
       totalOfertasRecebidas: (candidato.totalOfertasRecebidas || 0) + 1
     });
 
-    // aqui você pode chamar sua função de push/FCM
-    // await enviarPushOfertaFila({ empresaId, ofertaId: novaOferta.id, ...oferta });
-
     return {
       ok: true,
       ofertaId: novaOferta.id,
@@ -213,7 +219,7 @@ export async function ofertarVagaParaFila(empresaId, vaga) {
 ========================================================= */
 export async function processarOfertasExpiradas(empresaId) {
   try {
-    const ofertasRef = collection(db, "empresas", empresaId, OFERTAS_COLLECTION);
+    const ofertasRef = collection(db, ...getEmpresarioPath(empresaId), OFERTAS_COLLECTION);
 
     const qPendentes = query(
       ofertasRef,
@@ -237,8 +243,8 @@ export async function processarOfertasExpiradas(empresaId) {
 
       if (expiraMs > nowMs()) continue;
 
-      const ofertaRef = doc(db, "empresas", empresaId, OFERTAS_COLLECTION, ofertaDoc.id);
-      const filaRef = doc(db, "empresas", empresaId, FILA_COLLECTION, oferta.filaId);
+      const ofertaRef = doc(db, ...getEmpresarioPath(empresaId), OFERTAS_COLLECTION, ofertaDoc.id);
+      const filaRef = doc(db, ...getEmpresarioPath(empresaId), FILA_COLLECTION, oferta.filaId);
 
       await updateDoc(ofertaRef, {
         status: "expirada",
@@ -275,7 +281,7 @@ export async function processarOfertasExpiradas(empresaId) {
    CONFIRMA OFERTA COM TRAVA TRANSACIONAL
 ========================================================= */
 export async function confirmarOfertaFila(empresaId, ofertaId) {
-  const ofertaRef = doc(db, "empresas", empresaId, OFERTAS_COLLECTION, ofertaId);
+  const ofertaRef = doc(db, ...getEmpresarioPath(empresaId), OFERTAS_COLLECTION, ofertaId);
 
   try {
     const resultado = await runTransaction(db, async (transaction) => {
@@ -300,13 +306,13 @@ export async function confirmarOfertaFila(empresaId, ofertaId) {
         throw new Error("oferta_expirada");
       }
 
-      const agRef = collection(db, "empresas", empresaId, AGENDAMENTOS_COLLECTION);
+      const agRef = collection(db, ...getEmpresarioPath(empresaId), AGENDAMENTOS_COLLECTION);
 
       let qAg = query(
         agRef,
         where("data", "==", oferta.data),
         where("horario", "==", oferta.horario),
-        where("status", "in", ["confirmado", "pendente_confirmacao", "aguardando_pagamento"])
+        where("status", "in", STATUS_OCUPADOS)
       );
 
       if (oferta.profissionalId) {
@@ -315,7 +321,7 @@ export async function confirmarOfertaFila(empresaId, ofertaId) {
           where("data", "==", oferta.data),
           where("horario", "==", oferta.horario),
           where("profissionalId", "==", oferta.profissionalId),
-          where("status", "in", ["confirmado", "pendente_confirmacao", "aguardando_pagamento"])
+          where("status", "in", STATUS_OCUPADOS)
         );
       }
 
@@ -328,25 +334,26 @@ export async function confirmarOfertaFila(empresaId, ofertaId) {
         throw new Error("slot_ja_ocupado");
       }
 
-      const novoAgendamentoRef = doc(collection(db, "empresas", empresaId, AGENDAMENTOS_COLLECTION));
-      const filaRef = doc(db, "empresas", empresaId, FILA_COLLECTION, oferta.filaId);
+      const novoAgendamentoRef = doc(collection(db, ...getEmpresarioPath(empresaId), AGENDAMENTOS_COLLECTION));
+      const filaRef = doc(db, ...getEmpresarioPath(empresaId), FILA_COLLECTION, oferta.filaId);
 
       transaction.set(novoAgendamentoRef, {
         empresaId,
         clienteId: oferta.clienteId || null,
         clienteNome: oferta.clienteNome || "",
         clienteTelefone: oferta.clienteTelefone || "",
-        servicoId: oferta.servicoId,
-        servicoNome: oferta.servicoNome || "",
         profissionalId: oferta.profissionalId || null,
         profissionalNome: oferta.profissionalNome || "",
+        servicoId: oferta.servicoId,
+        servicoNome: oferta.servicoNome || "",
+        servicoDuracao: oferta.servicoDuracao || null,
+        servicoPrecoOriginal: oferta.servicoPrecoOriginal ?? null,
+        servicoPrecoCobrado: oferta.servicoPrecoCobrado ?? null,
         data: oferta.data,
         horario: oferta.horario,
+        status: "ativo",
         origem: "fila_inteligente",
-        status: "confirmado",
-        valor: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        criadoEm: serverTimestamp(),
         ofertaFilaId: ofertaId
       });
 
@@ -384,7 +391,7 @@ export async function confirmarOfertaFila(empresaId, ofertaId) {
 ========================================================= */
 export async function recusarOfertaFila(empresaId, ofertaId) {
   try {
-    const ofertaRef = doc(db, "empresas", empresaId, OFERTAS_COLLECTION, ofertaId);
+    const ofertaRef = doc(db, ...getEmpresarioPath(empresaId), OFERTAS_COLLECTION, ofertaId);
     const ofertaSnap = await getDoc(ofertaRef);
 
     if (!ofertaSnap.exists()) {
@@ -397,7 +404,7 @@ export async function recusarOfertaFila(empresaId, ofertaId) {
       return { ok: false, motivo: "oferta_indisponivel" };
     }
 
-    const filaRef = doc(db, "empresas", empresaId, FILA_COLLECTION, oferta.filaId);
+    const filaRef = doc(db, ...getEmpresarioPath(empresaId), FILA_COLLECTION, oferta.filaId);
 
     await updateDoc(ofertaRef, {
       status: "recusada",
@@ -432,7 +439,7 @@ export async function recusarOfertaFila(empresaId, ofertaId) {
    LISTENER PARA PAINEL ADMIN
 ========================================================= */
 export function ouvirOfertasFila(empresaId, callback) {
-  const ofertasRef = collection(db, "empresas", empresaId, OFERTAS_COLLECTION);
+  const ofertasRef = collection(db, ...getEmpresarioPath(empresaId), OFERTAS_COLLECTION);
 
   const qOfertas = query(
     ofertasRef,
@@ -454,7 +461,7 @@ export function ouvirOfertasFila(empresaId, callback) {
    LISTENER PARA FILA
 ========================================================= */
 export function ouvirFilaEspera(empresaId, callback) {
-  const filaRef = collection(db, "empresas", empresaId, FILA_COLLECTION);
+  const filaRef = collection(db, ...getEmpresarioPath(empresaId), FILA_COLLECTION);
 
   const qFila = query(
     filaRef,
