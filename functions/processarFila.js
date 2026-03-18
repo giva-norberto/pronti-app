@@ -5,7 +5,6 @@ const { getFirestore } = require("firebase-admin/firestore");
 if (!admin.apps.length) {
   admin.initializeApp();
 }
-
 const db = getFirestore("pronti-app");
 const fcm = admin.messaging();
 
@@ -13,17 +12,7 @@ const fcm = admin.messaging();
 function getDiaSemanaId(dataISO) {
   const [ano, mes, dia] = String(dataISO).split("-").map(Number);
   const data = new Date(ano, mes - 1, dia);
-  const diaSemana = data.getDay();
-  const mapa = {
-    0: "domingo",
-    1: "segunda",
-    2: "terca",
-    3: "quarta",
-    4: "quinta",
-    5: "sexta",
-    6: "sabado"
-  };
-  return mapa[diaSemana];
+  return data.getDay();
 }
 function horaParaMinutos(hora) {
   if (!hora || !String(hora).includes(":")) return 0;
@@ -38,17 +27,9 @@ function minutosParaHora(minutos) {
 function intervaloSobrepoe(inicioA, fimA, inicioB, fimB) {
   return inicioA < fimB && fimA > inicioB;
 }
-function filtrarSlotsPorTurno(slots, turno) {
-  if (!turno || turno === "Qualquer horário") return slots;
-  return slots.filter((slot) => {
-    const hora = Math.floor(horaParaMinutos(slot) / 60);
-    if (turno === "Manhã") return hora < 12;
-    if (turno === "Tarde") return hora >= 12 && hora < 18;
-    if (turno === "Noite") return hora >= 18;
-    return true;
-  });
-}
-function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTotal, turnoPreferido) {
+
+// ADAPTADO: Não filtra por turno. Retorna todos slots disponíveis do dia.
+function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTotal) {
   if (!horariosConfig) return [];
   const diaId = getDiaSemanaId(dataISO);
   const diaConfig = horariosConfig[diaId];
@@ -72,8 +53,9 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
       cursor += intervalo;
     }
   }
-  return filtrarSlotsPorTurno(slots, turnoPreferido);
+  return slots;
 }
+
 async function buscarTokenDoCliente(item) {
   if (item?.fcmToken) return item.fcmToken;
   if (!item?.clienteId) return null;
@@ -184,7 +166,7 @@ async function liberarFilaSemOferta(docFila) {
   });
 }
 
-// ⚡️ ALTERADO: CRIA OFERTA PENDENTE PARA O CLIENTE NA COLEÇÃO CORRETA
+// ⚡️ ALTERADO: Busca vaga para o dia inteiro, cria oferta pendente para o cliente
 async function processarItemFila(docFila) {
   const conseguiuReservar = await reservarFilaParaProcessamento(docFila);
   if (!conseguiuReservar) return;
@@ -199,7 +181,6 @@ async function processarItemFila(docFila) {
   const profissionalId = item?.profissionalId;
   const dataFila = item?.dataFila;
   const duracaoTotal = Number(item?.duracaoTotal) || 0;
-  const turnoPreferido = item?.preferencias?.turno || "Qualquer horário";
 
   if (!empresaId || !profissionalId || !dataFila || duracaoTotal <= 0) {
     console.log(`⚠️ Fila ${filaId} com dados incompletos. Ignorando.`);
@@ -246,12 +227,12 @@ async function processarItemFila(docFila) {
 
   const agendamentosDoDia = agendamentosSnap.docs.map((d) => d.data());
 
+  // ADAPTADO: Busca vaga para o dia inteiro, sem filtro de turno!
   const slotsDisponiveis = gerarSlotsDisponiveis(
     horariosConfig,
     agendamentosDoDia,
     dataFila,
-    duracaoTotal,
-    turnoPreferido
+    duracaoTotal
   );
 
   if (!slotsDisponiveis.length) {
@@ -269,7 +250,7 @@ async function processarItemFila(docFila) {
   const linkConfirmacao = construirLinkConfirmacao(filaId, empresaId);
   const pushEnviado = await enviarPushOferta(item, filaId, dataOferta, horarioEscolhido);
 
-  // Agora CRIA a oferta pendente para o frontend exibir o card!
+  // Cria oferta pendente para o frontend exibir o card!
   await db
     .collection("empresarios")
     .doc(empresaId)
