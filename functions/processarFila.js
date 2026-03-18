@@ -305,5 +305,14 @@ async function processarFila() {
         await docFila.ref.update({
           processando: false,
           ultimoErro: error.message || "erro_desconhecido",
-          ultimaTentativaEm: admin*
+          ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (erroUpdate) {
+        console.error(`❌ Erro ao atualizar falha da fila ${docFila.id}:`, erroUpdate.message);
+      }
+    }
+  }
+  console.log("🏁 Fim do processamento da fila");
+}
 
+module.exports = { processarFila };
