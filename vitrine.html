@@ -606,6 +606,170 @@
         });
     </script>
 
+    <!-- INÍCIO: card da oferta da fila -->
+    <div id="card-oferta-fila" style="display:none; position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); width: calc(100% - 24px); max-width: 520px; background: #fff; color: #374151; border-radius: 18px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.18); border: 2px solid #c7d2fe; z-index: 9998;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
+            <div style="font-weight:700; font-size:1.05rem; color:#4338ca;">⚡ Vaga disponível para você</div>
+            <span id="oferta-fila-status" style="background:#eef2ff; color:#4338ca; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700;">Pendente</span>
+        </div>
+
+        <div id="oferta-fila-conteudo" style="line-height:1.6; margin-bottom:14px;">
+            <div><b>Serviço:</b> <span id="oferta-fila-servico">-</span></div>
+            <div><b>Profissional:</b> <span id="oferta-fila-profissional">-</span></div>
+            <div><b>Data:</b> <span id="oferta-fila-data">-</span></div>
+            <div><b>Horário:</b> <span id="oferta-fila-horario">-</span></div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="btn-aceitar-oferta-fila" style="background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer;">
+                Confirmar vaga
+            </button>
+            <button id="btn-recusar-oferta-fila" style="background: #eef2ff; color: #374151; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer;">
+                Recusar
+            </button>
+        </div>
+    </div>
+    <!-- FIM: card da oferta da fila -->
+
+    <!-- INÍCIO: script da fila -->
+    <script type="module">
+        import { db, auth } from './vitrini-firebase.js';
+        import {
+            collection,
+            query,
+            where,
+            getDocs,
+            orderBy,
+            limit
+        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { confirmarOfertaFila, recusarOfertaFila } from './filaInteligenteEngine.js';
+
+        let ofertaFilaAtual = null;
+        let empresaIdFilaAtual = null;
+
+        function esconderCardOfertaFila() {
+            const card = document.getElementById('card-oferta-fila');
+            if (card) card.style.display = 'none';
+            ofertaFilaAtual = null;
+        }
+
+        function mostrarCardOfertaFila(oferta) {
+            const card = document.getElementById('card-oferta-fila');
+            if (!card) return;
+
+            document.getElementById('oferta-fila-servico').textContent = oferta.servicoNome || '-';
+            document.getElementById('oferta-fila-profissional').textContent = oferta.profissionalNome || 'Qualquer profissional';
+            document.getElementById('oferta-fila-data').textContent = oferta.data || '-';
+            document.getElementById('oferta-fila-horario').textContent = oferta.horario || '-';
+
+            card.style.display = 'block';
+        }
+
+        async function verificarOfertaFilaPendente(empresaId, userId) {
+            try {
+                const ofertasRef = collection(db, 'empresarios', empresaId, 'ofertas_fila');
+
+                const q = query(
+                    ofertasRef,
+                    where('clienteId', '==', userId),
+                    where('status', '==', 'pendente'),
+                    orderBy('createdAt', 'desc'),
+                    limit(1)
+                );
+
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    esconderCardOfertaFila();
+                    return;
+                }
+
+                const docOferta = snap.docs[0];
+                ofertaFilaAtual = {
+                    id: docOferta.id,
+                    ...docOferta.data()
+                };
+
+                empresaIdFilaAtual = empresaId;
+                mostrarCardOfertaFila(ofertaFilaAtual);
+            } catch (error) {
+                console.error('Erro ao verificar oferta pendente da fila:', error);
+                esconderCardOfertaFila();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnAceitar = document.getElementById('btn-aceitar-oferta-fila');
+            const btnRecusar = document.getElementById('btn-recusar-oferta-fila');
+
+            if (btnAceitar) {
+                btnAceitar.addEventListener('click', async () => {
+                    if (!ofertaFilaAtual || !empresaIdFilaAtual) return;
+
+                    btnAceitar.disabled = true;
+                    btnRecusar.disabled = true;
+
+                    try {
+                        const res = await confirmarOfertaFila(empresaIdFilaAtual, ofertaFilaAtual.id);
+
+                        if (res.ok) {
+                            alert('Vaga confirmada com sucesso!');
+                            esconderCardOfertaFila();
+                            document.dispatchEvent(new CustomEvent('agendamento:salvo'));
+                        } else {
+                            alert(`Não foi possível confirmar: ${res.motivo}`);
+                        }
+                    } catch (error) {
+                        console.error('Erro ao confirmar oferta da fila:', error);
+                        alert('Erro ao confirmar vaga.');
+                    } finally {
+                        btnAceitar.disabled = false;
+                        btnRecusar.disabled = false;
+                    }
+                });
+            }
+
+            if (btnRecusar) {
+                btnRecusar.addEventListener('click', async () => {
+                    if (!ofertaFilaAtual || !empresaIdFilaAtual) return;
+
+                    btnAceitar.disabled = true;
+                    btnRecusar.disabled = true;
+
+                    try {
+                        const res = await recusarOfertaFila(empresaIdFilaAtual, ofertaFilaAtual.id);
+
+                        if (res.ok) {
+                            alert('Oferta recusada.');
+                            esconderCardOfertaFila();
+                        } else {
+                            alert(`Não foi possível recusar: ${res.motivo}`);
+                        }
+                    } catch (error) {
+                        console.error('Erro ao recusar oferta da fila:', error);
+                        alert('Erro ao recusar oferta.');
+                    } finally {
+                        btnAceitar.disabled = false;
+                        btnRecusar.disabled = false;
+                    }
+                });
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                const empresaId = localStorage.getItem('empresaAtivaId');
+
+                if (!user || !empresaId) {
+                    esconderCardOfertaFila();
+                    return;
+                }
+
+                await verificarOfertaFilaPendente(empresaId, user.uid);
+            });
+        });
+    </script>
+    <!-- FIM: script da fila -->
+
     <script type="module" src="/messaging.js"></script>
 </body>
 </html>
