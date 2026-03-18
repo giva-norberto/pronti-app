@@ -27,8 +27,7 @@ function minutosParaHora(minutos) {
 function intervaloSobrepoe(inicioA, fimA, inicioB, fimB) {
   return inicioA < fimB && fimA > inicioB;
 }
-
-// ADAPTADO: Não filtra por turno. Retorna todos slots disponíveis do dia.
+// ⚡️ Não filtra slots por turno — retorna todos slots do dia.
 function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTotal) {
   if (!horariosConfig) return [];
   const diaId = getDiaSemanaId(dataISO);
@@ -55,7 +54,6 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
   }
   return slots;
 }
-
 async function buscarTokenDoCliente(item) {
   if (item?.fcmToken) return item.fcmToken;
   if (!item?.clienteId) return null;
@@ -166,7 +164,7 @@ async function liberarFilaSemOferta(docFila) {
   });
 }
 
-// ⚡️ ALTERADO: Busca vaga para o dia inteiro, cria oferta pendente para o cliente
+// ⚡️ ALTERADO: Busca vaga para o dia inteiro, NÃO usa turno/preferencia!
 async function processarItemFila(docFila) {
   const conseguiuReservar = await reservarFilaParaProcessamento(docFila);
   if (!conseguiuReservar) return;
@@ -227,7 +225,7 @@ async function processarItemFila(docFila) {
 
   const agendamentosDoDia = agendamentosSnap.docs.map((d) => d.data());
 
-  // ADAPTADO: Busca vaga para o dia inteiro, sem filtro de turno!
+  // ⚡️ Mude aqui: Não usa turno! Busca vaga do dia inteiro
   const slotsDisponiveis = gerarSlotsDisponiveis(
     horariosConfig,
     agendamentosDoDia,
@@ -307,14 +305,5 @@ async function processarFila() {
         await docFila.ref.update({
           processando: false,
           ultimoErro: error.message || "erro_desconhecido",
-          ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      } catch (erroUpdate) {
-        console.error(`❌ Erro ao atualizar falha da fila ${docFila.id}:`, erroUpdate.message);
-      }
-    }
-  }
-  console.log("🏁 Fim do processamento da fila");
-}
+          ultimaTentativaEm: admin*
 
-module.exports = { processarFila };
