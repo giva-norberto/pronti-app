@@ -11,6 +11,8 @@ import {
 let empresaIdAtual = null;
 let unsubscribeOfertas = null;
 let unsubscribeFila = null;
+let loopExpiracaoId = null;
+let painelFilaJaInicializado = false;
 
 export function iniciarPainelFilaInteligente(empresaId) {
   empresaIdAtual = empresaId;
@@ -22,7 +24,11 @@ export function iniciarPainelFilaInteligente(empresaId) {
   unsubscribeFila = ouvirFilaEspera(empresaId, renderizarFila);
 
   iniciarLoopDeExpiracao();
-  bindAcoesPainel();
+
+  if (!painelFilaJaInicializado) {
+    bindAcoesPainel();
+    painelFilaJaInicializado = true;
+  }
 }
 
 function bindAcoesPainel() {
@@ -43,54 +49,88 @@ function bindAcoesPainel() {
       };
 
       btnOferta.disabled = true;
-      const res = await ofertarVagaParaFila(empresaIdAtual, vaga);
-      btnOferta.disabled = false;
-
-      if (!res.ok) {
-        alert(`Não foi possível ofertar: ${res.motivo}`);
+      try {
+        const res = await ofertarVagaParaFila(empresaIdAtual, vaga);
+        if (!res.ok) {
+          alert(`Não foi possível ofertar: ${res.motivo}`);
+        }
+      } catch (error) {
+        console.error("Erro ao ofertar vaga:", error);
+        alert("Erro ao ofertar vaga.");
+      } finally {
+        btnOferta.disabled = false;
       }
+      return;
     }
 
     if (btnConfirmar) {
       const ofertaId = btnConfirmar.dataset.confirmarOferta;
       btnConfirmar.disabled = true;
-      const res = await confirmarOfertaFila(empresaIdAtual, ofertaId);
-      btnConfirmar.disabled = false;
+      try {
+        const res = await confirmarOfertaFila(empresaIdAtual, ofertaId);
 
-      if (!res.ok) {
-        alert(`Falha ao confirmar: ${res.motivo}`);
-      } else {
-        alert(`Agendamento confirmado para ${res.clienteNome} às ${res.horario}`);
+        if (!res.ok) {
+          alert(`Falha ao confirmar: ${res.motivo}`);
+        } else {
+          alert(`Agendamento confirmado para ${res.clienteNome} às ${res.horario}`);
+        }
+      } catch (error) {
+        console.error("Erro ao confirmar oferta:", error);
+        alert("Erro ao confirmar oferta.");
+      } finally {
+        btnConfirmar.disabled = false;
       }
+      return;
     }
 
     if (btnRecusar) {
       const ofertaId = btnRecusar.dataset.recusarOferta;
       btnRecusar.disabled = true;
-      const res = await recusarOfertaFila(empresaIdAtual, ofertaId);
-      btnRecusar.disabled = false;
+      try {
+        const res = await recusarOfertaFila(empresaIdAtual, ofertaId);
 
-      if (!res.ok) {
-        alert(`Falha ao recusar: ${res.motivo}`);
+        if (!res.ok) {
+          alert(`Falha ao recusar: ${res.motivo}`);
+        }
+      } catch (error) {
+        console.error("Erro ao recusar oferta:", error);
+        alert("Erro ao recusar oferta.");
+      } finally {
+        btnRecusar.disabled = false;
       }
+      return;
     }
 
     if (btnProcessar) {
       btnProcessar.disabled = true;
-      const res = await processarOfertasExpiradas(empresaIdAtual);
-      btnProcessar.disabled = false;
+      try {
+        const res = await processarOfertasExpiradas(empresaIdAtual);
 
-      if (!res.ok) {
+        if (!res.ok) {
+          alert("Erro ao processar ofertas expiradas.");
+        }
+      } catch (error) {
+        console.error("Erro ao processar expiradas:", error);
         alert("Erro ao processar ofertas expiradas.");
+      } finally {
+        btnProcessar.disabled = false;
       }
     }
   });
 }
 
 function iniciarLoopDeExpiracao() {
-  setInterval(async () => {
-    if (!empresaIdAtual) return;
-    await processarOfertasExpiradas(empresaIdAtual);
+  if (loopExpiracaoId) {
+    clearInterval(loopExpiracaoId);
+  }
+
+  loopExpiracaoId = setInterval(async () => {
+    try {
+      if (!empresaIdAtual) return;
+      await processarOfertasExpiradas(empresaIdAtual);
+    } catch (error) {
+      console.error("Erro no loop de expiração da fila:", error);
+    }
   }, 30000);
 }
 
@@ -100,6 +140,7 @@ function formatarStatus(status) {
     ofertado: "Ofertado",
     atendido: "Atendido",
     cancelado: "Cancelado",
+    cancelada: "Cancelada",
     expirado: "Expirado",
     pendente: "Pendente",
     aceita: "Aceita",
