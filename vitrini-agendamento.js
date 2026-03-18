@@ -8,12 +8,13 @@
   - encontrarPrimeiraDataComSlots agora pula datas em que o profissional tem ausência
   - sem alterar a lógica de cálculo de slots (calcularSlotsDisponiveis)
   - ✅ Adicionado: verificação da assinatura do cliente APENAS para ajuste do preço cobrado do serviço (não bloqueia agendamento)
-  - ✅ Adicionada função enviarEmailViaPHP(...) como utilitário; chamada ao envio foi alterada para usá‑la em background,
+  - ✅ Adicionada função enviarEmailViaPHP(...) como utilitário; chamada ao envio foi alterada para usá-la em background,
     mantendo todo o restante da lógica exatamente igual.
   - ✅ Adicionado: Chamada ao serviço de notificações no ato do salvamento para geração do token FCM.
 */
 
 import { db } from './vitrini-firebase.js';
+import { ofertarVagaParaFila } from './filaInteligenteEngine.js';
 import {
     collection,
     query,
@@ -441,10 +442,33 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
 export async function cancelarAgendamento(empresaId, agendamentoId) {
     try {
         const agendamentoRef = doc(db, 'empresarios', empresaId, 'agendamentos', agendamentoId);
+        const agendamentoSnap = await getDoc(agendamentoRef);
+
+        if (!agendamentoSnap.exists()) {
+            throw new Error("Agendamento não encontrado.");
+        }
+
+        const agendamento = agendamentoSnap.data();
+
         await updateDoc(agendamentoRef, {
             status: 'cancelado_pelo_cliente',
             canceladoEm: serverTimestamp()
         });
+
+        try {
+            const resFila = await ofertarVagaParaFila(empresaId, {
+                data: agendamento.data,
+                horario: agendamento.horario,
+                profissionalId: agendamento.profissionalId || null,
+                profissionalNome: agendamento.profissionalNome || "",
+                servicoId: agendamento.servicoId,
+                servicoNome: agendamento.servicoNome || ""
+            });
+
+            console.log("Resultado da fila inteligente após cancelamento:", resFila);
+        } catch (erroFila) {
+            console.warn("Erro ao tentar ofertar vaga para a fila após cancelamento:", erroFila);
+        }
     } catch (error) {
         console.error("Erro ao cancelar agendamento:", error);
         throw new Error("Ocorreu um erro ao cancelar o agendamento.");
