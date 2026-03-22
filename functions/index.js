@@ -8,6 +8,7 @@ const { getFirestore } = require("firebase-admin/firestore");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 const { processarFila } = require("./processarFila");
+const fetch = require("node-fetch");
 
 // ========================= Inicialização do Firebase =========================
 if (!admin.apps.length) {
@@ -24,6 +25,7 @@ const whitelist = [
   "https://prontiapp.vercel.app",
   "http://localhost:3000",
 ];
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.includes(origin)) {
@@ -36,6 +38,7 @@ const corsOptions = {
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
+
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
@@ -48,32 +51,40 @@ exports.verificarEmpresa = onRequest(
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
+
       if (req.method !== "POST") {
         logger.info("DEBUG: Método não permitido", { method: req.method });
         return res
           .status(405)
           .json({ error: "Método não permitido. Use POST." });
       }
+
       try {
         logger.info("DEBUG: INICIO verificarEmpresa", {
           body: req.body,
           headers: req.headers,
         });
+
         const { empresaId } = req.body;
+
         if (!empresaId) {
           logger.info("DEBUG: Falta empresaId no body");
           return res
             .status(400)
             .json({ error: "ID da empresa inválido ou não fornecido." });
         }
+
         const empresaDocRef = db.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
+
         if (!empresaDoc.exists) {
           logger.info("DEBUG: Empresa não encontrada", { empresaId });
           return res.status(404).json({ error: "Empresa não encontrada." });
         }
+
         const plano = empresaDoc.get("plano") || "free";
         const status = empresaDoc.get("status") || "";
+
         if (plano === "free" && status === "expirado") {
           logger.info("DEBUG: Plano free expirado", { empresaId });
           return res.status(403).json({
@@ -81,14 +92,18 @@ exports.verificarEmpresa = onRequest(
               "Assinatura gratuita expirada. Por favor, selecione um plano.",
           });
         }
+
         let licencasNecessarias = 0;
+
         try {
           const profissionaisSnapshot = await empresaDocRef
             .collection("profissionais")
             .get();
+
           if (!profissionaisSnapshot.empty) {
             licencasNecessarias = profissionaisSnapshot.size;
           }
+
           logger.info("DEBUG: profissionaisSnapshot.size", {
             size: licencasNecessarias,
           });
@@ -98,9 +113,11 @@ exports.verificarEmpresa = onRequest(
             { error: profErr }
           );
         }
+
         logger.info(
           `Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`
         );
+
         return res.status(200).json({ licencasNecessarias });
       } catch (error) {
         logger.error("Erro fatal em verificarEmpresa:", error);
@@ -123,23 +140,32 @@ exports.createPreference = onRequest(
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
+
       if (req.method !== "POST") {
         return res.status(405).json({ error: "Método não permitido." });
       }
+
       try {
         const client = getMercadoPagoClient();
+
         if (!client) {
           return res
             .status(500)
             .json({ error: "Erro de configuração do servidor." });
         }
+
         const { userId, planoEscolhido } = req.body;
+
         if (!userId || !planoEscolhido) {
           return res.status(400).json({ error: "Dados inválidos." });
         }
+
         const userRecord = await admin.auth().getUser(userId);
         const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
-        const notificationUrl = `https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago`;
+
+        const notificationUrl =
+          "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago";
+
         const subscriptionData = {
           reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
           auto_recurring: {
@@ -152,8 +178,10 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl,
         };
+
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
+
         await db
           .collection("empresarios")
           .doc(userId)
@@ -169,6 +197,7 @@ exports.createPreference = onRequest(
             },
             { merge: true }
           );
+
         return res.status(200).json({ init_point: response.init_point });
       } catch (error) {
         logger.error("Erro em createPreference:", error);
@@ -191,28 +220,38 @@ exports.receberWebhookMercadoPago = onRequest(
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
+
       const { id, type } = req.body;
+
       if (type === "preapproval") {
         try {
           const client = getMercadoPagoClient();
+
           if (!client) {
             return res.status(500).send("Erro de configuração interna.");
           }
+
           const preapproval = new Preapproval(client);
           const subscription = await preapproval.get({ id: id });
+
           const query = db
             .collectionGroup("assinatura")
             .where("mercadoPagoAssinaturaId", "==", subscription.id);
+
           const snapshot = await query.get();
+
           if (snapshot.empty) {
             return res.status(200).send("OK");
           }
+
           const statusMap = {
             authorized: "ativa",
             cancelled: "cancelada",
             paused: "pausada",
           };
+
           const novoStatus = statusMap[subscription.status] || "desconhecido";
+
           for (const doc of snapshot.docs) {
             await doc.ref.update({
               status: novoStatus,
@@ -226,6 +265,7 @@ exports.receberWebhookMercadoPago = onRequest(
           return res.status(500).send("Erro interno");
         }
       }
+
       return res.status(200).send("OK");
     });
   }
@@ -236,12 +276,14 @@ exports.receberWebhookMercadoPago = onRequest(
 // ============================================================================
 function getMercadoPagoClient() {
   const mpToken = process.env.MERCADOPAGO_TOKEN;
+
   if (!mpToken) {
     logger.error(
       "FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!"
     );
     return null;
   }
+
   return new MercadoPagoConfig({ accessToken: mpToken });
 }
 
@@ -254,26 +296,103 @@ function calcularPreco(totalFuncionarios) {
       { de: 11, ate: 50, valor: 24.9 },
     ],
   };
+
   if (totalFuncionarios <= 0) return 0;
-  if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos)
+  if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) {
     return configuracaoPrecos.precoBase;
+  }
+
   let precoTotal = configuracaoPrecos.precoBase;
   const funcionariosExtras =
     totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
   let funcionariosJaPrecificados = 0;
+
   for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
     const funcionariosNaFaixa = faixa.ate - faixa.de + 1;
+
     const extrasNestaFaixa = Math.min(
       funcionariosExtras - funcionariosJaPrecificados,
       funcionariosNaFaixa
     );
+
     if (extrasNestaFaixa > 0) {
       precoTotal += extrasNestaFaixa * faixa.valor;
       funcionariosJaPrecificados += extrasNestaFaixa;
     }
+
     if (funcionariosJaPrecificados >= funcionariosExtras) break;
   }
+
   return Number(precoTotal.toFixed(2));
+}
+
+function normalizarTelefoneBR(telefone) {
+  if (!telefone) return null;
+
+  let numero = String(telefone).replace(/\D/g, "");
+
+  if (!numero) return null;
+
+  if (numero.startsWith("0")) {
+    numero = numero.replace(/^0+/, "");
+  }
+
+  if (!numero.startsWith("55")) {
+    numero = `55${numero}`;
+  }
+
+  if (numero.length < 12 || numero.length > 13) {
+    return null;
+  }
+
+  return numero;
+}
+
+async function enviarWhatsAppEvolution({ telefone, mensagem }) {
+  const apiUrl = process.env.EVOLUTION_API_URL;
+  const apiKey = process.env.EVOLUTION_API_KEY;
+  const instanceName = process.env.EVOLUTION_INSTANCE || "pronti";
+
+  if (!apiUrl || !apiKey) {
+    logger.warn("Evolution API não configurada. Pulando envio de WhatsApp.");
+    return { enviado: false, motivo: "evolution_nao_configurada" };
+  }
+
+  const numeroNormalizado = normalizarTelefoneBR(telefone);
+
+  if (!numeroNormalizado) {
+    logger.warn("Telefone inválido para envio de WhatsApp.", { telefone });
+    return { enviado: false, motivo: "telefone_invalido" };
+  }
+
+  const baseUrl = apiUrl.replace(/\/$/, "");
+  const endpoint = `${baseUrl}/message/sendText/${instanceName}`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: apiKey,
+    },
+    body: JSON.stringify({
+      number: numeroNormalizado,
+      text: mensagem,
+    }),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new Error(
+      `Falha no envio WhatsApp: ${response.status} - ${responseText}`
+    );
+  }
+
+  return {
+    enviado: true,
+    numero: numeroNormalizado,
+    resposta: responseText,
+  };
 }
 
 // ============================================================================
@@ -292,7 +411,10 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
     const agendamentoId = event.params?.agendamentoId;
 
     if (!agendamento || !empresaId) {
-      logger.warn("Dados insuficientes para notificar dono", { agendamento, empresaId });
+      logger.warn("Dados insuficientes para notificar dono", {
+        agendamento,
+        empresaId,
+      });
       return;
     }
 
@@ -327,7 +449,11 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
       logger.info(`Token obtido. Enviando notificação ao dono ${donoId}`);
 
       const notificationTitle = "📝 Novo Agendamento!";
-      const notificationBody = `${agendamento.clienteNome || "Alguém"} marcou ${agendamento.servicoNome || "um serviço"} às ${agendamento.horario || "horário indefinido"}`;
+      const notificationBody = `${
+        agendamento.clienteNome || "Alguém"
+      } marcou ${agendamento.servicoNome || "um serviço"} às ${
+        agendamento.horario || "horário indefinido"
+      }`;
 
       const message = {
         token: fcmToken,
@@ -367,7 +493,8 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
             title: notificationTitle,
             body: notificationBody,
             icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+            badge:
+              "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
             tag: `agendamento_${agendamentoId}`,
           },
           fcmOptions: {
@@ -380,11 +507,11 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
       };
 
       const response = await fcm.send(message);
+
       logger.info(`✅ Push enviado com sucesso ao dono ${donoId}`, {
         messageId: response,
         agendamentoId,
       });
-
     } catch (error) {
       logger.error(`❌ Erro ao notificar dono:`, {
         error: error.message,
@@ -408,22 +535,27 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
 );
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) [CORRIGIDO PARA EVITAR DUPLICIDADE]
+// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) + WHATSAPP
+// CORRIGIDO PARA EVITAR DUPLICIDADE
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
     region: "southamerica-east1",
     database: "pronti-app",
+    secrets: ["EVOLUTION_API_URL", "EVOLUTION_API_KEY", "EVOLUTION_INSTANCE"],
   },
   async (event) => {
-    const bilhete = event.data && event.data.data ? event.data.data() : null;
-    const bilheteId = event.params && event.params.bilheteId ? event.params.bilheteId : null;
+    const bilhete =
+      event.data && event.data.data ? event.data.data() : null;
+    const bilheteId =
+      event.params && event.params.bilheteId ? event.params.bilheteId : null;
 
     if (!bilhete) {
       logger.log("Bilhete vazio, encerrando.");
       return;
     }
+
     if (bilhete.status === "processado") {
       logger.log(`Bilhete ${bilheteId} já processado, ignorando.`);
       return;
@@ -433,7 +565,11 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       const freshDoc = await transaction.get(event.data.ref);
       const bilheteAtualizado = freshDoc.data();
 
-      if (!bilheteAtualizado || bilheteAtualizado.status !== "pendente" || bilheteAtualizado.processando === true) {
+      if (
+        !bilheteAtualizado ||
+        bilheteAtualizado.status !== "pendente" ||
+        bilheteAtualizado.processando === true
+      ) {
         logger.log(`Bilhete ${bilheteId} já processado ou em processamento`);
         return;
       }
@@ -442,7 +578,14 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 
       const donoId = bilheteAtualizado.donoId;
       const titulo = bilheteAtualizado.titulo || "Notificação Pronti";
-      const mensagem = bilheteAtualizado.mensagem || "Você tem uma nova atividade.";
+      const mensagem =
+        bilheteAtualizado.mensagem || "Você tem uma nova atividade.";
+
+      const telefoneWhatsapp =
+        bilheteAtualizado.telefone ||
+        bilheteAtualizado.telefoneWhatsApp ||
+        bilheteAtualizado.whatsapp ||
+        null;
 
       if (!donoId) {
         logger.error(`Bilhete ${bilheteId} não tem donoId.`);
@@ -458,88 +601,142 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       const tokenRef = db.collection("mensagensTokens").doc(donoId);
       const tokenSnap = await tokenRef.get();
 
-      if (!tokenSnap.exists || !tokenSnap.data().fcmToken) {
-        logger.warn(`Token FCM não encontrado para dono: ${donoId}`);
-        transaction.update(event.data.ref, {
-          status: "processado_sem_token",
-          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-          processando: false,
-        });
-        return;
-      }
+      let fcmEnviado = false;
+      let fcmMessageId = null;
+      let whatsappEnviado = false;
+      let whatsappInfo = null;
+      let ultimoErro = null;
 
-      const fcmToken = tokenSnap.data().fcmToken;
+      // =========================
+      // PUSH FCM
+      // =========================
+      if (tokenSnap.exists && tokenSnap.data().fcmToken) {
+        const fcmToken = tokenSnap.data().fcmToken;
 
-      const payload = {
-        token: fcmToken,
-        notification: {
-          title: titulo,
-          body: mensagem,
-        },
-        data: {
-          tipo: "fila",
-          bilheteId: bilheteId || "",
-          link: "https://prontiapp.com.br/agenda.html",
-        },
-        android: {
-          priority: "high",
-          notification: {
-            sound: "default",
-            priority: "high",
-          },
-        },
-        apns: {
-          headers: {
-            "apns-priority": "10",
-          },
-          payload: {
-            aps: {
-              sound: "default",
-              badge: 1,
-              "mutable-content": 1,
-            },
-          },
-        },
-        webpush: {
+        const payload = {
+          token: fcmToken,
           notification: {
             title: titulo,
             body: mensagem,
-            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
           },
-          fcmOptions: {
+          data: {
+            tipo: "fila",
+            bilheteId: bilheteId || "",
             link: "https://prontiapp.com.br/agenda.html",
           },
-          headers: {
-            Urgency: "high",
+          android: {
+            priority: "high",
+            notification: {
+              sound: "default",
+              priority: "high",
+            },
           },
-        },
-      };
+          apns: {
+            headers: {
+              "apns-priority": "10",
+            },
+            payload: {
+              aps: {
+                sound: "default",
+                badge: 1,
+                "mutable-content": 1,
+              },
+            },
+          },
+          webpush: {
+            notification: {
+              title: titulo,
+              body: mensagem,
+              icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+              badge:
+                "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+            },
+            fcmOptions: {
+              link: "https://prontiapp.com.br/agenda.html",
+            },
+            headers: {
+              Urgency: "high",
+            },
+          },
+        };
 
-      try {
-        const messageId = await fcm.send(payload);
-        logger.log("✅ Notificação Push enviada com sucesso!", {
-          messageId,
-          donoId,
-          bilheteId,
-        });
+        try {
+          fcmMessageId = await fcm.send(payload);
+          fcmEnviado = true;
+
+          logger.log("✅ Notificação Push enviada com sucesso!", {
+            fcmMessageId,
+            donoId,
+            bilheteId,
+          });
+        } catch (error) {
+          logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
+          ultimoErro = error.code || error.message || String(error);
+
+          if (error.code === "messaging/registration-token-not-registered") {
+            await tokenRef.update({
+              fcmToken: admin.firestore.FieldValue.delete(),
+            });
+          }
+        }
+      } else {
+        logger.warn(`Token FCM não encontrado para dono: ${donoId}`);
+      }
+
+      // =========================
+      // WHATSAPP EVOLUTION
+      // =========================
+      if (telefoneWhatsapp) {
+        try {
+          whatsappInfo = await enviarWhatsAppEvolution({
+            telefone: telefoneWhatsapp,
+            mensagem,
+          });
+
+          whatsappEnviado = !!whatsappInfo?.enviado;
+
+          if (whatsappEnviado) {
+            logger.info("✅ WhatsApp enviado com sucesso!", {
+              bilheteId,
+              donoId,
+              telefone: whatsappInfo.numero,
+            });
+          }
+        } catch (error) {
+          logger.error(`❌ Erro ao enviar WhatsApp para ${donoId}:`, {
+            bilheteId,
+            erro: error.message,
+          });
+
+          if (!ultimoErro) {
+            ultimoErro = error.message || String(error);
+          }
+        }
+      } else {
+        logger.info(`Bilhete ${bilheteId} sem telefone para WhatsApp.`);
+      }
+
+      // =========================
+      // STATUS FINAL
+      // =========================
+      if (fcmEnviado || whatsappEnviado) {
         transaction.update(event.data.ref, {
           status: "processado",
           processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-          fcmMessageId: messageId,
+          fcmEnviado,
+          fcmMessageId: fcmMessageId || null,
+          whatsappEnviado,
+          whatsappTelefone: whatsappInfo?.numero || null,
           processando: false,
+          ultimoErro: ultimoErro || null,
         });
-      } catch (error) {
-        logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
-
-        if (error.code === "messaging/registration-token-not-registered") {
-          await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
-        }
-
+      } else {
         transaction.update(event.data.ref, {
           status: "processado_com_erro",
           processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-          ultimoErro: error.code || error.message || String(error),
+          ultimoErro: ultimoErro || "sem_token_e_sem_telefone",
+          fcmEnviado: false,
+          whatsappEnviado: false,
           processando: false,
         });
       }
@@ -585,7 +782,9 @@ exports.rotinaLembreteAgendamento = onSchedule(
             }
 
             if (lembrete.processando === true) {
-              logger.info(`Lembrete ${docLembrete.id} já está em processamento`);
+              logger.info(
+                `Lembrete ${docLembrete.id} já está em processamento`
+              );
               return { status: "em_processamento" };
             }
 
@@ -602,7 +801,9 @@ exports.rotinaLembreteAgendamento = onSchedule(
             const fcmToken = tokenSnap.exists ? tokenSnap.data().fcmToken : null;
 
             if (!fcmToken) {
-              logger.warn(`Token FCM não encontrado para cliente ${lembrete.clienteId}`);
+              logger.warn(
+                `Token FCM não encontrado para cliente ${lembrete.clienteId}`
+              );
               transaction.update(docLembrete.ref, {
                 enviado: "sem_token",
                 processando: false,
@@ -620,9 +821,9 @@ exports.rotinaLembreteAgendamento = onSchedule(
                 token: fcmToken,
                 notification: {
                   title: "Lembrete Pronti ⏰",
-                  body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${
-                    lembrete.horarioTexto || lembrete.horario
-                  }).`,
+                  body: `Olá! Seu horário para ${
+                    lembrete.servicoNome
+                  } está chegando (${lembrete.horarioTexto || lembrete.horario}).`,
                 },
                 data: {
                   tipo: "lembrete",
@@ -651,9 +852,9 @@ exports.rotinaLembreteAgendamento = onSchedule(
                 webpush: {
                   notification: {
                     title: "Lembrete Pronti ⏰",
-                    body: `Olá! Seu horário para ${lembrete.servicoNome} está chegando (${
-                      lembrete.horarioTexto || lembrete.horario
-                    }).`,
+                    body: `Olá! Seu horário para ${
+                      lembrete.servicoNome
+                    } está chegando (${lembrete.horarioTexto || lembrete.horario}).`,
                   },
                   fcmOptions: { link },
                   headers: { Urgency: "high" },
@@ -667,10 +868,13 @@ exports.rotinaLembreteAgendamento = onSchedule(
                 messageId: messageId,
               });
 
-              logger.info(`✅ Lembrete enviado para cliente ${lembrete.clienteId}`, {
-                lembreteId: docLembrete.id,
-                messageId,
-              });
+              logger.info(
+                `✅ Lembrete enviado para cliente ${lembrete.clienteId}`,
+                {
+                  lembreteId: docLembrete.id,
+                  messageId,
+                }
+              );
 
               return { status: "enviado" };
             } catch (err) {
@@ -695,10 +899,16 @@ exports.rotinaLembreteAgendamento = onSchedule(
         )
       );
 
-      const sucesso = resultados.filter((r) => r.status === "fulfilled").length;
-      const erros = resultados.filter((r) => r.status === "rejected").length;
-      logger.info(`✅ Rotina de lembretes concluída: ${sucesso} sucesso, ${erros} erros`);
+      const sucesso = resultados.filter(
+        (r) => r.status === "fulfilled"
+      ).length;
+      const erros = resultados.filter(
+        (r) => r.status === "rejected"
+      ).length;
 
+      logger.info(
+        `✅ Rotina de lembretes concluída: ${sucesso} sucesso, ${erros} erros`
+      );
     } catch (error) {
       logger.error("Erro na rotina de lembretes:", error);
     }
