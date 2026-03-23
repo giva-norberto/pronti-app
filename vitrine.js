@@ -200,7 +200,7 @@ async function renderizarPlanosDeAssinatura(empresaId) {
                     <button class="btn-assinar-plano" style="background:linear-gradient(90deg,#6366f1 0%,#4f46e5 100%);color:#fff;border:none;border-radius:8px;padding:8px 22px;margin-top:14px;font-size:1em;cursor:pointer;">Assinar</button>
                 `;
                 card.querySelector('.btn-assinar-plano').addEventListener('click', () => {
-                    window.location.href = `vitrine-assinatura.html?empresaId=${empresaId}&planoId=${planoId}`;
+                    window.location.href = `vitrine-assinatura.html?empresa=${encodeURIComponent(empresaId)}&empresaId=${encodeURIComponent(empresaId)}&planoId=${encodeURIComponent(planoId)}`;
                 });
                 planosDiv.appendChild(card);
             }
