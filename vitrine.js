@@ -1,6 +1,6 @@
 // ======================================================================
 //        VITRINE.JS - O Maestro da Aplicação (REVISADO E CORRIGIDO)
-// ======================================================================
+// =====================================================================
 
 // --- MÓDulos IMPORTADOS ---
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
