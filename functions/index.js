@@ -4,7 +4,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
-const { getFirestore } = require("firebase-admin/firestore");
+// REMOVIDO: const { getFirestore } = require("firebase-admin/firestore");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 const { processarFila } = require("./processarFila");
@@ -15,8 +15,7 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// ✅ CORREÇÃO: Usar getFirestore com databaseId explícito
-const db = getFirestore("pronti-app");
+const db = admin.firestore(); // CORRIGIDO: SEM argumentos!
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
