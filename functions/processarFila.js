@@ -1,11 +1,10 @@
 const admin = require("firebase-admin");
-const { getFirestore } = require("firebase-admin/firestore");
 
 // Inicialização
 if (!admin.apps.length) {
   admin.initializeApp();
 }
-const db = getFirestore("pronti-app");
+const db = admin.firestore(); // CORRIGIDO: SEM ARGUMENTOS, padrão moderno
 const fcm = admin.messaging();
 
 // Utilitários
