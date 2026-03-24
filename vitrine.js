@@ -1,5 +1,5 @@
 // =====================================================================
-//         VITRINE.JS - O Maestro da Aplicação (REVISADO E CORRIGIDO)
+//           VITRINE.JS - O Maestro da Aplicação (REVISADO E CORRIGIDO)
 // ====================================================================
 
 // --- MÓDulos IMPORTADOS ---
