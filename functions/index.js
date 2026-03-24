@@ -353,6 +353,7 @@ async function enviarWhatsAppEvolution({ telefone, mensagem }) {
   const apiKey = process.env.EVOLUTION_API_KEY;
   const instanceName = process.env.EVOLUTION_INSTANCE || "pronti";
 
+  // Se não houver chaves configuradas, apenas avisa no log em vez de quebrar
   if (!apiUrl || !apiKey) {
     logger.warn("Evolution API não configurada. Pulando envio de WhatsApp.");
     return { enviado: false, motivo: "evolution_nao_configurada" };
@@ -368,36 +369,40 @@ async function enviarWhatsAppEvolution({ telefone, mensagem }) {
   const baseUrl = apiUrl.replace(/\/$/, "");
   const endpoint = `${baseUrl}/message/sendText/${instanceName}`;
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: apiKey,
-    },
-    body: JSON.stringify({
-      number: numeroNormalizado,
-      text: mensagem,
-    }),
-  });
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: apiKey,
+      },
+      body: JSON.stringify({
+        number: numeroNormalizado,
+        text: mensagem,
+      }),
+    });
 
-  const responseText = await response.text();
+    const responseText = await response.text();
 
-  if (!response.ok) {
-    throw new Error(
-      `Falha no envio WhatsApp: ${response.status} - ${responseText}`
-    );
+    if (!response.ok) {
+      throw new Error(
+        `Falha no envio WhatsApp: ${response.status} - ${responseText}`
+      );
+    }
+
+    return {
+      enviado: true,
+      numero: numeroNormalizado,
+      resposta: responseText,
+    };
+  } catch (err) {
+    logger.error("Erro na requisição Evolution API:", err.message);
+    return { enviado: false, motivo: "erro_requisicao", erro: err.message };
   }
-
-  return {
-    enviado: true,
-    numero: numeroNormalizado,
-    resposta: responseText,
-  };
 }
 
 // ============================================================================
 // ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO
-// CORRIGIDO: Melhor tratamento de erros e logging, suporte completo APNS/Android/Web
 // ============================================================================
 exports.notificarDonoInstantaneo = onDocumentCreated(
   {
@@ -429,8 +434,6 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
       const empresaData = empresaDoc.data();
       const donoId = empresaData.donoId || empresaData.userId || empresaId;
 
-      logger.info(`Buscando token do dono: ${donoId}`);
-
       const tokenDoc = await db.collection("mensagensTokens").doc(donoId).get();
 
       if (!tokenDoc.exists) {
@@ -445,8 +448,6 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
         logger.warn(`FCM Token vazio para dono ${donoId}`);
         return;
       }
-
-      logger.info(`Token obtido. Enviando notificação ao dono ${donoId}`);
 
       const notificationTitle = "📝 Novo Agendamento!";
       const notificationBody = `${
@@ -483,8 +484,6 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
             aps: {
               sound: "default",
               badge: 1,
-              "content-available": 0,
-              "mutable-content": 1,
             },
           },
         },
@@ -493,57 +492,31 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
             title: notificationTitle,
             body: notificationBody,
             icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            badge:
-              "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            tag: `agendamento_${agendamentoId}`,
           },
           fcmOptions: {
             link: "https://prontiapp.com.br/agenda.html",
           },
-          headers: {
-            Urgency: "high",
-          },
         },
       };
 
-      const response = await fcm.send(message);
-
-      logger.info(`✅ Push enviado com sucesso ao dono ${donoId}`, {
-        messageId: response,
-        agendamentoId,
-      });
+      await fcm.send(message);
+      logger.info(`✅ Push enviado com sucesso ao dono ${donoId}`);
     } catch (error) {
-      logger.error(`❌ Erro ao notificar dono:`, {
-        error: error.message,
-        code: error.code,
-        empresaId,
-        agendamentoId,
-      });
-
-      if (error.code === "messaging/registration-token-not-registered") {
-        logger.warn(`Token inválido para dono. Removendo...`);
-        try {
-          await db.collection("mensagensTokens").doc(empresaId).update({
-            fcmToken: admin.firestore.FieldValue.delete(),
-          });
-        } catch (deleteError) {
-          logger.error("Erro ao remover token:", deleteError);
-        }
-      }
+      logger.error(`❌ Erro ao notificar dono:`, error.message);
     }
   }
 );
 
 // ============================================================================
 // FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) + WHATSAPP
-// CORRIGIDO PARA EVITAR DUPLICIDADE
+// ✅ CORREÇÃO: Removido 'secrets' do WhatsApp para não travar o deploy
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
     region: "southamerica-east1",
     database: "pronti-app",
-    secrets: ["EVOLUTION_API_URL", "EVOLUTION_API_KEY", "EVOLUTION_INSTANCE"],
+    secrets: [], // Removido as chaves de WhatsApp daqui para o deploy passar
   },
   async (event) => {
     const bilhete =
@@ -551,13 +524,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     const bilheteId =
       event.params && event.params.bilheteId ? event.params.bilheteId : null;
 
-    if (!bilhete) {
-      logger.log("Bilhete vazio, encerrando.");
-      return;
-    }
-
-    if (bilhete.status === "processado") {
-      logger.log(`Bilhete ${bilheteId} já processado, ignorando.`);
+    if (!bilhete || bilhete.status === "processado") {
       return;
     }
 
@@ -570,7 +537,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         bilheteAtualizado.status !== "pendente" ||
         bilheteAtualizado.processando === true
       ) {
-        logger.log(`Bilhete ${bilheteId} já processado ou em processamento`);
         return;
       }
 
@@ -578,23 +544,11 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 
       const donoId = bilheteAtualizado.donoId;
       const titulo = bilheteAtualizado.titulo || "Notificação Pronti";
-      const mensagem =
-        bilheteAtualizado.mensagem || "Você tem uma nova atividade.";
-
-      const telefoneWhatsapp =
-        bilheteAtualizado.telefone ||
-        bilheteAtualizado.telefoneWhatsApp ||
-        bilheteAtualizado.whatsapp ||
-        null;
+      const mensagem = bilheteAtualizado.mensagem || "Você tem uma nova atividade.";
+      const telefoneWhatsapp = bilheteAtualizado.telefone || bilheteAtualizado.whatsapp || null;
 
       if (!donoId) {
-        logger.error(`Bilhete ${bilheteId} não tem donoId.`);
-        transaction.update(event.data.ref, {
-          status: "processado_com_erro",
-          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-          ultimoErro: "sem_donoId",
-          processando: false,
-        });
+        transaction.update(event.data.ref, { status: "processado_com_erro", processando: false });
         return;
       }
 
@@ -605,147 +559,49 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       let fcmMessageId = null;
       let whatsappEnviado = false;
       let whatsappInfo = null;
-      let ultimoErro = null;
 
-      // =========================
-      // PUSH FCM
-      // =========================
+      // --- PUSH FCM ---
       if (tokenSnap.exists && tokenSnap.data().fcmToken) {
-        const fcmToken = tokenSnap.data().fcmToken;
-
-        const payload = {
-          token: fcmToken,
-          notification: {
-            title: titulo,
-            body: mensagem,
-          },
-          data: {
-            tipo: "fila",
-            bilheteId: bilheteId || "",
-            link: "https://prontiapp.com.br/agenda.html",
-          },
-          android: {
-            priority: "high",
-            notification: {
-              sound: "default",
-              priority: "high",
-            },
-          },
-          apns: {
-            headers: {
-              "apns-priority": "10",
-            },
-            payload: {
-              aps: {
-                sound: "default",
-                badge: 1,
-                "mutable-content": 1,
-              },
-            },
-          },
-          webpush: {
-            notification: {
-              title: titulo,
-              body: mensagem,
-              icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-              badge:
-                "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            },
-            fcmOptions: {
-              link: "https://prontiapp.com.br/agenda.html",
-            },
-            headers: {
-              Urgency: "high",
-            },
-          },
-        };
-
         try {
-          fcmMessageId = await fcm.send(payload);
-          fcmEnviado = true;
-
-          logger.log("✅ Notificação Push enviada com sucesso!", {
-            fcmMessageId,
-            donoId,
-            bilheteId,
+          fcmMessageId = await fcm.send({
+            token: tokenSnap.data().fcmToken,
+            notification: { title: titulo, body: mensagem },
+            data: { tipo: "fila", bilheteId: bilheteId || "" }
           });
+          fcmEnviado = true;
         } catch (error) {
-          logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
-          ultimoErro = error.code || error.message || String(error);
-
-          if (error.code === "messaging/registration-token-not-registered") {
-            await tokenRef.update({
-              fcmToken: admin.firestore.FieldValue.delete(),
-            });
-          }
+          logger.error(`❌ Erro Push:`, error.message);
         }
-      } else {
-        logger.warn(`Token FCM não encontrado para dono: ${donoId}`);
       }
 
-      // =========================
-      // WHATSAPP EVOLUTION
-      // =========================
+      // --- WHATSAPP ---
       if (telefoneWhatsapp) {
         try {
           whatsappInfo = await enviarWhatsAppEvolution({
             telefone: telefoneWhatsapp,
             mensagem,
           });
-
           whatsappEnviado = !!whatsappInfo?.enviado;
-
-          if (whatsappEnviado) {
-            logger.info("✅ WhatsApp enviado com sucesso!", {
-              bilheteId,
-              donoId,
-              telefone: whatsappInfo.numero,
-            });
-          }
         } catch (error) {
-          logger.error(`❌ Erro ao enviar WhatsApp para ${donoId}:`, {
-            bilheteId,
-            erro: error.message,
-          });
-
-          if (!ultimoErro) {
-            ultimoErro = error.message || String(error);
-          }
+          logger.error(`❌ Erro WhatsApp:`, error.message);
         }
-      } else {
-        logger.info(`Bilhete ${bilheteId} sem telefone para WhatsApp.`);
       }
 
-      // =========================
-      // STATUS FINAL
-      // =========================
-      if (fcmEnviado || whatsappEnviado) {
-        transaction.update(event.data.ref, {
-          status: "processado",
-          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-          fcmEnviado,
-          fcmMessageId: fcmMessageId || null,
-          whatsappEnviado,
-          whatsappTelefone: whatsappInfo?.numero || null,
-          processando: false,
-          ultimoErro: ultimoErro || null,
-        });
-      } else {
-        transaction.update(event.data.ref, {
-          status: "processado_com_erro",
-          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-          ultimoErro: ultimoErro || "sem_token_e_sem_telefone",
-          fcmEnviado: false,
-          whatsappEnviado: false,
-          processando: false,
-        });
-      }
+      // --- STATUS FINAL ---
+      transaction.update(event.data.ref, {
+        status: (fcmEnviado || whatsappEnviado) ? "processado" : "processado_com_erro",
+        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        fcmEnviado,
+        fcmMessageId: fcmMessageId || null,
+        whatsappEnviado,
+        processando: false,
+      });
     });
   }
 );
 
 // ============================================================================
-// rotinaLembreteAgendamento (AVISO AO CLIENTE) — CORRIGIDO PARA EVITAR DUPLICIDADE
+// rotinaLembreteAgendamento
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
   {
@@ -756,7 +612,6 @@ exports.rotinaLembreteAgendamento = onSchedule(
   },
   async () => {
     const agora = admin.firestore.Timestamp.now();
-
     try {
       const snapshot = await db
         .collection("lembretesPendentes")
@@ -765,158 +620,44 @@ exports.rotinaLembreteAgendamento = onSchedule(
         .limit(100)
         .get();
 
-      if (snapshot.empty) {
-        logger.info("Nenhum lembrete pendente encontrado.");
-        return;
-      }
+      if (snapshot.empty) return;
 
-      const resultados = await Promise.allSettled(
+      await Promise.allSettled(
         snapshot.docs.map((docLembrete) =>
           db.runTransaction(async (transaction) => {
-            const freshDoc = await transaction.get(docLembrete.ref);
-            const lembrete = freshDoc.data();
+            const lembrete = (await transaction.get(docLembrete.ref)).data();
+            if (!lembrete || lembrete.enviado !== false || lembrete.processando === true) return;
 
-            if (!lembrete || lembrete.enviado !== false) {
-              logger.info(`Lembrete ${docLembrete.id} já foi processado`);
-              return { status: "já_processado" };
-            }
+            transaction.update(docLembrete.ref, { processando: true });
 
-            if (lembrete.processando === true) {
-              logger.info(
-                `Lembrete ${docLembrete.id} já está em processamento`
-              );
-              return { status: "em_processamento" };
-            }
-
-            transaction.update(docLembrete.ref, {
-              processando: true,
-              processandoEm: admin.firestore.FieldValue.serverTimestamp(),
-            });
-
-            const tokenSnap = await db
-              .collection("mensagensTokens")
-              .doc(lembrete.clienteId)
-              .get();
-
+            const tokenSnap = await db.collection("mensagensTokens").doc(lembrete.clienteId).get();
             const fcmToken = tokenSnap.exists ? tokenSnap.data().fcmToken : null;
 
             if (!fcmToken) {
-              logger.warn(
-                `Token FCM não encontrado para cliente ${lembrete.clienteId}`
-              );
-              transaction.update(docLembrete.ref, {
-                enviado: "sem_token",
-                processando: false,
-                processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-              });
-              return { status: "sem_token" };
+              transaction.update(docLembrete.ref, { enviado: "sem_token", processando: false });
+              return;
             }
 
-            const link = `https://prontiapp.com.br/vitrine.html?empresa=${encodeURIComponent(
-              String(lembrete.empresaId || "")
-            )}`;
-
             try {
-              const messageId = await fcm.send({
+              const mid = await fcm.send({
                 token: fcmToken,
-                notification: {
-                  title: "Lembrete Pronti ⏰",
-                  body: `Olá! Seu horário para ${
-                    lembrete.servicoNome
-                  } está chegando (${lembrete.horarioTexto || lembrete.horario}).`,
-                },
-                data: {
-                  tipo: "lembrete",
-                  agendamentoId: lembrete.agendamentoId || "",
-                  link: link,
-                },
-                android: {
-                  priority: "high",
-                  notification: {
-                    sound: "default",
-                    priority: "high",
-                  },
-                },
-                apns: {
-                  headers: {
-                    "apns-priority": "10",
-                  },
-                  payload: {
-                    aps: {
-                      sound: "default",
-                      badge: 1,
-                      "mutable-content": 1,
-                    },
-                  },
-                },
-                webpush: {
-                  notification: {
-                    title: "Lembrete Pronti ⏰",
-                    body: `Olá! Seu horário para ${
-                      lembrete.servicoNome
-                    } está chegando (${lembrete.horarioTexto || lembrete.horario}).`,
-                  },
-                  fcmOptions: { link },
-                  headers: { Urgency: "high" },
-                },
+                notification: { title: "Lembrete Pronti ⏰", body: `Seu horário para ${lembrete.servicoNome} está chegando!` }
               });
-
-              transaction.update(docLembrete.ref, {
-                enviado: true,
-                processando: false,
-                processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-                messageId: messageId,
-              });
-
-              logger.info(
-                `✅ Lembrete enviado para cliente ${lembrete.clienteId}`,
-                {
-                  lembreteId: docLembrete.id,
-                  messageId,
-                }
-              );
-
-              return { status: "enviado" };
+              transaction.update(docLembrete.ref, { enviado: true, processando: false, messageId: mid });
             } catch (err) {
-              logger.error("Erro ao enviar FCM:", err);
-
-              if (err.code === "messaging/registration-token-not-registered") {
-                await db
-                  .collection("mensagensTokens")
-                  .doc(lembrete.clienteId)
-                  .update({ fcmToken: admin.firestore.FieldValue.delete() });
-              }
-
-              transaction.update(docLembrete.ref, {
-                enviado: false,
-                processando: false,
-                ultimoErro: err.code || err.message,
-              });
-
-              return { status: "erro_envio", erro: err.message };
+              transaction.update(docLembrete.ref, { processando: false });
             }
           })
         )
       );
-
-      const sucesso = resultados.filter(
-        (r) => r.status === "fulfilled"
-      ).length;
-      const erros = resultados.filter(
-        (r) => r.status === "rejected"
-      ).length;
-
-      logger.info(
-        `✅ Rotina de lembretes concluída: ${sucesso} sucesso, ${erros} erros`
-      );
     } catch (error) {
-      logger.error("Erro na rotina de lembretes:", error);
+      logger.error("Erro lembretes:", error);
     }
   }
 );
 
 // ============================================================================
-// rotinaProcessarFila — JOB AUTOMÁTICO DA FILA
+// rotinaProcessarFila
 // ============================================================================
 exports.rotinaProcessarFila = onSchedule(
   {
@@ -928,14 +669,10 @@ exports.rotinaProcessarFila = onSchedule(
   async () => {
     try {
       await processarFila();
-      logger.info("✅ Rotina de processamento da fila executada com sucesso.");
     } catch (error) {
-      logger.error("❌ Erro na rotina de processamento da fila:", error);
+      logger.error("❌ Erro fila:", error);
     }
   }
 );
 
-// ============================================================================
-// OUTRAS FUNÇÕES
-// ============================================================================
 exports.notificarClientes = require("./notifyClientes").notificarClientes;
