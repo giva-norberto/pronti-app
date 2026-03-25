@@ -773,6 +773,36 @@
         });
     </script>
     <!-- FIM: script da fila -->
+        <!-- FIM: script da fila -->
+
+    <!-- <--- SEU NOVO SCRIPT AQUI ---> -->
+    <script type="module">
+    import { montarPainelMinhasAssinaturas } from './minhas-assinaturas.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const divConteudo = document.getElementById('lista-assinaturas-cliente');
+        const menuAssinaturas = document.getElementById('menu-minhas-assinaturas');
+        const cardsGrid = document.getElementById('vitrine-cards-grid');
+        const mainNavigationContainer = document.getElementById('main-navigation-container');
+
+        cardsGrid.addEventListener('click', (e) => {
+            const card = e.target.closest('.vitrine-card');
+            if (!card) return;
+            if (card.dataset.menuCard === 'minhas-assinaturas') {
+                e.preventDefault();
+                mainNavigationContainer.style.display = 'none';
+                menuAssinaturas.style.display = 'block';
+                montarPainelMinhasAssinaturas(divConteudo);
+            }
+        });
+
+        menuAssinaturas.querySelector('.btn-voltar').addEventListener('click', () => {
+            menuAssinaturas.style.display = 'none';
+            mainNavigationContainer.style.display = 'block';
+        });
+    });
+    </script>
+    <!-- <--- FIM DO SEU SCRIPT NOVO ---> -->
 
     <script type="module" src="/messaging.js"></script>
 </body>
