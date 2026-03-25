@@ -590,7 +590,7 @@ async function entrarNaFilaDeAgendamento() {
     }
 
     try {
-        const filaRef = collection(db, "empresarios", empresaId, "fila_espera");
+        const filaRef = collection(db, "fila_agendamentos");
         
         await addDoc(filaRef, {
             clienteId: user.uid,
