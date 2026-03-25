@@ -1,7 +1,7 @@
 import { db, auth } from './vitrini-firebase.js';
-import { collection, query, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, query, getDocs, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Função utilitária para obter o empresaId mais robusto
+// Função utilitária para obter o empresaId mais robusto (URL > localStorage)
 function obterEmpresaId() {
     let empresaId = null;
     try {
@@ -29,6 +29,9 @@ function esperarUsuarioAutenticado() {
     });
 }
 
+/**
+ * EXIBE SOMENTE AS ASSINATURAS ATIVAS
+ */
 export async function montarPainelMinhasAssinaturas(divAlvo) {
     divAlvo.innerHTML = "Carregando assinaturas...";
     const [empresaId, user] = await Promise.all([
@@ -41,27 +44,61 @@ export async function montarPainelMinhasAssinaturas(divAlvo) {
     }
 
     const assinaturasRef = collection(db, "empresarios", empresaId, "clientes", user.uid, "assinaturas");
-    const q = query(assinaturasRef);
+    const q = query(assinaturasRef); // buscando todas do usuário na empresa
     const snap = await getDocs(q);
 
-    if (snap.empty) {
-        divAlvo.innerHTML = "<p>Você não possui assinaturas.</p>";
-        return;
-    }
-
     divAlvo.innerHTML = "";
+    let achouAtiva = false;
+
     snap.forEach(doc => {
         const a = doc.data();
-        const status = a.status === "ativo" && a.dataFim && a.dataFim.toDate ? 
-            (a.dataFim.toDate() > new Date() ? "ATIVA" : "VENCIDA") 
-            : "VENCIDA";
+        const isAtiva =
+            a.status === "ativo"
+            && a.dataFim
+            && a.dataFim.toDate
+            && a.dataFim.toDate() > new Date();
+        if (!isAtiva) return; // Só mostra ativas
+
+        achouAtiva = true;
         const item = document.createElement('div');
         item.className = 'card-assinatura';
         item.innerHTML = `
             <b>${a.planoNome || a.planoId}</b><br>
-            Status: <b>${status}</b><br>
+            Status: <b>ATIVA</b><br>
             Validade até: <span>${a.dataFim?.toDate ? a.dataFim.toDate().toLocaleDateString('pt-BR') : '---'}</span>
         `;
         divAlvo.appendChild(item);
     });
+
+    if (!achouAtiva) {
+        divAlvo.innerHTML = "<p>Você não possui assinaturas ativas.</p>";
+    }
+}
+
+/**
+ * CHECA SE USUÁRIO JÁ TEM ASSINATURA ATIVA DESSE PLANO (para bloquear duplicidade)
+ * Uso: await existeAssinaturaAtivaDoPlano(empresaId, user.uid, planoId)
+ * Retorna: true se já existe, false se pode criar
+ */
+export async function existeAssinaturaAtivaDoPlano(empresaId, userId, planoId) {
+    const assinaturasRef = collection(db, "empresarios", empresaId, "clientes", userId, "assinaturas");
+    // Filtra por planoId, status ativo
+    const q = query(
+        assinaturasRef,
+        where("planoId", "==", planoId),
+        where("status", "==", "ativo")
+    );
+    const snap = await getDocs(q);
+    let algumaAtiva = false;
+    snap.forEach(doc => {
+        const a = doc.data();
+        if(
+            a.dataFim
+            && a.dataFim.toDate
+            && a.dataFim.toDate() > new Date()
+        ) {
+            algumaAtiva = true;
+        }
+    });
+    return algumaAtiva;
 }
