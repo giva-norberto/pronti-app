@@ -331,7 +331,7 @@
 
         // LÓGICA DE PLANOS PRESERVADA
         async function renderizarPlanosVitrine(empresaId) {
-            const container = document.getElementById('lista-de-planos');
+            const container = document.getElementById('cards-planos-vitrine');
             if (!container) return;
             container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>';
             try {
@@ -394,7 +394,7 @@
                         if (empresaId) {
                             renderizarPlanosVitrine(empresaId);
                         } else {
-                            document.getElementById('lista-de-planos').innerHTML = '<p style="color: #fff;">Erro: ID da empresa não encontrado.</p>';
+                            document.getElementById('cards-planos-vitrine').innerHTML = '<p style="color: #fff;">Erro: ID da empresa não encontrado.</p>';
                         }
                     }
                 });
