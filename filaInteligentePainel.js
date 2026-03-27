@@ -1,4 +1,3 @@
-// filaInteligentePainel.js
 import {
   ofertarVagaParaFila,
   processarOfertasExpiradas,
@@ -20,6 +19,7 @@ export function iniciarPainelFilaInteligente(empresaId) {
   if (unsubscribeOfertas) unsubscribeOfertas();
   if (unsubscribeFila) unsubscribeFila();
 
+  // Listeners apenas para leitura/atualização da UI:
   unsubscribeOfertas = ouvirOfertasFila(empresaId, renderizarOfertas);
   unsubscribeFila = ouvirFilaEspera(empresaId, renderizarFila);
 
@@ -38,6 +38,7 @@ function bindAcoesPainel() {
     const btnRecusar = e.target.closest("[data-recusar-oferta]");
     const btnProcessar = e.target.closest("[data-processar-expiradas]");
 
+    // Ofertar vaga:
     if (btnOferta) {
       const vaga = {
         data: btnOferta.dataset.data,
@@ -63,6 +64,7 @@ function bindAcoesPainel() {
       return;
     }
 
+    // Confirmar oferta:
     if (btnConfirmar) {
       const ofertaId = btnConfirmar.dataset.confirmarOferta;
       btnConfirmar.disabled = true;
@@ -72,7 +74,11 @@ function bindAcoesPainel() {
         if (!res.ok) {
           alert(`Falha ao confirmar: ${res.motivo}`);
         } else {
-          alert(`Agendamento confirmado para ${res.clienteNome} às ${res.horario}`);
+          alert(
+            res.horario && res.clienteNome
+              ? `Agendamento confirmado para ${res.clienteNome} às ${res.horario}`
+              : `Agendamento confirmado!`
+          );
         }
       } catch (error) {
         console.error("Erro ao confirmar oferta:", error);
@@ -83,6 +89,7 @@ function bindAcoesPainel() {
       return;
     }
 
+    // Recusar oferta:
     if (btnRecusar) {
       const ofertaId = btnRecusar.dataset.recusarOferta;
       btnRecusar.disabled = true;
@@ -101,6 +108,7 @@ function bindAcoesPainel() {
       return;
     }
 
+    // Processar expiradas:
     if (btnProcessar) {
       btnProcessar.disabled = true;
       try {
@@ -158,7 +166,9 @@ function renderizarOfertas(lista) {
     return;
   }
 
-  el.innerHTML = lista.map((item) => `
+  el.innerHTML = lista
+    .map(
+      (item) => `
     <div class="card-fila">
       <div class="card-fila-topo">
         <strong>${item.clienteNome || "Cliente"}</strong>
@@ -179,7 +189,9 @@ function renderizarOfertas(lista) {
         </div>
       ` : ""}
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 }
 
 function renderizarFila(lista) {
@@ -191,7 +203,9 @@ function renderizarFila(lista) {
     return;
   }
 
-  el.innerHTML = lista.map((item) => `
+  el.innerHTML = lista
+    .map(
+      (item) => `
     <div class="card-fila">
       <div class="card-fila-topo">
         <strong>${item.clienteNome || "Cliente"}</strong>
@@ -205,5 +219,7 @@ function renderizarFila(lista) {
         <div><b>Horários:</b> ${(item.horariosAceitos || []).join(", ") || "-"}</div>
       </div>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 }
