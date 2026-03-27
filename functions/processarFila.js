@@ -1,10 +1,11 @@
+const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
 // Inicialização
 if (!admin.apps.length) {
   admin.initializeApp();
 }
-const db = admin.firestore(); // CORRIGIDO: SEM ARGUMENTOS, padrão moderno
+const db = admin.firestore();
 const fcm = admin.messaging();
 
 // Utilitários
@@ -314,4 +315,73 @@ async function processarFila() {
   console.log("🏁 Fim do processamento da fila");
 }
 
-module.exports = { processarFila };
+// ========= CONFIRMAR OFERTA =============
+const confirmarOfertaFila = functions.https.onCall(async (data, context) => {
+  const { empresaId, ofertaId } = data;
+  try {
+    // Busca oferta
+    const ofertaRef = db.collection("empresarios").doc(empresaId).collection("ofertas_fila").doc(ofertaId);
+    const snap = await ofertaRef.get();
+    if (!snap.exists) return { ok: false, motivo: "oferta_nao_encontrada" };
+
+    const oferta = snap.data();
+
+    if (oferta.status !== "pendente") return { ok: false, motivo: "oferta_indisponivel" };
+
+    // Busca o documento da fila
+    const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
+    const filaSnap = await filaRef.get();
+    if (!filaSnap.exists) return { ok: false, motivo: "fila_nao_encontrada" };
+    const fila = filaSnap.data();
+
+    // Cria agendamento
+    const agendamentoData = {
+      clienteId: oferta.clienteId,
+      empresaId,
+      profissionalId: oferta.profissionalId,
+      data: oferta.data,
+      horario: oferta.horario,
+      status: "ativo",
+      servicos: fila.servicos,
+      criadoEm: admin.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection("empresarios").doc(empresaId).collection("agendamentos").add(agendamentoData);
+
+    // Atualiza oferta e fila
+    await ofertaRef.update({ status: "aceita", aceitaEm: admin.firestore.FieldValue.serverTimestamp() });
+    await filaRef.update({ status: "atendido", atendidoEm: admin.firestore.FieldValue.serverTimestamp(), processando: false });
+
+    return { ok: true };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, motivo: "erro_backend", erro: e.message || e.toString() };
+  }
+});
+
+// ========= RECUSAR OFERTA =============
+const recusarOfertaFila = functions.https.onCall(async (data, context) => {
+  const { empresaId, ofertaId } = data;
+  try {
+    const ofertaRef = db.collection("empresarios").doc(empresaId).collection("ofertas_fila").doc(ofertaId);
+    const snap = await ofertaRef.get();
+    if (!snap.exists) return { ok: false, motivo: "oferta_nao_encontrada" };
+    const oferta = snap.data();
+    if (oferta.status !== "pendente") return { ok: false, motivo: "oferta_ja_resolvida" };
+
+    const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
+
+    await ofertaRef.update({ status: "recusada", recusadaEm: admin.firestore.FieldValue.serverTimestamp() });
+    await filaRef.update({ status: "aguardando", processando: false, ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp() });
+
+    return { ok: true };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, motivo: "erro_backend", erro: e.message || e.toString() };
+  }
+});
+
+module.exports = {
+  processarFila,
+  confirmarOfertaFila,
+  recusarOfertaFila
+};
