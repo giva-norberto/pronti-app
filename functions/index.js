@@ -10,7 +10,7 @@ const cors = require("cors");
 const { processarFila } = require("./processarFila");
 const fetch = require("node-fetch");
 
-// ========================= Inicialização do Firebase =========================
+// ========================= Inicialização do Firebase ========================
 if (!admin.apps.length) {
   admin.initializeApp();
 }
