@@ -4,7 +4,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
-// REMOVIDO: const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore } = require("firebase-admin/firestore"); // AGORA USA getFirestore(nome)
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 const { processarFila } = require("./processarFila");
@@ -15,7 +15,8 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.firestore(); // CORRIGIDO: SEM argumentos!
+// ==== USANDO O BANCO NOMEADO "pronti-app"! ====
+const db = getFirestore("pronti-app");
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
@@ -24,7 +25,6 @@ const whitelist = [
   "https://prontiapp.vercel.app",
   "http://localhost:3000",
 ];
-
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.includes(origin)) {
@@ -37,7 +37,6 @@ const corsOptions = {
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
-
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
