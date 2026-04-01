@@ -55,9 +55,9 @@ function adicionarDias(data, dias) {
 }
 
 function diferencaEmDias(base, alvo) {
-  const msPorDia = 1000 * 60 * 60 * 24;
   const utcBase = Date.UTC(base.getFullYear(), base.getMonth(), base.getDate());
   const utcAlvo = Date.UTC(alvo.getFullYear(), alvo.getMonth(), alvo.getDate());
+  const msPorDia = 1000 * 60 * 60 * 24;
   return Math.floor((utcAlvo - utcBase) / msPorDia);
 }
 
@@ -68,9 +68,9 @@ function dataParaISO(date) {
   return `${ano}-${mes}-${dia}`;
 }
 
-function classificarRetorno(proximaData, periodicidade) {
-  if (!periodicidade || periodicidade <= 0 || !proximaData) {
-    return "sem_periodicidade";
+function classificarRetorno(proximaData, mediaDias) {
+  if (!mediaDias || mediaDias <= 0 || !proximaData) {
+    return "sem_historico";
   }
 
   const hoje = new Date();
@@ -94,8 +94,8 @@ function textoStatus(status, dias) {
       return dias === 1 ? "Retorno amanhã" : `Retorno em ${dias} dia(s)`;
     case "futuro":
       return `Retorno em ${dias} dia(s)`;
-    case "sem_periodicidade":
-      return "Sem periodicidade definida";
+    case "sem_historico":
+      return "Histórico insuficiente";
     default:
       return status;
   }
@@ -103,24 +103,6 @@ function textoStatus(status, dias) {
 
 function buscarEmpresaAtiva() {
   return localStorage.getItem("empresaAtivaId");
-}
-
-async function buscarServicosMap(empresaIdAtual) {
-  const servicosRef = collection(db, "empresarios", empresaIdAtual, "servicos");
-  const snapshot = await getDocs(servicosRef);
-
-  const mapa = new Map();
-
-  snapshot.forEach((docSnap) => {
-    const dados = docSnap.data() || {};
-    mapa.set(docSnap.id, {
-      id: docSnap.id,
-      nome: dados.nome || "",
-      periodicidadeRetornoDias: Number(dados.periodicidadeRetornoDias) || 0
-    });
-  });
-
-  return mapa;
 }
 
 async function buscarAgendamentosRealizados(empresaIdAtual) {
@@ -134,43 +116,71 @@ async function buscarAgendamentosRealizados(empresaIdAtual) {
   }));
 }
 
-function montarUltimoAtendimentoPorClienteServico(agendamentos) {
+function agruparAgendamentosPorCliente(agendamentos) {
   const mapa = new Map();
 
   for (const ag of agendamentos) {
     const clienteId = ag.clienteId || "";
-    const servicoId = ag.servicoId || "";
     const data = ag.data || "";
 
     if (!clienteId || !data) continue;
 
-    const chave = `${clienteId}__${servicoId || ag.servicoNome || "sem-servico"}`;
-    const atual = mapa.get(chave);
-
-    if (!atual) {
-      mapa.set(chave, ag);
-      continue;
+    if (!mapa.has(clienteId)) {
+      mapa.set(clienteId, []);
     }
 
-    if ((ag.data || "") > (atual.data || "")) {
-      mapa.set(chave, ag);
+    mapa.get(clienteId).push(ag);
+  }
+
+  return mapa;
+}
+
+function calcularMediaIntervalos(datasISO) {
+  if (!Array.isArray(datasISO) || datasISO.length < 2) {
+    return 0;
+  }
+
+  const intervalos = [];
+
+  for (let i = 1; i < datasISO.length; i++) {
+    const dataAnterior = normalizarDataISO(datasISO[i - 1]);
+    const dataAtual = normalizarDataISO(datasISO[i]);
+
+    if (!dataAnterior || !dataAtual) continue;
+
+    const intervalo = diferencaEmDias(dataAnterior, dataAtual);
+
+    if (intervalo > 0) {
+      intervalos.push(intervalo);
     }
   }
 
-  return Array.from(mapa.values());
+  if (!intervalos.length) return 0;
+
+  const soma = intervalos.reduce((total, valor) => total + valor, 0);
+  return Math.round(soma / intervalos.length);
 }
 
-function calcularRetornos(agendamentos, servicosMap) {
-  const ultimos = montarUltimoAtendimentoPorClienteServico(agendamentos);
+function calcularRetornos(agendamentos) {
+  const grupos = agruparAgendamentosPorCliente(agendamentos);
+  const calculados = [];
 
-  const calculados = ultimos.map((ag) => {
-    const servicoCadastro = servicosMap.get(ag.servicoId) || null;
-    const periodicidade =
-      Number(servicoCadastro?.periodicidadeRetornoDias) || 0;
+  for (const [clienteId, listaCliente] of grupos.entries()) {
+    const ordenados = [...listaCliente].sort((a, b) => {
+      return (a.data || "").localeCompare(b.data || "");
+    });
 
-    const dataUltima = normalizarDataISO(ag.data);
-    const proximaData = dataUltima && periodicidade > 0
-      ? adicionarDias(dataUltima, periodicidade)
+    const ultimosCinco = ordenados.slice(-5);
+    const datas = ultimosCinco.map((item) => item.data).filter(Boolean);
+
+    const mediaDias = calcularMediaIntervalos(datas);
+    const ultimoAtendimento = ultimosCinco[ultimosCinco.length - 1] || null;
+    const dataUltima = ultimoAtendimento?.data
+      ? normalizarDataISO(ultimoAtendimento.data)
+      : null;
+
+    const proximaData = dataUltima && mediaDias > 0
+      ? adicionarDias(dataUltima, mediaDias)
       : null;
 
     const hoje = new Date();
@@ -180,22 +190,22 @@ function calcularRetornos(agendamentos, servicosMap) {
       ? diferencaEmDias(hoje, proximaData)
       : null;
 
-    const statusRetorno = classificarRetorno(proximaData, periodicidade);
+    const statusRetorno = classificarRetorno(proximaData, mediaDias);
 
-    return {
-      clienteId: ag.clienteId || "",
-      clienteNome: ag.clienteNome || "Cliente sem nome",
-      clienteFoto: ag.clienteFoto || "",
-      servicoId: ag.servicoId || "",
-      servicoNome: ag.servicoNome || servicoCadastro?.nome || "Serviço",
-      profissionalNome: ag.profissionalNome || "-",
-      dataUltimoAtendimento: ag.data || "",
+    calculados.push({
+      clienteId,
+      clienteNome: ultimoAtendimento?.clienteNome || "Cliente sem nome",
+      clienteFoto: ultimoAtendimento?.clienteFoto || "",
+      ultimoServicoNome: ultimoAtendimento?.servicoNome || "Não informado",
+      profissionalNome: ultimoAtendimento?.profissionalNome || "-",
+      dataUltimoAtendimento: ultimoAtendimento?.data || "",
       proximaDataIdeal: proximaData ? dataParaISO(proximaData) : "",
-      periodicidadeRetornoDias: periodicidade,
+      mediaRetornoDias: mediaDias,
       diasParaRetorno,
-      statusRetorno
-    };
-  });
+      statusRetorno,
+      quantidadeAtendimentosConsiderados: ultimosCinco.length
+    });
+  }
 
   calculados.sort((a, b) => {
     const ordem = {
@@ -203,7 +213,7 @@ function calcularRetornos(agendamentos, servicosMap) {
       hoje: 2,
       em_breve: 3,
       futuro: 4,
-      sem_periodicidade: 5
+      sem_historico: 5
     };
 
     const ordemA = ordem[a.statusRetorno] || 99;
@@ -267,7 +277,7 @@ function renderizarLista() {
           ${foto}
           <div>
             <h3 class="cliente-nome">${item.clienteNome}</h3>
-            <p class="cliente-sub">Serviço-base para retorno: ${item.servicoNome}</p>
+            <p class="cliente-sub">Último serviço: ${item.ultimoServicoNome}</p>
           </div>
         </div>
 
@@ -284,16 +294,21 @@ function renderizarLista() {
 
         <div class="info-box">
           <div class="label">Próxima data ideal</div>
-          <div class="texto">${item.proximaDataIdeal ? formatarDataBR(item.proximaDataIdeal) : "Não definida"}</div>
+          <div class="texto">${item.proximaDataIdeal ? formatarDataBR(item.proximaDataIdeal) : "Histórico insuficiente"}</div>
         </div>
 
         <div class="info-box">
-          <div class="label">Periodicidade</div>
-          <div class="texto">${item.periodicidadeRetornoDias ? `${item.periodicidadeRetornoDias} dia(s)` : "Não cadastrada"}</div>
+          <div class="label">Média de retorno</div>
+          <div class="texto">${item.mediaRetornoDias ? `${item.mediaRetornoDias} dia(s)` : "Ainda sem média"}</div>
         </div>
 
         <div class="info-box">
-          <div class="label">Profissional</div>
+          <div class="label">Atendimentos usados</div>
+          <div class="texto">${item.quantidadeAtendimentosConsiderados} atendimento(s)</div>
+        </div>
+
+        <div class="info-box">
+          <div class="label">Profissional da última visita</div>
           <div class="texto">${item.profissionalNome || "-"}</div>
         </div>
       </div>
@@ -329,12 +344,9 @@ async function carregarTela() {
       throw new Error("Nenhuma empresa ativa encontrada.");
     }
 
-    const [servicosMap, agendamentos] = await Promise.all([
-      buscarServicosMap(empresaId),
-      buscarAgendamentosRealizados(empresaId)
-    ]);
+    const agendamentos = await buscarAgendamentosRealizados(empresaId);
 
-    retornoCalculado = calcularRetornos(agendamentos, servicosMap);
+    retornoCalculado = calcularRetornos(agendamentos);
     atualizarResumo(retornoCalculado);
 
     loadingEl.style.display = "none";
