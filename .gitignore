@@ -22,3 +22,8 @@ yarn-error.log*
 # 4. Ignorar chave do Firebase – NUNCA COMITAR
 firebase-credentials.json
 
+service-account.json
+service-account.json
+service-account.json
+service-account.json
+service-account.json
