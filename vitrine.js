@@ -580,9 +580,21 @@ async function entrarNaFilaDeAgendamento() {
     }
 
     const empresaId = state.empresaId;
-    const profissionalId = state.agendamento.profissional?.id || "qualquer";
+    const profissional = state.agendamento.profissional;
+    const profissionalId = profissional?.id;
+    const profissionalNome = profissional?.nome || "Profissional";
     const dataSelecionada = state.agendamento.data;
-    const servicosSelecionados = state.agendamento.servicos;
+    const servicosSelecionados = state.agendamento.servicos || [];
+
+    if (!empresaId) {
+        await UI.mostrarAlerta("Erro", "Empresa não identificada.");
+        return;
+    }
+
+    if (!profissionalId) {
+        await UI.mostrarAlerta("Atenção", "Selecione um profissional antes de entrar na fila.");
+        return;
+    }
 
     if (!dataSelecionada || servicosSelecionados.length === 0) {
         await UI.mostrarAlerta("Atenção", "Por favor, selecione os serviços e a data desejada antes de entrar na fila.");
@@ -591,28 +603,41 @@ async function entrarNaFilaDeAgendamento() {
 
     try {
         const filaRef = collection(db, "fila_agendamentos");
-        
+
+        const servicosNormalizados = servicosSelecionados.map((s) => ({
+            id: s.id,
+            nome: s.nome,
+            duracao: Number(s.duracao) || 0
+        }));
+
+        const duracaoTotal = servicosNormalizados.reduce((total, s) => total + (Number(s.duracao) || 0), 0);
+
         await addDoc(filaRef, {
             clienteId: user.uid,
             clienteNome: user.displayName || "Cliente",
-            clienteEmail: user.email,
+            clienteEmail: user.email || null,
+            empresaId: empresaId,
             profissionalId: profissionalId,
-            servicos: servicosSelecionados.map(s => ({ id: s.id, nome: s.nome })),
-            dataDesejada: dataSelecionada,
-            status: "aguardando",
-            createdAt: serverTimestamp()
+            profissionalNome: profissionalNome,
+            servicos: servicosNormalizados,
+            duracaoTotal: duracaoTotal,
+            dataFila: dataSelecionada,
+            status: "fila",
+            processando: false,
+            origem: "vitrine",
+            createdAt: serverTimestamp(),
+            criadoEm: serverTimestamp()
         });
 
-        await UI.mostrarAlerta("Fila de Espera", "Pronto! Você está na fila de espera. Se houver uma desistência, avisaremos você.");
+        await UI.mostrarAlerta("Fila de Espera", "Pronto! Você entrou na fila de espera. Se surgir uma vaga, avisaremos você.");
         
-        const containerFila = document.getElementById('container-fila-espera');
-        if (containerFila) containerFila.style.display = 'none';
+        const containerFila = document.getElementById("container-fila-espera");
+        if (containerFila) containerFila.style.display = "none";
 
     } catch (error) {
         console.error("Erro ao entrar na fila:", error);
         await UI.mostrarAlerta("Erro", "Erro ao processar sua solicitação. Tente novamente.");
     }
 }
-
 // Expondo a função para o HTML (onclick)
 window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
