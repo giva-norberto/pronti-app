@@ -135,9 +135,12 @@ function agruparAgendamentosPorCliente(agendamentos) {
   return mapa;
 }
 
-function calcularMediaIntervalos(datasISO) {
+function calcularMediaIntervalosComDetalhes(datasISO) {
   if (!Array.isArray(datasISO) || datasISO.length < 2) {
-    return 0;
+    return {
+      mediaDias: 0,
+      intervalosValidos: 0
+    };
   }
 
   const intervalos = [];
@@ -155,10 +158,19 @@ function calcularMediaIntervalos(datasISO) {
     }
   }
 
-  if (!intervalos.length) return 0;
+  if (!intervalos.length) {
+    return {
+      mediaDias: 0,
+      intervalosValidos: 0
+    };
+  }
 
   const soma = intervalos.reduce((total, valor) => total + valor, 0);
-  return Math.round(soma / intervalos.length);
+
+  return {
+    mediaDias: Math.round(soma / intervalos.length),
+    intervalosValidos: intervalos.length
+  };
 }
 
 function calcularRetornos(agendamentos) {
@@ -173,7 +185,8 @@ function calcularRetornos(agendamentos) {
     const ultimosCinco = ordenados.slice(-5);
     const datas = ultimosCinco.map((item) => item.data).filter(Boolean);
 
-    const mediaDias = calcularMediaIntervalos(datas);
+    const { mediaDias, intervalosValidos } = calcularMediaIntervalosComDetalhes(datas);
+
     const ultimoAtendimento = ultimosCinco[ultimosCinco.length - 1] || null;
     const dataUltima = ultimoAtendimento?.data
       ? normalizarDataISO(ultimoAtendimento.data)
@@ -203,7 +216,8 @@ function calcularRetornos(agendamentos) {
       mediaRetornoDias: mediaDias,
       diasParaRetorno,
       statusRetorno,
-      quantidadeAtendimentosConsiderados: ultimosCinco.length
+      quantidadeAtendimentosAnalisados: ultimosCinco.length,
+      quantidadeIntervalosValidos: intervalosValidos
     });
   }
 
@@ -303,8 +317,13 @@ function renderizarLista() {
         </div>
 
         <div class="info-box">
-          <div class="label">Atendimentos usados</div>
-          <div class="texto">${item.quantidadeAtendimentosConsiderados} atendimento(s)</div>
+          <div class="label">Atendimentos analisados</div>
+          <div class="texto">${item.quantidadeAtendimentosAnalisados} atendimento(s)</div>
+        </div>
+
+        <div class="info-box">
+          <div class="label">Intervalos válidos</div>
+          <div class="texto">${item.quantidadeIntervalosValidos} intervalo(s)</div>
         </div>
 
         <div class="info-box">
