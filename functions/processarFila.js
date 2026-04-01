@@ -1,12 +1,14 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 
 // Inicialização
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.firestore();
+const REGION = "southamerica-east1";
+const db = getFirestore("pronti-app");
 const fcm = admin.messaging();
 
 // =========================
@@ -109,9 +111,9 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
         const duracaoAg =
           Number(ag.servicoDuracao) ||
           Number(ag.duracaoTotal) ||
-          Array.isArray(ag.servicos)
+          (Array.isArray(ag.servicos)
             ? (ag.servicos || []).reduce((t, s) => t + (Number(s?.duracao) || 0), 0)
-            : 0;
+            : 0);
 
         const fimAg = inicioAg + (duracaoAg || 0);
         return intervaloSobrepoe(inicioSlot, fimSlot, inicioAg, fimAg);
@@ -481,7 +483,7 @@ async function processarFila() {
 // =========================
 // Callable: ofertar vaga manualmente
 // =========================
-const ofertarVagaParaFila = functions.https.onCall(async (data) => {
+const ofertarVagaParaFila = functions.region(REGION).https.onCall(async (data) => {
   const { empresaId, vaga } = data || {};
 
   try {
@@ -576,7 +578,7 @@ const ofertarVagaParaFila = functions.https.onCall(async (data) => {
 // =========================
 // Callable: processar expiradas
 // =========================
-const processarOfertasExpiradas = functions.https.onCall(async (data) => {
+const processarOfertasExpiradas = functions.region(REGION).https.onCall(async (data) => {
   const { empresaId } = data || {};
 
   try {
@@ -636,7 +638,7 @@ const processarOfertasExpiradas = functions.https.onCall(async (data) => {
 // =========================
 // Callable: confirmar oferta
 // =========================
-const confirmarOfertaFila = functions.https.onCall(async (data) => {
+const confirmarOfertaFila = functions.region(REGION).https.onCall(async (data) => {
   const { empresaId, ofertaId } = data || {};
 
   try {
@@ -659,7 +661,11 @@ const confirmarOfertaFila = functions.https.onCall(async (data) => {
       return { ok: false, motivo: "oferta_indisponivel" };
     }
 
-    if (oferta.expiraEm && oferta.expiraEm.toDate && oferta.expiraEm.toDate() < getAgoraDate()) {
+    if (
+      oferta.expiraEm &&
+      oferta.expiraEm.toDate &&
+      oferta.expiraEm.toDate() < getAgoraDate()
+    ) {
       await ofertaRef.update({
         status: STATUS_OFERTA.EXPIRADA,
         expiradaEm: agoraTimestamp(),
@@ -736,7 +742,7 @@ const confirmarOfertaFila = functions.https.onCall(async (data) => {
 // =========================
 // Callable: recusar oferta
 // =========================
-const recusarOfertaFila = functions.https.onCall(async (data) => {
+const recusarOfertaFila = functions.region(REGION).https.onCall(async (data) => {
   const { empresaId, ofertaId } = data || {};
 
   try {
