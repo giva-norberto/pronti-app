@@ -41,7 +41,7 @@ function getDiaSemanaId(dataISO) {
 function horaParaMinutos(hora) {
   if (!hora || !String(hora).includes(":")) return 0;
   const [h, m] = String(hora).split(":").map(Number);
-  return (h * 60) + m;
+  return h * 60 + m;
 }
 
 function minutosParaHora(minutos) {
@@ -77,7 +77,12 @@ function getOfertaExpiracaoTimestamp(minutos = 5) {
 // =========================
 // Geração de slots
 // =========================
-function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTotal) {
+function gerarSlotsDisponiveis(
+  horariosConfig,
+  agendamentos,
+  dataISO,
+  duracaoTotal
+) {
   if (!horariosConfig) return [];
 
   const diaId = getDiaSemanaId(dataISO);
@@ -112,7 +117,10 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
           Number(ag.servicoDuracao) ||
           Number(ag.duracaoTotal) ||
           (Array.isArray(ag.servicos)
-            ? (ag.servicos || []).reduce((t, s) => t + (Number(s?.duracao) || 0), 0)
+            ? (ag.servicos || []).reduce(
+                (t, s) => t + (Number(s?.duracao) || 0),
+                0
+              )
             : 0);
 
         const fimAg = inicioAg + (duracaoAg || 0);
@@ -138,7 +146,10 @@ async function buscarTokenDoCliente(item) {
   if (!item?.clienteId) return null;
 
   try {
-    const tokenSnap = await db.collection("mensagensTokens").doc(item.clienteId).get();
+    const tokenSnap = await db
+      .collection("mensagensTokens")
+      .doc(item.clienteId)
+      .get();
 
     if (!tokenSnap.exists) return null;
 
@@ -147,7 +158,10 @@ async function buscarTokenDoCliente(item) {
 
     return dados.fcmToken || null;
   } catch (error) {
-    console.error(`❌ Erro ao buscar token do cliente ${item?.clienteId}:`, error.message);
+    console.error(
+      `❌ Erro ao buscar token do cliente ${item?.clienteId}:`,
+      error.message
+    );
     return null;
   }
 }
@@ -158,7 +172,9 @@ async function enviarPushOferta(item, filaId, dataOferta, horarioOferta) {
 
   if (!token) {
     console.log(
-      `ℹ️ Cliente ${item?.clienteId || "desconhecido"} sem token. Oferta ficará salva sem push.`
+      `ℹ️ Cliente ${
+        item?.clienteId || "desconhecido"
+      } sem token. Oferta ficará salva sem push.`
     );
     return false;
   }
@@ -215,7 +231,10 @@ async function enviarPushOferta(item, filaId, dataOferta, horarioOferta) {
       },
     });
 
-    console.log(`✅ Push de oferta enviado ao cliente ${item?.clienteId}:`, response);
+    console.log(
+      `✅ Push de oferta enviado ao cliente ${item?.clienteId}:`,
+      response
+    );
     return true;
   } catch (error) {
     console.error(
@@ -283,11 +302,15 @@ async function buscarOfertaPendenteDaFila(empresaId, filaId) {
     .get();
 
   if (snap.empty) return null;
-
   return snap.docs[0];
 }
 
-async function criarOfertaParaFila({ item, filaId, horarioEscolhido, dataOferta }) {
+async function criarOfertaParaFila({
+  item,
+  filaId,
+  horarioEscolhido,
+  dataOferta,
+}) {
   const empresaId = item.empresaId;
   const expiraEm = getOfertaExpiracaoTimestamp(5);
   const linkConfirmacao = construirLinkConfirmacao(filaId, empresaId);
@@ -304,7 +327,12 @@ async function criarOfertaParaFila({ item, filaId, horarioEscolhido, dataOferta 
     };
   }
 
-  const pushEnviado = await enviarPushOferta(item, filaId, dataOferta, horarioEscolhido);
+  const pushEnviado = await enviarPushOferta(
+    item,
+    filaId,
+    dataOferta,
+    horarioEscolhido
+  );
 
   const ofertaRef = await db
     .collection("empresarios")
@@ -415,11 +443,7 @@ async function processarItemFila(docFila) {
   const horarioEscolhido = slotsDisponiveis[0];
   const dataOferta = dataFila;
 
-  const {
-    expiraEm,
-    linkConfirmacao,
-    pushEnviado,
-  } = await criarOfertaParaFila({
+  const { expiraEm, linkConfirmacao, pushEnviado } = await criarOfertaParaFila({
     item,
     filaId,
     horarioEscolhido,
@@ -439,7 +463,9 @@ async function processarItemFila(docFila) {
     ultimoErro: admin.firestore.FieldValue.delete(),
   });
 
-  console.log(`✅ Oferta criada/enviada para fila ${filaId} em ${horarioEscolhido}`);
+  console.log(
+    `✅ Oferta criada/enviada para fila ${filaId} em ${horarioEscolhido}`
+  );
 }
 
 async function processarFila() {
@@ -483,311 +509,329 @@ async function processarFila() {
 // =========================
 // Callable: ofertar vaga manualmente
 // =========================
-const ofertarVagaParaFila = functions.region(REGION).https.onCall(async (data) => {
-  const { empresaId, vaga } = data || {};
+const ofertarVagaParaFila = functions
+  .region(REGION)
+  .https.onCall(async (data) => {
+    const { empresaId, vaga } = data || {};
 
-  try {
-    if (!empresaId) {
-      return { ok: false, motivo: "empresa_id_obrigatorio" };
-    }
+    try {
+      if (!empresaId) {
+        return { ok: false, motivo: "empresa_id_obrigatorio" };
+      }
 
-    const dataVaga = vaga?.data || null;
-    const horarioVaga = vaga?.horario || null;
-    const profissionalId = vaga?.profissionalId || null;
+      const dataVaga = vaga?.data || null;
+      const horarioVaga = vaga?.horario || null;
+      const profissionalId = vaga?.profissionalId || null;
 
-    if (!dataVaga || !horarioVaga || !profissionalId) {
-      return { ok: false, motivo: "vaga_invalida" };
-    }
+      if (!dataVaga || !horarioVaga || !profissionalId) {
+        return { ok: false, motivo: "vaga_invalida" };
+      }
 
-    const filaSnap = await db
-      .collection("fila_agendamentos")
-      .where("empresaId", "==", empresaId)
-      .where("profissionalId", "==", profissionalId)
-      .where("dataFila", "==", dataVaga)
-      .where("status", "==", STATUS_FILA.FILA)
-      .limit(1)
-      .get();
+      const filaSnap = await db
+        .collection("fila_agendamentos")
+        .where("empresaId", "==", empresaId)
+        .where("profissionalId", "==", profissionalId)
+        .where("dataFila", "==", dataVaga)
+        .where("status", "==", STATUS_FILA.FILA)
+        .limit(1)
+        .get();
 
-    if (filaSnap.empty) {
-      return { ok: false, motivo: "nenhum_cliente_na_fila" };
-    }
+      if (filaSnap.empty) {
+        return { ok: false, motivo: "nenhum_cliente_na_fila" };
+      }
 
-    const docFila = filaSnap.docs[0];
-    const item = docFila.data();
-    const filaId = docFila.id;
+      const docFila = filaSnap.docs[0];
+      const item = docFila.data();
+      const filaId = docFila.id;
 
-    const ofertaExistente = await buscarOfertaPendenteDaFila(empresaId, filaId);
-    if (ofertaExistente) {
-      return { ok: false, motivo: "ja_existe_oferta_pendente" };
-    }
-
-    const expiraEm = getOfertaExpiracaoTimestamp(5);
-    const linkConfirmacao = construirLinkConfirmacao(filaId, empresaId);
-    const pushEnviado = await enviarPushOferta(item, filaId, dataVaga, horarioVaga);
-
-    await db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("ofertas_fila")
-      .add({
-        status: STATUS_OFERTA.PENDENTE,
-        clienteId: item.clienteId,
-        clienteNome: item.clienteNome || "Cliente",
+      const ofertaExistente = await buscarOfertaPendenteDaFila(
         empresaId,
+        filaId
+      );
+      if (ofertaExistente) {
+        return { ok: false, motivo: "ja_existe_oferta_pendente" };
+      }
+
+      const expiraEm = getOfertaExpiracaoTimestamp(5);
+      const linkConfirmacao = construirLinkConfirmacao(filaId, empresaId);
+      const pushEnviado = await enviarPushOferta(
+        item,
         filaId,
-        data: dataVaga,
-        horario: horarioVaga,
-        servicoNome: vaga?.servicoNome || item?.servicos?.[0]?.nome || "",
-        profissionalId,
-        profissionalNome: vaga?.profissionalNome || item?.profissionalNome || "",
+        dataVaga,
+        horarioVaga
+      );
+
+      await db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("ofertas_fila")
+        .add({
+          status: STATUS_OFERTA.PENDENTE,
+          clienteId: item.clienteId,
+          clienteNome: item.clienteNome || "Cliente",
+          empresaId,
+          filaId,
+          data: dataVaga,
+          horario: horarioVaga,
+          servicoNome: vaga?.servicoNome || item?.servicos?.[0]?.nome || "",
+          profissionalId,
+          profissionalNome:
+            vaga?.profissionalNome || item?.profissionalNome || "",
+          linkConfirmacao,
+          expiraEm,
+          createdAt: agoraTimestamp(),
+          pushOfertaEnviado: pushEnviado,
+        });
+
+      await docFila.ref.update({
+        status: STATUS_FILA.OFERTA_ENVIADA,
+        processando: false,
+        dataOferta: dataVaga,
+        horarioOferta: horarioVaga,
+        ofertaExpiraEm: expiraEm,
         linkConfirmacao,
-        expiraEm,
-        createdAt: agoraTimestamp(),
         pushOfertaEnviado: pushEnviado,
+        ofertaEnviadaEm: agoraTimestamp(),
+        ultimaTentativaEm: agoraTimestamp(),
       });
 
-    await docFila.ref.update({
-      status: STATUS_FILA.OFERTA_ENVIADA,
-      processando: false,
-      dataOferta: dataVaga,
-      horarioOferta: horarioVaga,
-      ofertaExpiraEm: expiraEm,
-      linkConfirmacao,
-      pushOfertaEnviado: pushEnviado,
-      ofertaEnviadaEm: agoraTimestamp(),
-      ultimaTentativaEm: agoraTimestamp(),
-    });
-
-    return {
-      ok: true,
-      filaId,
-      horario: horarioVaga,
-      data: dataVaga,
-      pushEnviado,
-    };
-  } catch (e) {
-    console.error("❌ Erro em ofertarVagaParaFila:", e);
-    return {
-      ok: false,
-      motivo: "erro_backend",
-      erro: e.message || e.toString(),
-    };
-  }
-});
+      return {
+        ok: true,
+        filaId,
+        horario: horarioVaga,
+        data: dataVaga,
+        pushEnviado,
+      };
+    } catch (e) {
+      console.error("❌ Erro em ofertarVagaParaFila:", e);
+      return {
+        ok: false,
+        motivo: "erro_backend",
+        erro: e.message || e.toString(),
+      };
+    }
+  });
 
 // =========================
 // Callable: processar expiradas
 // =========================
-const processarOfertasExpiradas = functions.region(REGION).https.onCall(async (data) => {
-  const { empresaId } = data || {};
+const processarOfertasExpiradas = functions
+  .region(REGION)
+  .https.onCall(async (data) => {
+    const { empresaId } = data || {};
 
-  try {
-    if (!empresaId) {
-      return { ok: false, motivo: "empresa_id_obrigatorio" };
-    }
-
-    const agora = admin.firestore.Timestamp.now();
-
-    const ofertasSnap = await db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("ofertas_fila")
-      .where("status", "==", STATUS_OFERTA.PENDENTE)
-      .where("expiraEm", "<=", agora)
-      .limit(50)
-      .get();
-
-    if (ofertasSnap.empty) {
-      return { ok: true, processadas: 0 };
-    }
-
-    let processadas = 0;
-
-    for (const ofertaDoc of ofertasSnap.docs) {
-      const oferta = ofertaDoc.data();
-      const filaId = oferta?.filaId;
-
-      await ofertaDoc.ref.update({
-        status: STATUS_OFERTA.EXPIRADA,
-        expiradaEm: agoraTimestamp(),
-      });
-
-      if (filaId) {
-        const filaRef = db.collection("fila_agendamentos").doc(filaId);
-        await filaRef.update({
-          status: STATUS_FILA.FILA,
-          processando: false,
-          ultimaTentativaEm: agoraTimestamp(),
-        });
+    try {
+      if (!empresaId) {
+        return { ok: false, motivo: "empresa_id_obrigatorio" };
       }
 
-      processadas += 1;
-    }
+      const agora = admin.firestore.Timestamp.now();
 
-    return { ok: true, processadas };
-  } catch (e) {
-    console.error("❌ Erro em processarOfertasExpiradas:", e);
-    return {
-      ok: false,
-      motivo: "erro_backend",
-      erro: e.message || e.toString(),
-    };
-  }
-});
+      const ofertasSnap = await db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("ofertas_fila")
+        .where("status", "==", STATUS_OFERTA.PENDENTE)
+        .where("expiraEm", "<=", agora)
+        .limit(50)
+        .get();
+
+      if (ofertasSnap.empty) {
+        return { ok: true, processadas: 0 };
+      }
+
+      let processadas = 0;
+
+      for (const ofertaDoc of ofertasSnap.docs) {
+        const oferta = ofertaDoc.data();
+        const filaId = oferta?.filaId;
+
+        await ofertaDoc.ref.update({
+          status: STATUS_OFERTA.EXPIRADA,
+          expiradaEm: agoraTimestamp(),
+        });
+
+        if (filaId) {
+          const filaRef = db.collection("fila_agendamentos").doc(filaId);
+          await filaRef.update({
+            status: STATUS_FILA.FILA,
+            processando: false,
+            ultimaTentativaEm: agoraTimestamp(),
+          });
+        }
+
+        processadas += 1;
+      }
+
+      return { ok: true, processadas };
+    } catch (e) {
+      console.error("❌ Erro em processarOfertasExpiradas:", e);
+      return {
+        ok: false,
+        motivo: "erro_backend",
+        erro: e.message || e.toString(),
+      };
+    }
+  });
 
 // =========================
 // Callable: confirmar oferta
 // =========================
-const confirmarOfertaFila = functions.region(REGION).https.onCall(async (data) => {
-  const { empresaId, ofertaId } = data || {};
+const confirmarOfertaFila = functions
+  .region(REGION)
+  .https.onCall(async (data) => {
+    const { empresaId, ofertaId } = data || {};
 
-  try {
-    if (!empresaId || !ofertaId) {
-      return { ok: false, motivo: "parametros_invalidos" };
-    }
-
-    const ofertaRef = db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("ofertas_fila")
-      .doc(ofertaId);
-
-    const snap = await ofertaRef.get();
-    if (!snap.exists) return { ok: false, motivo: "oferta_nao_encontrada" };
-
-    const oferta = snap.data();
-
-    if (oferta.status !== STATUS_OFERTA.PENDENTE) {
-      return { ok: false, motivo: "oferta_indisponivel" };
-    }
-
-    if (
-      oferta.expiraEm &&
-      oferta.expiraEm.toDate &&
-      oferta.expiraEm.toDate() < getAgoraDate()
-    ) {
-      await ofertaRef.update({
-        status: STATUS_OFERTA.EXPIRADA,
-        expiradaEm: agoraTimestamp(),
-      });
-
-      if (oferta.filaId) {
-        await db.collection("fila_agendamentos").doc(oferta.filaId).update({
-          status: STATUS_FILA.FILA,
-          processando: false,
-          ultimaTentativaEm: agoraTimestamp(),
-        });
+    try {
+      if (!empresaId || !ofertaId) {
+        return { ok: false, motivo: "parametros_invalidos" };
       }
 
-      return { ok: false, motivo: "oferta_expirada" };
+      const ofertaRef = db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("ofertas_fila")
+        .doc(ofertaId);
+
+      const snap = await ofertaRef.get();
+      if (!snap.exists) return { ok: false, motivo: "oferta_nao_encontrada" };
+
+      const oferta = snap.data();
+
+      if (oferta.status !== STATUS_OFERTA.PENDENTE) {
+        return { ok: false, motivo: "oferta_indisponivel" };
+      }
+
+      if (
+        oferta.expiraEm &&
+        oferta.expiraEm.toDate &&
+        oferta.expiraEm.toDate() < getAgoraDate()
+      ) {
+        await ofertaRef.update({
+          status: STATUS_OFERTA.EXPIRADA,
+          expiradaEm: agoraTimestamp(),
+        });
+
+        if (oferta.filaId) {
+          await db.collection("fila_agendamentos").doc(oferta.filaId).update({
+            status: STATUS_FILA.FILA,
+            processando: false,
+            ultimaTentativaEm: agoraTimestamp(),
+          });
+        }
+
+        return { ok: false, motivo: "oferta_expirada" };
+      }
+
+      const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
+      const filaSnap = await filaRef.get();
+
+      if (!filaSnap.exists) {
+        return { ok: false, motivo: "fila_nao_encontrada" };
+      }
+
+      const fila = filaSnap.data();
+
+      const agendamentoData = {
+        clienteId: oferta.clienteId,
+        clienteNome: fila?.clienteNome || oferta?.clienteNome || "Cliente",
+        empresaId,
+        profissionalId: oferta.profissionalId,
+        profissionalNome:
+          oferta.profissionalNome || fila?.profissionalNome || "",
+        data: oferta.data,
+        horario: oferta.horario,
+        status: "ativo",
+        servicos: Array.isArray(fila?.servicos) ? fila.servicos : [],
+        duracaoTotal: Number(fila?.duracaoTotal) || 0,
+        origem: "fila_inteligente",
+        filaId: oferta.filaId,
+        criadoEm: agoraTimestamp(),
+      };
+
+      await db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("agendamentos")
+        .add(agendamentoData);
+
+      await ofertaRef.update({
+        status: STATUS_OFERTA.ACEITA,
+        aceitaEm: agoraTimestamp(),
+      });
+
+      await filaRef.update({
+        status: STATUS_FILA.ATENDIDO,
+        atendidoEm: agoraTimestamp(),
+        processando: false,
+      });
+
+      return {
+        ok: true,
+        horario: oferta.horario,
+        clienteNome: fila?.clienteNome || oferta?.clienteNome || "Cliente",
+      };
+    } catch (e) {
+      console.error("❌ Erro em confirmarOfertaFila:", e);
+      return {
+        ok: false,
+        motivo: "erro_backend",
+        erro: e.message || e.toString(),
+      };
     }
-
-    const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
-    const filaSnap = await filaRef.get();
-
-    if (!filaSnap.exists) {
-      return { ok: false, motivo: "fila_nao_encontrada" };
-    }
-
-    const fila = filaSnap.data();
-
-    const agendamentoData = {
-      clienteId: oferta.clienteId,
-      clienteNome: fila?.clienteNome || oferta?.clienteNome || "Cliente",
-      empresaId,
-      profissionalId: oferta.profissionalId,
-      profissionalNome: oferta.profissionalNome || fila?.profissionalNome || "",
-      data: oferta.data,
-      horario: oferta.horario,
-      status: "ativo",
-      servicos: Array.isArray(fila?.servicos) ? fila.servicos : [],
-      duracaoTotal: Number(fila?.duracaoTotal) || 0,
-      origem: "fila_inteligente",
-      filaId: oferta.filaId,
-      criadoEm: agoraTimestamp(),
-    };
-
-    await db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("agendamentos")
-      .add(agendamentoData);
-
-    await ofertaRef.update({
-      status: STATUS_OFERTA.ACEITA,
-      aceitaEm: agoraTimestamp(),
-    });
-
-    await filaRef.update({
-      status: STATUS_FILA.ATENDIDO,
-      atendidoEm: agoraTimestamp(),
-      processando: false,
-    });
-
-    return {
-      ok: true,
-      horario: oferta.horario,
-      clienteNome: fila?.clienteNome || oferta?.clienteNome || "Cliente",
-    };
-  } catch (e) {
-    console.error("❌ Erro em confirmarOfertaFila:", e);
-    return {
-      ok: false,
-      motivo: "erro_backend",
-      erro: e.message || e.toString(),
-    };
-  }
-});
+  });
 
 // =========================
 // Callable: recusar oferta
 // =========================
-const recusarOfertaFila = functions.region(REGION).https.onCall(async (data) => {
-  const { empresaId, ofertaId } = data || {};
+const recusarOfertaFila = functions
+  .region(REGION)
+  .https.onCall(async (data) => {
+    const { empresaId, ofertaId } = data || {};
 
-  try {
-    if (!empresaId || !ofertaId) {
-      return { ok: false, motivo: "parametros_invalidos" };
+    try {
+      if (!empresaId || !ofertaId) {
+        return { ok: false, motivo: "parametros_invalidos" };
+      }
+
+      const ofertaRef = db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("ofertas_fila")
+        .doc(ofertaId);
+
+      const snap = await ofertaRef.get();
+      if (!snap.exists) return { ok: false, motivo: "oferta_nao_encontrada" };
+
+      const oferta = snap.data();
+
+      if (oferta.status !== STATUS_OFERTA.PENDENTE) {
+        return { ok: false, motivo: "oferta_ja_resolvida" };
+      }
+
+      const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
+
+      await ofertaRef.update({
+        status: STATUS_OFERTA.RECUSADA,
+        recusadaEm: agoraTimestamp(),
+      });
+
+      await filaRef.update({
+        status: STATUS_FILA.FILA,
+        processando: false,
+        ultimaTentativaEm: agoraTimestamp(),
+      });
+
+      return { ok: true };
+    } catch (e) {
+      console.error("❌ Erro em recusarOfertaFila:", e);
+      return {
+        ok: false,
+        motivo: "erro_backend",
+        erro: e.message || e.toString(),
+      };
     }
-
-    const ofertaRef = db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("ofertas_fila")
-      .doc(ofertaId);
-
-    const snap = await ofertaRef.get();
-    if (!snap.exists) return { ok: false, motivo: "oferta_nao_encontrada" };
-
-    const oferta = snap.data();
-
-    if (oferta.status !== STATUS_OFERTA.PENDENTE) {
-      return { ok: false, motivo: "oferta_ja_resolvida" };
-    }
-
-    const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
-
-    await ofertaRef.update({
-      status: STATUS_OFERTA.RECUSADA,
-      recusadaEm: agoraTimestamp(),
-    });
-
-    await filaRef.update({
-      status: STATUS_FILA.FILA,
-      processando: false,
-      ultimaTentativaEm: agoraTimestamp(),
-    });
-
-    return { ok: true };
-  } catch (e) {
-    console.error("❌ Erro em recusarOfertaFila:", e);
-    return {
-      ok: false,
-      motivo: "erro_backend",
-      erro: e.message || e.toString(),
-    };
-  }
-});
+  });
 
 module.exports = {
   processarFila,
