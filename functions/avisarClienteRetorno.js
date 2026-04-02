@@ -1,11 +1,13 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.firestore();
+// Usa o mesmo banco nomeado do index.js
+const db = getFirestore("pronti-app");
 const fcm = admin.messaging();
 
 const REGION = "southamerica-east1";
@@ -31,21 +33,24 @@ async function buscarTokenDoCliente(clienteId) {
   if (!clienteId) return null;
 
   try {
+    // Mesmo lugar usado no restante do sistema
     const tokenSnap = await db.collection("mensagensTokens").doc(clienteId).get();
 
     if (!tokenSnap.exists) return null;
 
     const dados = tokenSnap.data() || {};
-    if (dados.ativo === false) return null;
 
-    return dados.fcmToken || null;
+    if (dados.ativo === false) return null;
+    if (!dados.fcmToken || typeof dados.fcmToken !== "string") return null;
+
+    return dados.fcmToken;
   } catch (error) {
     console.error(`Erro ao buscar token do cliente ${clienteId}:`, error);
     return null;
   }
 }
 
-exports.avisarClienteRetorno = onCall(
+const avisarClienteRetorno = onCall(
   { region: REGION },
   async (request) => {
     const data = request.data || {};
@@ -65,7 +70,10 @@ exports.avisarClienteRetorno = onCall(
     } = data;
 
     if (!empresaId || !clienteId) {
-      throw new HttpsError("invalid-argument", "empresaId e clienteId são obrigatórios.");
+      throw new HttpsError(
+        "invalid-argument",
+        "empresaId e clienteId são obrigatórios."
+      );
     }
 
     const mensagem = montarMensagemRetorno({
@@ -158,3 +166,5 @@ exports.avisarClienteRetorno = onCall(
     };
   }
 );
+
+module.exports = { avisarClienteRetorno };
