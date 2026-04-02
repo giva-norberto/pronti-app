@@ -29,6 +29,82 @@ function montarMensagemRetorno({ nome, statusRetorno }) {
   }
 }
 
+function normalizarUrlPronti(valor) {
+  if (typeof valor !== "string") return "";
+
+  let url = valor.trim();
+  if (!url) return "";
+
+  if (url.startsWith("/")) {
+    return `https://prontiapp.com.br${url}`;
+  }
+
+  if (!/^https?:\/\//i.test(url)) {
+    if (url.includes("prontiapp.com.br")) {
+      return `https://${url.replace(/^\/+/, "")}`;
+    }
+    return "";
+  }
+
+  return url;
+}
+
+async function buscarLinkDaEmpresa(empresaId) {
+  if (!empresaId) return "";
+
+  try {
+    const empresaSnap = await db.collection("empresarios").doc(empresaId).get();
+
+    if (!empresaSnap.exists) return "";
+
+    const dados = empresaSnap.data() || {};
+
+    const candidatos = [
+      dados.linkVitrine,
+      dados.vitrineLink,
+      dados.link,
+      dados.url,
+      dados.site,
+      dados.empresa,
+      dados.links?.vitrine,
+      dados.vitrine?.link
+    ];
+
+    for (const candidato of candidatos) {
+      const url = normalizarUrlPronti(candidato);
+      if (url) return url;
+    }
+
+    return "";
+  } catch (error) {
+    console.error(`Erro ao buscar link da empresa ${empresaId}:`, error);
+    return "";
+  }
+}
+
+async function buscarNomeDaEmpresa(empresaId) {
+  if (!empresaId) return "Pronti";
+
+  try {
+    const empresaSnap = await db.collection("empresarios").doc(empresaId).get();
+
+    if (!empresaSnap.exists) return "Pronti";
+
+    const dados = empresaSnap.data() || {};
+
+    return (
+      dados.nomeEmpresa ||
+      dados.nomeNegocio ||
+      dados.nome ||
+      dados.empresaNome ||
+      "Pronti"
+    );
+  } catch (error) {
+    console.error(`Erro ao buscar nome da empresa ${empresaId}:`, error);
+    return "Pronti";
+  }
+}
+
 async function buscarTokenDoCliente(clienteId) {
   if (!clienteId) return null;
 
@@ -88,16 +164,19 @@ const avisarClienteRetorno = onCall(
       .doc();
 
     const token = await buscarTokenDoCliente(clienteId);
+    const linkDestino = await buscarLinkDaEmpresa(empresaId);
+    const nomeEmpresa = await buscarNomeDaEmpresa(empresaId);
+    const tituloNotificacao = `${nomeEmpresa} • Aviso de retorno`;
 
     let enviadoPush = false;
     let motivo = "";
 
     if (token) {
       try {
-        await fcm.send({
+        const payload = {
           token,
           notification: {
-            title: "Pronti • Aviso de retorno",
+            title: tituloNotificacao,
             body: mensagem
           },
           data: {
@@ -106,7 +185,8 @@ const avisarClienteRetorno = onCall(
             clienteId: String(clienteId),
             statusRetorno: String(statusRetorno || ""),
             proximaDataIdeal: String(proximaDataIdeal || ""),
-            ultimoServicoNome: String(ultimoServicoNome || "")
+            ultimoServicoNome: String(ultimoServicoNome || ""),
+            url: String(linkDestino || "")
           },
           android: {
             priority: "high",
@@ -129,9 +209,30 @@ const avisarClienteRetorno = onCall(
           webpush: {
             headers: {
               Urgency: "high"
+            },
+            notification: {
+              title: tituloNotificacao,
+              body: mensagem,
+              data: {
+                tipo: "aviso_retorno",
+                empresaId: String(empresaId),
+                clienteId: String(clienteId),
+                statusRetorno: String(statusRetorno || ""),
+                proximaDataIdeal: String(proximaDataIdeal || ""),
+                ultimoServicoNome: String(ultimoServicoNome || ""),
+                url: String(linkDestino || "")
+              }
             }
           }
-        });
+        };
+
+        if (linkDestino) {
+          payload.webpush.fcmOptions = {
+            link: linkDestino
+          };
+        }
+
+        await fcm.send(payload);
 
         enviadoPush = true;
         motivo = "push_enviado";
