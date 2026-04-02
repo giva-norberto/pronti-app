@@ -5,6 +5,10 @@ import {
   query,
   where
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import {
+  getFunctions,
+  httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-functions.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 const listaEl = document.getElementById("lista-retorno");
@@ -17,18 +21,21 @@ const resumoAtrasadosEl = document.getElementById("resumo-atrasados");
 const resumoHojeEl = document.getElementById("resumo-hoje");
 const resumoEmBreveEl = document.getElementById("resumo-em-breve");
 
+const functions = getFunctions(undefined, "southamerica-east1");
+const avisarClienteRetornoFn = httpsCallable(functions, "avisarClienteRetorno");
+
 let empresaId = null;
 let retornoCalculado = [];
 let filtroAtual = "todos";
 
-function mostrarToast(texto) {
+function mostrarToast(texto, cor = "#ef4444") {
   if (typeof Toastify !== "undefined") {
     Toastify({
       text: texto,
       duration: 3500,
       gravity: "top",
       position: "right",
-      style: { background: "#ef4444", color: "#fff" }
+      style: { background: cor, color: "#fff" }
     }).showToast();
   } else {
     alert(texto);
@@ -261,6 +268,72 @@ function obterListaFiltrada() {
   return retornoCalculado.filter((item) => item.statusRetorno === filtroAtual);
 }
 
+async function copiarTexto(texto) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch (error) {
+    console.warn("Clipboard API falhou:", error);
+  }
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = texto;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const sucesso = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return sucesso;
+  } catch (error) {
+    console.warn("Fallback de cópia falhou:", error);
+    return false;
+  }
+}
+
+async function handleAvisarCliente(item, botao) {
+  const textoOriginal = botao.innerHTML;
+  botao.disabled = true;
+  botao.innerHTML = "Avisando...";
+
+  try {
+    const resposta = await avisarClienteRetornoFn({
+      empresaId,
+      clienteId: item.clienteId,
+      clienteNome: item.clienteNome,
+      statusRetorno: item.statusRetorno,
+      proximaDataIdeal: item.proximaDataIdeal,
+      ultimoServicoNome: item.ultimoServicoNome
+    });
+
+    const dados = resposta?.data || {};
+
+    if (dados.enviadoPush) {
+      mostrarToast("Aviso enviado por push com sucesso.", "#22c55e");
+      return;
+    }
+
+    const mensagem = dados.mensagem || `Oi, ${item.clienteNome}! Quer agendar seu próximo horário?`;
+    const copiou = await copiarTexto(mensagem);
+
+    if (copiou) {
+      mostrarToast("Cliente sem token. Mensagem copiada.", "#f59e0b");
+    } else {
+      mostrarToast("Cliente sem token. Não foi possível copiar a mensagem.", "#f59e0b");
+    }
+  } catch (error) {
+    console.error("Erro ao avisar cliente:", error);
+    mostrarToast("Erro ao avisar cliente.", "#ef4444");
+  } finally {
+    botao.disabled = false;
+    botao.innerHTML = textoOriginal;
+  }
+}
+
 function renderizarLista() {
   const lista = obterListaFiltrada();
 
@@ -331,7 +404,16 @@ function renderizarLista() {
           <div class="texto">${item.profissionalNome || "-"}</div>
         </div>
       </div>
+
+      <div style="margin-top: 8px;">
+        <button class="btn-avisar-retorno" style="background:#4f46e5;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;">
+          Avisar cliente
+        </button>
+      </div>
     `;
+
+    const btnAvisar = card.querySelector(".btn-avisar-retorno");
+    btnAvisar.addEventListener("click", () => handleAvisarCliente(item, btnAvisar));
 
     listaEl.appendChild(card);
   }
