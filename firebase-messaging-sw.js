@@ -4,9 +4,10 @@
 // ✅ UNIFICADO: Junta o antigo service-worker.js (cache) com o firebase-messaging-sw.js (push)
 //    Agora é UM ÚNICO service worker que faz tudo.
 // ======================================================================
-// Firebase compat para Service Worker
+
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
+
 // --------------------------------------------------
 // CONFIG FIREBASE (mesma do firebase-config.js)
 // --------------------------------------------------
@@ -18,6 +19,7 @@ firebase.initializeApp({
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 });
+
 // --------------------------------------------------
 // MESSAGING
 // --------------------------------------------------
@@ -25,25 +27,34 @@ const messaging = firebase.messaging();
 // URLs padrão (fallback) — mantém comportamento antigo
 const DEFAULT_VIEW_URL = "https://prontiapp.com.br/agendamentos";
 const DEFAULT_FALLBACK_URL = "https://prontiapp.com.br/";
+
 // --------------------------------------------------
-// RECEBE PUSH COM APP FECHADO
+// RECEBE PUSH COM APP FECHADO/PWA/CHROME
 // --------------------------------------------------
-messaging.onBackgroundMessage(function (payload) {
+// ATENÇÃO: Evitar duplicidade—controla exibição manual SEM deixar Chrome exibir genérica também.
+messaging.onBackgroundMessage(function(payload) {
   try {
     console.log("[Firebase SW] Push recebido:", payload);
+    // Firebase pode passar dados em vários formatos
+    // Tenta puxar 'link' de todos os jeitos possíveis
     const data = payload?.data || {};
-    const notification = payload?.notification || {};
+    const notif = payload?.notification || {};
+    const webpush = payload?.webpush || {};
+    const fcmLink =
+      data.link ||
+      data.url ||
+      (webpush?.fcmOptions && webpush.fcmOptions.link) ||
+      (payload?.fcmOptions && payload.fcmOptions.link) ||
+      "";
+
     const title =
-      notification.title ||
+      notif.title ||
       data.title ||
       "Novo Agendamento";
     const options = {
-      body:
-        notification.body ||
-        data.body ||
-        "Você tem um novo agendamento!",
-      icon: notification.icon || data.icon || "/icon.png",
-      image: notification.image || data.image,
+      body: notif.body || data.body || "Você tem um novo agendamento!",
+      icon: notif.icon || data.icon || "/icon.png",
+      image: notif.image || data.image,
       badge: "/badge.png",
       tag: `agendamento-${data.bilheteId || data.lembreteId || Date.now()}`,
       requireInteraction: true,
@@ -53,37 +64,53 @@ messaging.onBackgroundMessage(function (payload) {
       ],
       data: {
         ...data,
-        link: data.link || data.url || ""
+        link: fcmLink || "", // universal link
       }
     };
+
+    // Garante: só UM ponto exibe a notificação -- aqui, nunca fora.
     self.registration.showNotification(title, options);
   } catch (err) {
     console.warn("[Firebase SW] Erro ao processar push em background:", err);
   }
 });
+
 // --------------------------------------------------
-// CLICK NA NOTIFICAÇÃO
+// CLICK NA NOTIFICAÇÃO — universal para qualquer payload de link/url
 // --------------------------------------------------
-self.addEventListener("notificationclick", function (event) {
+self.addEventListener("notificationclick", function(event) {
   try {
     console.log("[Firebase SW] Clique na notificação:", event.action);
-    const data = event.notification?.data || {};
-    const linkFromPayload = (data && (data.link || data.url)) ? String(data.link || data.url) : "";
     event.notification.close();
+
+    const data = event.notification?.data || {};
+
+    // Tenta extrair o link de todos os jeitos possíveis
+    let link =
+      data.link ||
+      data.url ||
+      // Notificações do FCM Webpush podem mandar dentro de FCM_MSG
+      (data.FCM_MSG && (
+        data.FCM_MSG.link ||
+        data.FCM_MSG.url ||
+        (data.FCM_MSG.data && (data.FCM_MSG.data.link || data.FCM_MSG.data.url))
+      )) ||
+      DEFAULT_FALLBACK_URL;
+
+    // Se for o botão de dismiss, não faz nada
     if (event.action === "dismiss") return;
-    let targetUrl = DEFAULT_FALLBACK_URL;
-    if (event.action === "view") {
-      targetUrl = DEFAULT_VIEW_URL;
-    }
-    if (linkFromPayload) {
-      targetUrl = linkFromPayload;
-    }
-    event.waitUntil(clients.openWindow(targetUrl));
+
+    // Se for action custom, você pode filtrar por nomes ('view'/'abrir')
+    // Mas para não perder nenhum click, SEMPRE tentará abrir o link no final
+    if (!link || typeof link !== "string") link = DEFAULT_FALLBACK_URL;
+
+    event.waitUntil(clients.openWindow(link));
   } catch (err) {
     console.warn("[Firebase SW] Erro no notificationclick:", err);
     event.waitUntil(clients.openWindow(DEFAULT_FALLBACK_URL));
   }
 });
+
 // ======================================================
 // CACHE OFFLINE - PRONTI APP (antigo service-worker.js)
 // ======================================================
@@ -98,23 +125,25 @@ const FILES_TO_CACHE = [
   "/dashboard.html",
   "/perfil.html"
 ];
+
 // --------------------------------------------------
 // INSTALL
 // --------------------------------------------------
-self.addEventListener("install", function (event) {
+self.addEventListener("install", function(event) {
   console.log("[ServiceWorker] Install (unificado: push + cache)");
   event.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) {
+    caches.open(CACHE_NAME).then(function(cache) {
       console.log("[ServiceWorker] Caching app shell");
       return cache.addAll(FILES_TO_CACHE);
     })
   );
   self.skipWaiting();
 });
+
 // --------------------------------------------------
 // FETCH (cache offline)
 // --------------------------------------------------
-self.addEventListener("fetch", function (event) {
+self.addEventListener("fetch", function(event) {
   const url = event.request.url;
   // NÃO interferir com Firebase / APIs externas
   if (
@@ -126,11 +155,11 @@ self.addEventListener("fetch", function (event) {
     return;
   }
   event.respondWith(
-    caches.match(event.request).then(function (response) {
+    caches.match(event.request).then(function(response) {
       if (response) {
         return response;
       }
-      return fetch(event.request).then(function (fetchResponse) {
+      return fetch(event.request).then(function(fetchResponse) {
         // cacheia apenas GET do mesmo domínio
         if (
           event.request.method === "GET" &&
@@ -138,13 +167,13 @@ self.addEventListener("fetch", function (event) {
           fetchResponse.type === "basic"
         ) {
           const responseClone = fetchResponse.clone();
-          caches.open(CACHE_NAME).then(function (cache) {
+          caches.open(CACHE_NAME).then(function(cache) {
             cache.put(event.request, responseClone);
           });
         }
         return fetchResponse;
       });
-    }).catch(function () {
+    }).catch(function() {
       // fallback se estiver offline
       if (event.request.destination === "document") {
         return caches.match("/index.html");
@@ -152,19 +181,21 @@ self.addEventListener("fetch", function (event) {
     })
   );
 });
+
 // --------------------------------------------------
 // ACTIVATE
 // --------------------------------------------------
-self.addEventListener("activate", function (event) {
+self.addEventListener("activate", function(event) {
   console.log("[ServiceWorker] Activate (unificado: push + cache)");
   event.waitUntil(
-    caches.keys().then(function (keys) {
+    caches.keys().then(function(keys) {
       return Promise.all(
         keys
-          .filter(function (key) { return key !== CACHE_NAME; })
-          .map(function (key) { return caches.delete(key); })
+          .filter(function(key) { return key !== CACHE_NAME; })
+          .map(function(key) { return caches.delete(key); })
       );
     })
   );
   self.clients.claim();
 });
+
