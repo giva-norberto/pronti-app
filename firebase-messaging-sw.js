@@ -21,57 +21,100 @@ firebase.initializeApp({
 });
 
 // --------------------------------------------------
-// MESSAGING
+// MESSAGING (background push handler safe for any payload)
 // --------------------------------------------------
 const messaging = firebase.messaging();
-// URLs padrão (fallback) — mantém comportamento antigo
 const DEFAULT_VIEW_URL = "https://prontiapp.com.br/agendamentos";
 const DEFAULT_FALLBACK_URL = "https://prontiapp.com.br/";
 
-// --------------------------------------------------
-// RECEBE PUSH COM APP FECHADO/PWA/CHROME
-// --------------------------------------------------
-// ATENÇÃO: Evitar duplicidade—controla exibição manual SEM deixar Chrome exibir genérica também.
+// Handler universal para TODAS as mensagens.
+// Isso cobre: mensagens padrão do FCM, data-only, e mensagens de outros flows!
+function getLinkFromPayload(payload) {
+  // 1. Tenta nas raízes principais
+  if (payload?.data) {
+    if (payload.data.link) return payload.data.link;
+    if (payload.data.url) return payload.data.url;
+    // Se vier FCM_MSG aninhado (alguns navegadores antigos)
+    if (payload.data.FCM_MSG) {
+      try {
+        const fcmMsg = typeof payload.data.FCM_MSG === "string"
+          ? JSON.parse(payload.data.FCM_MSG)
+          : payload.data.FCM_MSG;
+        if (fcmMsg?.link) return fcmMsg.link;
+        if (fcmMsg?.url) return fcmMsg.url;
+        if (fcmMsg?.data?.link) return fcmMsg.data.link;
+        if (fcmMsg?.data?.url) return fcmMsg.data.url;
+      } catch (_) { /* ignore */ }
+    }
+  }
+  // 2. WebPush/fcmOptions (caso Firebase Web mande nesse padrão)
+  if (payload?.webpush?.fcmOptions?.link) return payload.webpush.fcmOptions.link;
+  if (payload?.fcmOptions?.link) return payload.fcmOptions.link;
+  // 3. Notification/click_action direto
+  if (payload?.notification?.click_action) return payload.notification.click_action;
+  // 4. Fallback
+  return DEFAULT_FALLBACK_URL;
+}
+
+// ---------- Firebase Official handler ----------
 messaging.onBackgroundMessage(function(payload) {
   try {
+    // Sempre log para debug (remover em prod se incomodar)
     console.log("[Firebase SW] Push recebido:", payload);
-    // Firebase pode passar dados em vários formatos
-    // Tenta puxar 'link' de todos os jeitos possíveis
+
     const data = payload?.data || {};
     const notif = payload?.notification || {};
-    const webpush = payload?.webpush || {};
-    const fcmLink =
-      data.link ||
-      data.url ||
-      (webpush?.fcmOptions && webpush.fcmOptions.link) ||
-      (payload?.fcmOptions && payload.fcmOptions.link) ||
-      "";
+    const title = notif.title || data.title || "Novo Agendamento";
+    const body = notif.body || data.body || "Você tem um novo agendamento!";
+    const icon = notif.icon || data.icon || "/icon.png";
+    const image = notif.image || data.image;
+    const badge = "/badge.png";
 
-    const title =
-      notif.title ||
-      data.title ||
-      "Novo Agendamento";
+    const tag = `agendamento-${data.bilheteId || data.lembreteId || Date.now()}`;
+    const link = getLinkFromPayload(payload);
+
     const options = {
-      body: notif.body || data.body || "Você tem um novo agendamento!",
-      icon: notif.icon || data.icon || "/icon.png",
-      image: notif.image || data.image,
-      badge: "/badge.png",
-      tag: `agendamento-${data.bilheteId || data.lembreteId || Date.now()}`,
+      body,
+      icon,
+      image,
+      badge,
+      tag,
       requireInteraction: true,
       actions: [
         { action: "view", title: "Ver Agendamento" },
-        { action: "dismiss", title: "Dispensar" }
+        { action: "dismiss", title: "Dispensar" },
       ],
       data: {
         ...data,
-        link: fcmLink || "", // universal link
+        link, // universal link: sempre na raiz do data
       }
     };
 
-    // Garante: só UM ponto exibe a notificação -- aqui, nunca fora.
     self.registration.showNotification(title, options);
+
   } catch (err) {
     console.warn("[Firebase SW] Erro ao processar push em background:", err);
+  }
+});
+
+// ------------- PLUS: Captura todo push não-firebase padrão -----------
+self.addEventListener("push", function(event) {
+  // Só cai aqui se a mensagem não foi interceptada pelo onBackgroundMessage (raro, mas cobre!)
+  try {
+    if (event.data) {
+      const payload = event.data.json();
+      const link = getLinkFromPayload(payload);
+      const title = payload.notification?.title || payload.data?.title || "Pronti";
+      const body = payload.notification?.body || payload.data?.body || "";
+      self.registration.showNotification(title, {
+        body,
+        icon: payload.notification?.icon || payload.data?.icon || "/icon.png",
+        badge: "/badge.png",
+        data: { link }
+      });
+    }
+  } catch (err) {
+    console.warn("[Firebase SW] push fallback handler erro:", err);
   }
 });
 
@@ -80,30 +123,21 @@ messaging.onBackgroundMessage(function(payload) {
 // --------------------------------------------------
 self.addEventListener("notificationclick", function(event) {
   try {
-    console.log("[Firebase SW] Clique na notificação:", event.action);
     event.notification.close();
-
     const data = event.notification?.data || {};
-
-    // Tenta extrair o link de todos os jeitos possíveis
-    let link =
-      data.link ||
-      data.url ||
-      // Notificações do FCM Webpush podem mandar dentro de FCM_MSG
-      (data.FCM_MSG && (
-        data.FCM_MSG.link ||
-        data.FCM_MSG.url ||
-        (data.FCM_MSG.data && (data.FCM_MSG.data.link || data.FCM_MSG.data.url))
-      )) ||
-      DEFAULT_FALLBACK_URL;
-
-    // Se for o botão de dismiss, não faz nada
+    // Universal: prioriza data.link mas garante em outros campos
+    let link = data.link || data.url || DEFAULT_FALLBACK_URL;
+    // Se FCM_MSG veio como string em data
+    if ((!link || typeof link !== "string") && data.FCM_MSG) {
+      try {
+        const fcmMsg = typeof data.FCM_MSG === "string"
+          ? JSON.parse(data.FCM_MSG)
+          : data.FCM_MSG;
+        link = fcmMsg?.link || fcmMsg?.url || fcmMsg?.data?.link || fcmMsg?.data?.url || DEFAULT_FALLBACK_URL;
+      } catch (_) {}
+    }
     if (event.action === "dismiss") return;
-
-    // Se for action custom, você pode filtrar por nomes ('view'/'abrir')
-    // Mas para não perder nenhum click, SEMPRE tentará abrir o link no final
     if (!link || typeof link !== "string") link = DEFAULT_FALLBACK_URL;
-
     event.waitUntil(clients.openWindow(link));
   } catch (err) {
     console.warn("[Firebase SW] Erro no notificationclick:", err);
@@ -112,7 +146,7 @@ self.addEventListener("notificationclick", function(event) {
 });
 
 // ======================================================
-// CACHE OFFLINE - PRONTI APP (antigo service-worker.js)
+// CACHE OFFLINE - PRONTI APP
 // ======================================================
 const CACHE_NAME = "pronti-painel-v2";
 const FILES_TO_CACHE = [
@@ -198,4 +232,3 @@ self.addEventListener("activate", function(event) {
   );
   self.clients.claim();
 });
-
