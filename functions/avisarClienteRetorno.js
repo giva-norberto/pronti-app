@@ -209,19 +209,6 @@ const avisarClienteRetorno = onCall(
           webpush: {
             headers: {
               Urgency: "high"
-            },
-            notification: {
-              title: tituloNotificacao,
-              body: mensagem,
-              data: {
-                tipo: "aviso_retorno",
-                empresaId: String(empresaId),
-                clienteId: String(clienteId),
-                statusRetorno: String(statusRetorno || ""),
-                proximaDataIdeal: String(proximaDataIdeal || ""),
-                ultimoServicoNome: String(ultimoServicoNome || ""),
-                url: String(linkDestino || "")
-              }
             }
           }
         };
