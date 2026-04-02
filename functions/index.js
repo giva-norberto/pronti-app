@@ -8,6 +8,7 @@ const { getFirestore } = require("firebase-admin/firestore"); // AGORA USA getFi
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 const { processarFila } = require("./processarFila");
+const { avisarClienteRetorno } = require("./avisarClienteRetorno");
 const fetch = require("node-fetch");
 
 // ========================= Inicialização do Firebase ======================
@@ -674,3 +675,4 @@ exports.rotinaProcessarFila = onSchedule(
 );
 
 exports.notificarClientes = require("./notifyClientes").notificarClientes;
+exports.avisarClienteRetorno = avisarClienteRetorno;
