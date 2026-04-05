@@ -180,6 +180,60 @@ function calcularMediaIntervalosComDetalhes(datasISO) {
   };
 }
 
+function limparTelefone(telefone) {
+  return String(telefone || "").replace(/\D/g, "");
+}
+
+function obterTelefoneCliente(agendamento) {
+  return (
+    agendamento?.clienteTelefone ||
+    agendamento?.clienteCelular ||
+    agendamento?.telefone ||
+    agendamento?.celular ||
+    ""
+  );
+}
+
+function montarMensagemWhatsApp(item) {
+  const nome = item.clienteNome || "cliente";
+  const servico = item.ultimoServicoNome || "seu último serviço";
+  const dataIdeal = item.proximaDataIdeal ? formatarDataBR(item.proximaDataIdeal) : "";
+
+  if (dataIdeal) {
+    return `Oi, ${nome}! 😊
+
+Percebemos que já está na época ideal do seu retorno para ${servico}.
+
+Sua data ideal de retorno é ${dataIdeal}.
+
+Que tal agendar seu próximo horário?`;
+  }
+
+  return `Oi, ${nome}! 😊
+
+Percebemos que já está na época ideal do seu retorno para ${servico}.
+
+Que tal agendar seu próximo horário?`;
+}
+
+function abrirWhatsAppCliente(item) {
+  const telefoneLimpo = limparTelefone(item.clienteTelefone);
+
+  if (!telefoneLimpo) {
+    mostrarToast("Cliente sem celular cadastrado.", "#ef4444");
+    return;
+  }
+
+  const telefoneComPais = telefoneLimpo.startsWith("55")
+    ? telefoneLimpo
+    : `55${telefoneLimpo}`;
+
+  const mensagem = montarMensagemWhatsApp(item);
+  const url = `https://wa.me/${telefoneComPais}?text=${encodeURIComponent(mensagem)}`;
+
+  window.open(url, "_blank");
+}
+
 function calcularRetornos(agendamentos) {
   const grupos = agruparAgendamentosPorCliente(agendamentos);
   const calculados = [];
@@ -216,6 +270,7 @@ function calcularRetornos(agendamentos) {
       clienteId,
       clienteNome: ultimoAtendimento?.clienteNome || "Cliente sem nome",
       clienteFoto: ultimoAtendimento?.clienteFoto || "",
+      clienteTelefone: obterTelefoneCliente(ultimoAtendimento),
       ultimoServicoNome: ultimoAtendimento?.servicoNome || "Não informado",
       profissionalNome: ultimoAtendimento?.profissionalNome || "-",
       dataUltimoAtendimento: ultimoAtendimento?.data || "",
@@ -405,15 +460,22 @@ function renderizarLista() {
         </div>
       </div>
 
-      <div style="margin-top: 8px;">
+      <div style="margin-top: 8px; display:flex; gap:10px; flex-wrap:wrap;">
         <button class="btn-avisar-retorno" style="background:#4f46e5;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;">
           Avisar cliente
+        </button>
+
+        <button class="btn-whatsapp-retorno" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;">
+          WhatsApp
         </button>
       </div>
     `;
 
     const btnAvisar = card.querySelector(".btn-avisar-retorno");
     btnAvisar.addEventListener("click", () => handleAvisarCliente(item, btnAvisar));
+
+    const btnWhatsApp = card.querySelector(".btn-whatsapp-retorno");
+    btnWhatsApp.addEventListener("click", () => abrirWhatsAppCliente(item));
 
     listaEl.appendChild(card);
   }
