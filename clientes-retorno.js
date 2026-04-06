@@ -3,7 +3,9 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
+  doc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import {
   getFunctions,
@@ -184,12 +186,33 @@ function limparTelefone(telefone) {
   return String(telefone || "").replace(/\D/g, "");
 }
 
-function obterTelefoneCliente(agendamento) {
+async function buscarClientePorId(empresaIdAtual, clienteId) {
+  if (!empresaIdAtual || !clienteId) return null;
+
+  try {
+    const clienteRef = doc(db, "empresarios", empresaIdAtual, "clientes", clienteId);
+    const clienteSnap = await getDoc(clienteRef);
+
+    if (!clienteSnap.exists()) return null;
+
+    return {
+      id: clienteSnap.id,
+      ...clienteSnap.data()
+    };
+  } catch (error) {
+    console.error("Erro ao buscar cliente no Firebase:", error);
+    return null;
+  }
+}
+
+function obterTelefoneDoClienteFirebase(cliente) {
   return (
-    agendamento?.clienteTelefone ||
-    agendamento?.clienteCelular ||
-    agendamento?.telefone ||
-    agendamento?.celular ||
+    cliente?.telefone ||
+    cliente?.celular ||
+    cliente?.whatsapp ||
+    cliente?.telefoneWhatsapp ||
+    cliente?.clienteTelefone ||
+    cliente?.clienteCelular ||
     ""
   );
 }
@@ -216,22 +239,29 @@ Percebemos que já está na época ideal do seu retorno para ${servico}.
 Que tal agendar seu próximo horário?`;
 }
 
-function abrirWhatsAppCliente(item) {
-  const telefoneLimpo = limparTelefone(item.clienteTelefone);
+async function abrirWhatsAppCliente(item) {
+  try {
+    const cliente = await buscarClientePorId(empresaId, item.clienteId);
+    const telefoneFirebase = obterTelefoneDoClienteFirebase(cliente);
+    const telefoneLimpo = limparTelefone(telefoneFirebase);
 
-  if (!telefoneLimpo) {
-    mostrarToast("Cliente sem celular cadastrado.", "#ef4444");
-    return;
+    if (!telefoneLimpo) {
+      mostrarToast("Cliente sem celular cadastrado.", "#ef4444");
+      return;
+    }
+
+    const telefoneComPais = telefoneLimpo.startsWith("55")
+      ? telefoneLimpo
+      : `55${telefoneLimpo}`;
+
+    const mensagem = montarMensagemWhatsApp(item);
+    const url = `https://wa.me/${telefoneComPais}?text=${encodeURIComponent(mensagem)}`;
+
+    window.open(url, "_blank");
+  } catch (error) {
+    console.error("Erro ao abrir WhatsApp do cliente:", error);
+    mostrarToast("Erro ao abrir WhatsApp do cliente.", "#ef4444");
   }
-
-  const telefoneComPais = telefoneLimpo.startsWith("55")
-    ? telefoneLimpo
-    : `55${telefoneLimpo}`;
-
-  const mensagem = montarMensagemWhatsApp(item);
-  const url = `https://wa.me/${telefoneComPais}?text=${encodeURIComponent(mensagem)}`;
-
-  window.open(url, "_blank");
 }
 
 function calcularRetornos(agendamentos) {
@@ -270,7 +300,6 @@ function calcularRetornos(agendamentos) {
       clienteId,
       clienteNome: ultimoAtendimento?.clienteNome || "Cliente sem nome",
       clienteFoto: ultimoAtendimento?.clienteFoto || "",
-      clienteTelefone: obterTelefoneCliente(ultimoAtendimento),
       ultimoServicoNome: ultimoAtendimento?.servicoNome || "Não informado",
       profissionalNome: ultimoAtendimento?.profissionalNome || "-",
       dataUltimoAtendimento: ultimoAtendimento?.data || "",
