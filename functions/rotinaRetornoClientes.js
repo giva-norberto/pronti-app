@@ -290,10 +290,8 @@ async function calcularRetornosDaEmpresa(empresaId) {
 
     if (!clienteId || !data) continue;
 
-    if (!mapaNoOriginalHas) { // Variável apenas ilustrativa para seguir a lógica
-       if (!grupos.has(clienteId)) {
-          grupos.set(clienteId, []);
-       }
+    if (!grupos.has(clienteId)) {
+      grupos.set(clienteId, []);
     }
 
     grupos.get(clienteId).push(ag);
@@ -320,13 +318,6 @@ async function calcularRetornosDaEmpresa(empresaId) {
       ? adicionarDias(dataUltima, mediaDias)
       : null;
 
-    const hoje = new Date();
-    hoje.setHours(12, 0, 0, 0);
-
-    const diasParaRetorno = proximaData
-      ? diferencaEmDias(hoje, proximaData)
-      : null;
-
     const statusRetorno = classificarRetorno(proximaData, mediaDias);
 
     calculados.push({
@@ -335,7 +326,6 @@ async function calcularRetornosDaEmpresa(empresaId) {
       ultimoServicoNome: ultimoAtendimento?.servicoNome || "Não informado",
       proximaDataIdeal: proximaData ? dataParaISO(proximaData) : "",
       mediaRetornoDias: mediaDias,
-      diasParaRetorno,
       statusRetorno,
       quantidadeAtendimentosAnalisados: ultimosCinco.length,
       quantidadeIntervalosValidos: intervalosValidos
@@ -372,7 +362,7 @@ const rotinaRetornoClientes = onSchedule(
 
         for (const item of clientesHoje) {
           try {
-            const resultado = await enviarAvisoAutomatico({
+            await enviarAvisoAutomatico({
               empresaId,
               clienteId: item.clienteId,
               clienteNome: item.clienteNome,
@@ -383,8 +373,7 @@ const rotinaRetornoClientes = onSchedule(
 
             console.log("RETORNO PROCESSADO", {
               empresaId,
-              clienteId: item.clienteId,
-              resultado
+              clienteId: item.clienteId
             });
           } catch (error) {
             console.error("Erro ao processar cliente no job", {
