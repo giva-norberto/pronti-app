@@ -10,7 +10,7 @@ const cors = require("cors");
 const { processarFila } = require("./processarFila");
 const { avisarClienteRetorno } = require("./avisarClienteRetorno");
 const fetch = require("node-fetch");
-
+const { rotinaRetornoClientes } = require("./rotinaRetornoClientes");
 // ========================= Inicialização do Firebase ======================
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -674,5 +674,5 @@ exports.rotinaProcessarFila = onSchedule(
   }
 );
 
-exports.notificarClientes = require("./notifyClientes").notificarClientes;
 exports.avisarClienteRetorno = avisarClienteRetorno;
+exports.rotinaRetornoClientes = rotinaRetornoClientes;
