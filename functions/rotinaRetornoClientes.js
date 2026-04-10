@@ -152,8 +152,6 @@ async function enviarAvisoAutomatico({
     statusRetorno
   });
 
-  const urlVitrine = `https://prontiapp.com.br/vitrine/${empresaId}`;
-
   const historicoRef = db
     .collection("empresarios")
     .doc(empresaId)
@@ -199,7 +197,6 @@ async function enviarAvisoAutomatico({
         },
         data: {
           tipo: "aviso_retorno",
-          link: urlVitrine,
           empresaId: String(empresaId),
           clienteId: String(clienteId),
           statusRetorno: String(statusRetorno || ""),
@@ -210,9 +207,7 @@ async function enviarAvisoAutomatico({
           priority: "high",
           notification: {
             sound: "default",
-            priority: "high",
-            tag: "retorno_cliente",
-            clickAction: urlVitrine
+            priority: "high"
           }
         },
         apns: {
@@ -227,9 +222,6 @@ async function enviarAvisoAutomatico({
           }
         },
         webpush: {
-          fcmOptions: {
-            link: urlVitrine
-          },
           headers: {
             Urgency: "high"
           }
@@ -257,7 +249,6 @@ async function enviarAvisoAutomatico({
     mensagem,
     enviadoPush,
     motivo,
-    linkVitrine: urlVitrine,
     criadoEm: admin.firestore.FieldValue.serverTimestamp(),
     criadoPor: "job"
   });
@@ -318,6 +309,13 @@ async function calcularRetornosDaEmpresa(empresaId) {
       ? adicionarDias(dataUltima, mediaDias)
       : null;
 
+    const hoje = new Date();
+    hoje.setHours(12, 0, 0, 0);
+
+    const diasParaRetorno = proximaData
+      ? diferencaEmDias(hoje, proximaData)
+      : null;
+
     const statusRetorno = classificarRetorno(proximaData, mediaDias);
 
     calculados.push({
@@ -326,6 +324,7 @@ async function calcularRetornosDaEmpresa(empresaId) {
       ultimoServicoNome: ultimoAtendimento?.servicoNome || "Não informado",
       proximaDataIdeal: proximaData ? dataParaISO(proximaData) : "",
       mediaRetornoDias: mediaDias,
+      diasParaRetorno,
       statusRetorno,
       quantidadeAtendimentosAnalisados: ultimosCinco.length,
       quantidadeIntervalosValidos: intervalosValidos
@@ -362,7 +361,7 @@ const rotinaRetornoClientes = onSchedule(
 
         for (const item of clientesHoje) {
           try {
-            await enviarAvisoAutomatico({
+            const resultado = await enviarAvisoAutomatico({
               empresaId,
               clienteId: item.clienteId,
               clienteNome: item.clienteNome,
@@ -373,7 +372,8 @@ const rotinaRetornoClientes = onSchedule(
 
             console.log("RETORNO PROCESSADO", {
               empresaId,
-              clienteId: item.clienteId
+              clienteId: item.clienteId,
+              resultado
             });
           } catch (error) {
             console.error("Erro ao processar cliente no job", {
