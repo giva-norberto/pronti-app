@@ -152,6 +152,8 @@ async function enviarAvisoAutomatico({
     statusRetorno
   });
 
+  const urlVitrine = `https://prontiapp.com.br/vitrine/${empresaId}`;
+
   const historicoRef = db
     .collection("empresarios")
     .doc(empresaId)
@@ -197,6 +199,7 @@ async function enviarAvisoAutomatico({
         },
         data: {
           tipo: "aviso_retorno",
+          link: urlVitrine,
           empresaId: String(empresaId),
           clienteId: String(clienteId),
           statusRetorno: String(statusRetorno || ""),
@@ -207,7 +210,9 @@ async function enviarAvisoAutomatico({
           priority: "high",
           notification: {
             sound: "default",
-            priority: "high"
+            priority: "high",
+            tag: "retorno_cliente",
+            clickAction: urlVitrine
           }
         },
         apns: {
@@ -222,6 +227,9 @@ async function enviarAvisoAutomatico({
           }
         },
         webpush: {
+          fcmOptions: {
+            link: urlVitrine
+          },
           headers: {
             Urgency: "high"
           }
@@ -249,6 +257,7 @@ async function enviarAvisoAutomatico({
     mensagem,
     enviadoPush,
     motivo,
+    linkVitrine: urlVitrine,
     criadoEm: admin.firestore.FieldValue.serverTimestamp(),
     criadoPor: "job"
   });
@@ -281,8 +290,10 @@ async function calcularRetornosDaEmpresa(empresaId) {
 
     if (!clienteId || !data) continue;
 
-    if (!grupos.has(clienteId)) {
-      grupos.set(clienteId, []);
+    if (!mapaNoOriginalHas) { // Variável apenas ilustrativa para seguir a lógica
+       if (!grupos.has(clienteId)) {
+          grupos.set(clienteId, []);
+       }
     }
 
     grupos.get(clienteId).push(ag);
