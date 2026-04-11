@@ -7,6 +7,7 @@
 // Firebase compat para Service Worker
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
+
 // --------------------------------------------------
 // CONFIG FIREBASE (mesma do firebase-config.js)
 // --------------------------------------------------
@@ -18,6 +19,7 @@ firebase.initializeApp({
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 });
+
 // --------------------------------------------------
 // MESSAGING
 // --------------------------------------------------
@@ -25,6 +27,7 @@ const messaging = firebase.messaging();
 // URLs padrão (fallback) — mantém comportamento antigo
 const DEFAULT_VIEW_URL = "https://prontiapp.com.br/agendamentos";
 const DEFAULT_FALLBACK_URL = "https://prontiapp.com.br/";
+
 // --------------------------------------------------
 // RECEBE PUSH COM APP FECHADO
 // --------------------------------------------------
@@ -61,6 +64,7 @@ messaging.onBackgroundMessage(function (payload) {
     console.warn("[Firebase SW] Erro ao processar push em background:", err);
   }
 });
+
 // --------------------------------------------------
 // CLICK NA NOTIFICAÇÃO
 // --------------------------------------------------
@@ -84,6 +88,7 @@ self.addEventListener("notificationclick", function (event) {
     event.waitUntil(clients.openWindow(DEFAULT_FALLBACK_URL));
   }
 });
+
 // ======================================================
 // CACHE OFFLINE - PRONTI APP (antigo service-worker.js)
 // ======================================================
@@ -98,6 +103,7 @@ const FILES_TO_CACHE = [
   "/dashboard.html",
   "/perfil.html"
 ];
+
 // --------------------------------------------------
 // INSTALL
 // --------------------------------------------------
@@ -111,6 +117,7 @@ self.addEventListener("install", function (event) {
   );
   self.skipWaiting();
 });
+
 // --------------------------------------------------
 // FETCH (cache offline)
 // --------------------------------------------------
@@ -152,6 +159,7 @@ self.addEventListener("fetch", function (event) {
     })
   );
 });
+
 // --------------------------------------------------
 // ACTIVATE
 // --------------------------------------------------
