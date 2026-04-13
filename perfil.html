@@ -12,7 +12,7 @@
 
   <style>
     :root {
-        --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
+        --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
         --primary-color: #4f46e5;
         --card-bg: #ffffff;
         --text-main: #1e293b;
@@ -21,6 +21,7 @@
         --input-bg: #f8fafc;
         --shadow: 0 4px 20px rgba(0,0,0,0.06);
     }
+
     body {
       font-family: 'Inter', Arial, sans-serif;
       background: var(--gradient-primary);
@@ -28,12 +29,14 @@
       color: var(--text-main);
       display: flex;
     }
+
     .main-content {
       margin-left: 270px;
       padding: 32px;
       flex-grow: 1;
       min-height: 100vh;
     }
+
     .form-card {
       background: var(--card-bg);
       border-radius: 20px;
@@ -42,6 +45,7 @@
       max-width: 700px;
       margin: 0 auto;
     }
+
     .header-section {
       display: flex;
       justify-content: space-between;
@@ -50,22 +54,26 @@
       margin-bottom: 28px;
       flex-wrap: wrap;
     }
+
     .header-content h1 {
       font-size: 1.9rem;
       margin: 0 0 6px 0;
       color: var(--text-main);
       font-weight: 800;
     }
+
     .header-content p {
       margin: 0;
       color: var(--text-secondary);
       font-size: 1rem;
     }
+
     .header-actions {
       display: flex;
       align-items: center;
       gap: 12px;
     }
+
     .btn-new, .btn-submit, .btn-copy, .btn-open, .btn-upload {
       display: inline-flex;
       align-items: center;
@@ -79,20 +87,25 @@
       text-decoration: none;
       transition: all 0.2s;
     }
+
     .btn-new {
       background-color: var(--primary-color) !important;
       color: white !important;
     }
+
     .btn-new:hover {
       background-color: #4338ca !important;
     }
+
     .btn-submit {
       background-color: var(--primary-color);
       color: #fff;
     }
+
     .btn-submit:hover {
       background-color: #4338ca;
     }
+
     .btn-copy, .btn-open {
       background: #f9fafb;
       color: var(--primary-color);
@@ -100,9 +113,11 @@
       padding: 8px 14px;
       font-size: 0.95rem;
     }
+
     .btn-copy:hover, .btn-open:hover {
       background: #eef2ff;
     }
+
     .btn-upload {
       background: #f9fafb;
       color: #374151;
@@ -110,11 +125,13 @@
       padding: 10px 16px;
       font-size: 0.95rem;
     }
+
     .btn-upload:hover {
       background: #eef2ff;
       border-color: var(--primary-color);
       color: var(--primary-color);
     }
+
     .form-section h3 {
       margin: 24px 0 18px 0;
       font-size: 1.2em;
@@ -123,9 +140,11 @@
       padding-bottom: 8px;
       border-bottom: 1.5px solid var(--border-color);
     }
+
     .form-group {
       margin-bottom: 20px;
     }
+
     .form-group label {
       font-size: 1em;
       color: var(--text-main);
@@ -133,6 +152,7 @@
       font-weight: 500;
       display: block;
     }
+
     .form-group input[type="text"],
     .form-group textarea,
     #selectEmpresa,
@@ -144,10 +164,11 @@
       font-size: 1em;
       background: var(--input-bg);
       color: var(--text-main);
-      transition: border 0.2s, box-shadow 0.2s;
+      transition: border 0.2s, box-shadow 0.2s, transform 0.12s;
       width: 100%;
       box-sizing: border-box;
     }
+
     .form-group input[type="text"]:focus,
     .form-group input[type="number"]:focus,
     .form-group textarea:focus,
@@ -156,11 +177,14 @@
       border-color: var(--primary-color);
       outline: none;
       box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+      transform: translateY(-1px);
     }
+
     .form-actions {
       text-align: right;
       margin-top: 32px;
     }
+
     .vitrine-link-container {
       display: flex;
       align-items: center;
@@ -171,6 +195,7 @@
       border-radius: 12px;
       border: 1.5px solid var(--border-color);
     }
+
     .vitrine-url {
       font-size: 0.95em;
       color: #2563eb;
@@ -180,11 +205,13 @@
       padding: 0;
       flex-grow: 1;
     }
+
     .logo-upload-container {
       display: flex;
       align-items: center;
       gap: 16px;
     }
+
     .logo-upload-container img#logo-preview {
       width: 80px;
       height: 80px;
@@ -194,61 +221,68 @@
       border: 2px solid var(--border-color);
     }
 
-    /* Bloco Primeiros Passos */
-    .guia-primeiros-passos {
+    .guia-campo {
       background: linear-gradient(135deg, #eef2ff 0%, #f8faff 100%);
       border: 1.5px solid #c7d2fe;
       border-radius: 16px;
-      padding: 16px;
+      padding: 18px 16px;
       margin-bottom: 22px;
       box-shadow: 0 4px 14px rgba(79,70,229,0.08);
     }
-    .guia-topo {
+
+    .guia-campo-topo {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 10px;
-      flex-wrap: wrap;
       margin-bottom: 8px;
-    }
-    .guia-titulo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
-      color: #4338ca;
-      font-size: 1rem;
-    }
-    .guia-etapa {
-      font-size: 0.92rem;
-      font-weight: 700;
-      color: #4f46e5;
-      background: #e0e7ff;
-      padding: 6px 10px;
-      border-radius: 999px;
-    }
-    .guia-texto {
-      font-size: 0.96rem;
-      color: #334155;
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
-    .guia-barra {
-      width: 100%;
-      height: 8px;
-      background: #c7d2fe;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .guia-barra-progresso {
-      width: 20%;
-      height: 100%;
-      background: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-      border-radius: 999px;
-      transition: width 0.25s ease;
+      flex-wrap: wrap;
     }
 
-    /* Floating back button (mobile) */
+    .guia-campo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: #4f46e5;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .guia-campo-titulo {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #3730a3;
+    }
+
+    .guia-campo-subtitulo {
+      font-size: 0.93rem;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .guia-campo-exemplo {
+      background: rgba(255,255,255,0.75);
+      border: 1px dashed #c7d2fe;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 0.92rem;
+      color: #334155;
+    }
+
+    .guia-campo-exemplo strong {
+      color: #4338ca;
+    }
+
+    .campo-ativo {
+      border-color: #4f46e5 !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+      background: #fff !important;
+    }
+
     .floating-back-btn {
       position: fixed;
       left: 16px;
@@ -268,21 +302,38 @@
       transition: transform 0.12s ease, opacity 0.12s ease;
       opacity: 1;
     }
-    .floating-back-btn:hover { transform: translateY(-3px); }
+
+    .floating-back-btn:hover {
+      transform: translateY(-3px);
+    }
 
     @media (min-width: 901px) {
-      .floating-back-btn { display: none; }
+      .floating-back-btn {
+        display: none;
+      }
     }
 
     @media (max-width: 900px) {
-      body { flex-direction: column; }
-      .main-content { margin-left: 0; padding: 16px; }
-      .header-section { flex-direction: column; align-items: stretch; }
+      body {
+        flex-direction: column;
+      }
+
+      .main-content {
+        margin-left: 0;
+        padding: 16px;
+      }
+
+      .header-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
       .header-actions {
         flex-direction: column;
         align-items: stretch;
         width: 100%;
       }
+
       .header-actions .btn-new {
         justify-content: center;
       }
@@ -291,6 +342,7 @@
 </head>
 <body>
   <div id="sidebar-placeholder"></div>
+
   <main class="main-content">
     <div class="form-card">
       <div class="header-section">
@@ -308,19 +360,18 @@
         </div>
       </div>
 
-      <div id="guia-primeiros-passos" class="guia-primeiros-passos">
-        <div class="guia-topo">
-          <div class="guia-titulo">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            Primeiros passos
+      <div id="guia-campo" class="guia-campo">
+        <div class="guia-campo-topo">
+          <div id="guia-campo-icon" class="guia-campo-icon">
+            <i class="fa-solid fa-circle-info"></i>
           </div>
-          <div id="guia-etapa" class="guia-etapa">Passo 1 de 5</div>
+          <div id="guia-campo-titulo" class="guia-campo-titulo">Preencha seu perfil passo a passo</div>
         </div>
-        <div id="guia-texto" class="guia-texto">
-          Comece preenchendo o nome do seu negócio para criar sua empresa no Pronti.
+        <div id="guia-campo-subtitulo" class="guia-campo-subtitulo">
+          Clique em qualquer campo abaixo e o Pronti vai te explicar exatamente o que colocar.
         </div>
-        <div class="guia-barra">
-          <div id="guia-barra-progresso" class="guia-barra-progresso"></div>
+        <div id="guia-campo-exemplo" class="guia-campo-exemplo">
+          <strong>Dica:</strong> comece pelo nome do negócio. Depois complete o link, descrição, endereço e horário.
         </div>
       </div>
 
@@ -328,7 +379,9 @@
         <label for="selectEmpresa"><i class="fa-solid fa-building"></i> Selecione sua empresa:</label>
         <select id="selectEmpresa"></select>
       </div>
+
       <div id="mensagem-cadastro-sucesso"></div>
+
       <div id="mensagem-free" style="display:none; margin:20px auto; max-width:560px; background:#e0e7ff; color:#3730a3; border-radius:10px; padding:12px 18px; text-align:center; font-weight:bold;">
         Plano atual: FREE
       </div>
@@ -341,10 +394,12 @@
             <label for="nomeNegocio">Nome do Negócio</label>
             <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
           </div>
+
           <div class="form-group">
             <label for="slug">Link Personalizado (Apelido)</label>
             <input type="text" id="slug" placeholder="Ex: barbearia-do-joao">
           </div>
+
           <div class="form-group" id="container-link-vitrine" style="display: none;">
             <label>Link da sua Vitrine Pública</label>
             <div class="vitrine-link-container">
@@ -359,6 +414,7 @@
               </div>
             </div>
           </div>
+
           <div class="form-group">
             <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
             <div class="logo-upload-container">
@@ -371,23 +427,28 @@
               </div>
             </div>
           </div>
+
           <div class="form-group">
             <label for="descricao">Descrição Curta</label>
             <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
           </div>
+
           <div class="form-group">
             <label for="localizacao">Localização (Endereço )</label>
             <input type="text" id="localizacao" placeholder="Ex: Rua das Flores, 123, São Paulo">
           </div>
+
           <div class="form-group">
             <label for="horarioFuncionamento">Horário de Funcionamento</label>
             <input type="text" id="horarioFuncionamento" placeholder="Ex: Seg a Sex, 9h - 18h">
           </div>
+
           <div class="form-group">
             <label for="chavePix">Chave PIX (Opcional)</label>
             <input type="text" id="chavePix" placeholder="Digite sua chave PIX">
           </div>
         </div>
+
         <div class="form-actions">
           <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
         </div>
@@ -443,45 +504,90 @@
         });
       }
 
-      function atualizarGuiaPrimeirosPassos() {
-        const nome = (document.getElementById('nomeNegocio')?.value || '').trim();
-        const endereco = (document.getElementById('localizacao')?.value || '').trim();
-        const horario = (document.getElementById('horarioFuncionamento')?.value || '').trim();
-        const descricao = (document.getElementById('descricao')?.value || '').trim();
+      const ajudaCampos = {
+        nomeNegocio: {
+          titulo: "Nome do Negócio",
+          subtitulo: "Digite o nome que seu cliente conhece. Esse nome aparece no seu perfil e ajuda a identificar sua empresa dentro do Pronti.",
+          exemplo: "Exemplo: <strong>Barbearia do João</strong>, <strong>Studio Bella</strong>, <strong>Clínica Vida</strong>",
+          icon: "fa-solid fa-store"
+        },
+        slug: {
+          titulo: "Link Personalizado",
+          subtitulo: "Esse apelido vira parte do link da sua vitrine pública. Use algo simples, sem espaço, fácil de lembrar e relacionado ao seu negócio.",
+          exemplo: "Exemplo: <strong>barbearia-do-joao</strong> ou <strong>studio-bella</strong>",
+          icon: "fa-solid fa-link"
+        },
+        logoNegocio: {
+          titulo: "Logo do Negócio",
+          subtitulo: "Escolha uma imagem para deixar sua empresa mais profissional. Pode ser sua logo, símbolo ou foto principal da marca.",
+          exemplo: "Dica: use uma imagem quadrada e nítida para ficar bonita na vitrine.",
+          icon: "fa-regular fa-image"
+        },
+        descricao: {
+          titulo: "Descrição Curta",
+          subtitulo: "Explique rapidamente o que seu negócio faz. Essa descrição ajuda o cliente a entender seu atendimento e seu diferencial.",
+          exemplo: "Exemplo: <strong>Especialista em cortes modernos, barba e atendimento com horário marcado.</strong>",
+          icon: "fa-solid fa-align-left"
+        },
+        localizacao: {
+          titulo: "Endereço do Negócio",
+          subtitulo: "Coloque o local onde você atende para o cliente saber onde fica sua empresa. Quanto mais claro, melhor.",
+          exemplo: "Exemplo: <strong>Rua das Flores, 123, Centro, Contagem - MG</strong>",
+          icon: "fa-solid fa-location-dot"
+        },
+        horarioFuncionamento: {
+          titulo: "Horário de Funcionamento",
+          subtitulo: "Informe os dias e horários que sua empresa costuma funcionar. Isso ajuda a organizar melhor seu perfil.",
+          exemplo: "Exemplo: <strong>Seg a Sex, 9h às 18h | Sábado, 8h às 14h</strong>",
+          icon: "fa-regular fa-clock"
+        },
+        chavePix: {
+          titulo: "Chave PIX",
+          subtitulo: "Esse campo é opcional. Use se quiser facilitar recebimentos e pagamentos ligados ao seu negócio.",
+          exemplo: "Exemplo: <strong>seuemail@provedor.com</strong> ou <strong>(31) 99999-9999</strong>",
+          icon: "fa-solid fa-money-bill-transfer"
+        }
+      };
 
-        let passo = 1;
+      const guiaTitulo = document.getElementById("guia-campo-titulo");
+      const guiaSubtitulo = document.getElementById("guia-campo-subtitulo");
+      const guiaExemplo = document.getElementById("guia-campo-exemplo");
+      const guiaIcon = document.getElementById("guia-campo-icon");
 
-        if (nome) passo = 2;
-        if (nome && endereco) passo = 3;
-        if (nome && endereco && horario) passo = 4;
-        if (nome && endereco && horario && descricao) passo = 5;
-
-        const etapa = document.getElementById('guia-etapa');
-        const texto = document.getElementById('guia-texto');
-        const barra = document.getElementById('guia-barra-progresso');
-
-        const textos = {
-          1: 'Comece preenchendo o nome do seu negócio para criar sua empresa no Pronti.',
-          2: 'Ótimo. Agora adicione o endereço do seu negócio para deixar seu perfil mais completo.',
-          3: 'Perfeito. Defina o horário de funcionamento para seus clientes saberem quando você atende.',
-          4: 'Agora escreva uma descrição curta para apresentar melhor o seu negócio.',
-          5: 'Tudo pronto nesta etapa. Agora é só clicar em “Salvar Todas as Configurações”.'
-        };
-
-        if (etapa) etapa.textContent = `Passo ${passo} de 5`;
-        if (texto) texto.textContent = textos[passo];
-        if (barra) barra.style.width = `${passo * 20}%`;
+      function limparCampoAtivo() {
+        document.querySelectorAll("#form-perfil input, #form-perfil textarea, #form-perfil select").forEach(el => {
+          el.classList.remove("campo-ativo");
+        });
       }
 
-      ['nomeNegocio', 'localizacao', 'horarioFuncionamento', 'descricao'].forEach((id) => {
+      function atualizarAjudaCampo(id) {
+        const ajuda = ajudaCampos[id];
+        if (!ajuda) return;
+
+        if (guiaTitulo) guiaTitulo.textContent = ajuda.titulo;
+        if (guiaSubtitulo) guiaSubtitulo.textContent = ajuda.subtitulo;
+        if (guiaExemplo) guiaExemplo.innerHTML = ajuda.exemplo;
+        if (guiaIcon) guiaIcon.innerHTML = `<i class="${ajuda.icon}"></i>`;
+      }
+
+      Object.keys(ajudaCampos).forEach((id) => {
         const campo = document.getElementById(id);
-        if (campo) {
-          campo.addEventListener('input', atualizarGuiaPrimeirosPassos);
-          campo.addEventListener('change', atualizarGuiaPrimeirosPassos);
-        }
+        if (!campo) return;
+
+        ["focus", "click"].forEach((evento) => {
+          campo.addEventListener(evento, () => {
+            limparCampoAtivo();
+            campo.classList.add("campo-ativo");
+            atualizarAjudaCampo(id);
+          });
+        });
       });
 
-      atualizarGuiaPrimeirosPassos();
+      const primeiroCampo = document.getElementById("nomeNegocio");
+      if (primeiroCampo) {
+        primeiroCampo.classList.add("campo-ativo");
+        atualizarAjudaCampo("nomeNegocio");
+      }
     });
   </script>
 
