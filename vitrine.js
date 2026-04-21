@@ -659,13 +659,11 @@ async function exigirCelularParaAgendamento(user) {
     } catch { perfil = {}; }
     // Valida telefone (mínimo 9 dígitos)
     if (perfil.telefone && /^\d{9,15}$/.test(perfil.telefone)) return true;
-    // Pede telefone, com prompt
-    let telefone = "";
-    while (!/^\d{9,15}$/.test(telefone)) {
-        telefone = prompt("Para continuar, informe seu telefone celular (apenas números, com DDD):") || "";
-        if (telefone === null) return false; // Usuário cancelou
-        telefone = telefone.replace(/\D/g, "");
-        if (telefone.length < 9) alert("Telefone inválido. Informe com DDD e apenas números.");
+   let telefone = "";
+   while (!/^\d{9,15}$/.test(telefone)) {
+       telefone = await pedirTelefoneModalPronti();
+       if (telefone === null) return false; // Usuário cancelou
+}
     }
     // Salva no perfil Firebase
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
