@@ -642,35 +642,33 @@ async function entrarNaFilaDeAgendamento() {
 // Expondo a função para o HTML (onclick)
 window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
 // =====================================================================
-//    BLOCO CIRÚRGICO - EXIGIR CELULAR NO PRIMEIRO AGENDAMENTO
+//    BLOCO CIRÚRGICO - EXIGIR TELEFONE NO PRIMEIRO AGENDAMENTO
 // =====================================================================
-
-// ATENÇÃO: Se "clientes" não é sua collection, ajuste o nome abaixo!
 
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Função utilitária para buscar ou exigir celular do cliente
+// Função utilitária para buscar ou exigir o telefone do cliente
 async function exigirCelularParaAgendamento(user) {
     if (!user) return false;
-    // Substitua "clientes" pela sua collection se precisar.
-    const docRef = doc(db, "clientes", user.uid); 
+    // Busca o doc no path correto (subcoleção clientes do empresario)
+    const docRef = doc(db, "empresarios", state.empresaId, "clientes", user.uid); 
     let perfil = {};
     try {
         const snap = await getDoc(docRef);
         perfil = snap.exists() ? snap.data() : {};
     } catch { perfil = {}; }
-    // Valida celular (mínimo 9 digitos)
-    if (perfil.celular && /^\d{9,15}$/.test(perfil.celular)) return true;
-    // Pede celular
-    let celular = "";
-    while (!/^\d{9,15}$/.test(celular)) {
-        celular = prompt("Para continuar, informe seu telefone celular (apenas números, com DDD):") || "";
-        if (celular === null) return false; // Usuário cancelou
-        celular = celular.replace(/\D/g, "");
-        if (celular.length < 9) alert("Celular inválido. Informe com DDD e apenas números.");
+    // Valida telefone (mínimo 9 dígitos)
+    if (perfil.telefone && /^\d{9,15}$/.test(perfil.telefone)) return true;
+    // Pede telefone, com prompt
+    let telefone = "";
+    while (!/^\d{9,15}$/.test(telefone)) {
+        telefone = prompt("Para continuar, informe seu telefone celular (apenas números, com DDD):") || "";
+        if (telefone === null) return false; // Usuário cancelou
+        telefone = telefone.replace(/\D/g, "");
+        if (telefone.length < 9) alert("Telefone inválido. Informe com DDD e apenas números.");
     }
     // Salva no perfil Firebase
-    await setDoc(docRef, { ...perfil, celular }, { merge: true });
+    await setDoc(docRef, { ...perfil, telefone }, { merge: true });
     return true;
 }
 
