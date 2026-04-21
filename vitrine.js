@@ -678,11 +678,17 @@ async function exigirCelularParaAgendamento(user) {
     while (true) {
         telefone = await pedirTelefoneModalPronti();
 
-        // ✅ Usuário escolheu continuar sem telefone
-        if (telefone === "skip") return true;
+        // ✅ Usuário clicou em "seguir sem celular"
+        if (telefone === "skip") {
+            console.log("Usuário optou por seguir sem telefone");
+            return true;
+        }
 
-        // 🔥 segurança extra
-        if (telefone === null) return false;
+        // 🔥 segurança extra (caso algo quebre)
+        if (telefone === null || telefone === undefined) {
+            console.warn("Modal retornou valor inválido");
+            return false;
+        }
 
         telefone = telefone.replace(/\D/g, "");
 
@@ -695,28 +701,37 @@ async function exigirCelularParaAgendamento(user) {
     return true;
 }
 
-// =====================================================================
-// ⚠️ IMPORTANTE: NÃO INTERCEPTAR BOTÃO AQUI
-// =====================================================================
-// 👉 A validação deve ser chamada DENTRO do handleConfirmarAgendamento
-// 👉 Isso evita TODOS os bugs que você enfrentou
-
 
 // =====================================================================
 //      FUNÇÃO MODAL PRONTI (COM BOTÃO SEGUIR SEM CELULAR)
 // =====================================================================
 function pedirTelefoneModalPronti() {
     return new Promise(resolve => {
+
         const modal = document.getElementById("modal-telefone-pronti");
         const input = document.getElementById("modal-telefone-input");
         const erro = document.getElementById("modal-telefone-erro");
         const btnOk = document.getElementById("modal-telefone-ok");
         const btnCancelar = document.getElementById("modal-telefone-cancelar");
 
+        // 🔥 proteção contra erro silencioso
+        if (!modal || !input || !btnOk || !btnCancelar) {
+            console.error("Modal de telefone não encontrado no DOM");
+            resolve("skip");
+            return;
+        }
+
         modal.style.display = "flex";
         input.value = "";
         erro.style.display = "none";
         input.focus();
+
+        // 🔥 remove listeners antigos (ESSENCIAL)
+        btnOk.replaceWith(btnOk.cloneNode(true));
+        btnCancelar.replaceWith(btnCancelar.cloneNode(true));
+
+        const newBtnOk = document.getElementById("modal-telefone-ok");
+        const newBtnCancelar = document.getElementById("modal-telefone-cancelar");
 
         function confirmar() {
             let val = input.value.replace(/\D/g, "");
@@ -731,16 +746,17 @@ function pedirTelefoneModalPronti() {
             fechar(val);
         }
 
-       // ✅ BOTÃO "SEGUIR SEM CELULAR"
-       function cancelar() {
-           fechar("skip"); // ← agora segue o fluxo
-       }
+        // ✅ BOTÃO "SEGUIR SEM CELULAR"
+        function cancelar() {
+            console.log("Clique em seguir sem celular");
+            fechar("skip");
+        }
 
         function fechar(retorno) {
             modal.style.display = "none";
 
-            btnOk.removeEventListener("click", confirmar);
-            btnCancelar.removeEventListener("click", cancelar);
+            newBtnOk.removeEventListener("click", confirmar);
+            newBtnCancelar.removeEventListener("click", cancelar);
             input.removeEventListener("keydown", enterHandler);
 
             resolve(retorno);
@@ -750,8 +766,8 @@ function pedirTelefoneModalPronti() {
             if (ev.key === "Enter") confirmar();
         }
 
-        btnOk.addEventListener("click", confirmar);
-        btnCancelar.addEventListener("click", cancelar);
+        newBtnOk.addEventListener("click", confirmar);
+        newBtnCancelar.addEventListener("click", cancelar);
         input.addEventListener("keydown", enterHandler);
     });
 }
