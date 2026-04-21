@@ -732,9 +732,9 @@ function pedirTelefoneModalPronti() {
         }
 
         // ✅ NOVO COMPORTAMENTO
-        function cancelar() {
-            fechar("skip"); // seguir sem telefone
-        }
+       function cancelar() {
+           fechar(null); // ← AGORA CANCELA DE VERDADE
+       }
 
         function fechar(retorno) {
             modal.style.display = "none";
