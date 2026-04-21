@@ -657,14 +657,16 @@ async function exigirCelularParaAgendamento(user) {
         const snap = await getDoc(docRef);
         perfil = snap.exists() ? snap.data() : {};
     } catch { perfil = {}; }
+
     // Valida telefone (mínimo 9 dígitos)
     if (perfil.telefone && /^\d{9,15}$/.test(perfil.telefone)) return true;
-   let telefone = "";
-   while (!/^\d{9,15}$/.test(telefone)) {
-       telefone = await pedirTelefoneModalPronti();
-       if (telefone === null) return false; // Usuário cancelou
-}
-    }
+
+    let telefone = "";
+    while (!/^\d{9,15}$/.test(telefone)) {
+        telefone = await pedirTelefoneModalPronti();
+        if (telefone === null) return false; // Usuário cancelou
+    } // <-- só fecha aqui!
+
     // Salva no perfil Firebase
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
     return true;
