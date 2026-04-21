@@ -811,24 +811,50 @@
         });
     });
     </script>
-   <!-- Modal padrão Pronti para telefone -->
+ <!-- Modal padrão Pronti para telefone -->
 <div id="modal-telefone-pronti" 
      style="display:none;position:fixed;z-index:9999;inset:0;align-items:center;justify-content:center;background:rgba(60,62,90,0.18)">
   <div style="background: #fff; border-radius:16px; box-shadow: 0 10px 32px #6366f144; color: #444; max-width: 340px; width:90vw; margin:0 auto; padding:30px 28px 22px 28px; text-align: center; position:relative;">
+    
     <h2 style="color: #4f46e5; margin:0 0 14px 0; font-size:1.25em;">Insira seu celular</h2>
-    <div style="font-size:0.99em;">Para continuar, informe seu telefone celular <span style="white-space:nowrap">(apenas números, com DDD)</span>:</div>
+    
+    <div style="font-size:0.99em;">
+      Para continuar, informe seu telefone celular 
+      <span style="white-space:nowrap">(apenas números, com DDD)</span>:
+    </div>
+
+    <!-- NOVO: explicação -->
+    <div style="font-size:0.85em; color:#666; margin-top:6px;">
+      Usamos seu número apenas para avisos do agendamento.
+    </div>
+
     <input type="tel" id="modal-telefone-input" 
         style="margin:16px 0 7px 0;padding:12px 16px;border-radius:8px;border:1.7px solid #ddd;font-size:1.1em;width:94%;box-sizing:border-box;text-align:center;" maxlength="15" />
-    <div id="modal-telefone-erro" style="color:#d32f2f;font-size:.96em;min-height:20px;display:none;">Telefone inválido.</div>
+    
+    <div id="modal-telefone-erro" style="color:#d32f2f;font-size:.96em;min-height:20px;display:none;">
+      Telefone inválido.
+    </div>
+
+    <!-- NOVO: seguir sem celular -->
+    <div id="modal-telefone-seguir-sem" 
+         style="margin-top:10px; font-size:0.9em; color:#4f46e5; cursor:pointer; font-weight:600;">
+      Seguir sem informar celular
+    </div>
+
     <div style="margin-top:18px;display:flex;justify-content:space-between;gap:18px;">
       <button id="modal-telefone-cancelar"
-         style="background:#eee;color:#444;border:none;border-radius:7px;padding:10px 22px;font-weight:500;font-size:1.02em;cursor:pointer;min-width:88px;transition:.2s;">Cancelar</button>
+         style="background:#eee;color:#444;border:none;border-radius:7px;padding:10px 22px;font-weight:500;font-size:1.02em;cursor:pointer;min-width:88px;transition:.2s;">
+         Cancelar
+      </button>
+
       <button id="modal-telefone-ok"
-         style="background:linear-gradient(90deg,#6366f1 0%,#4f46e5 100%);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-weight:bold;font-size:1.03em;min-width:88px;cursor:pointer;">Confirmar</button>
+         style="background:linear-gradient(90deg,#6366f1 0%,#4f46e5 100%);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-weight:bold;font-size:1.03em;min-width:88px;cursor:pointer;">
+         Confirmar
+      </button>
     </div>
   </div>
 </div>
 
-    <script type="module" src="/messaging.js"></script>
+<script type="module" src="/messaging.js"></script>
 </body>
 </html>
