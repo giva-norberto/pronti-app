@@ -653,18 +653,23 @@ import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/
 // Função utilitária para buscar ou exigir o telefone do cliente
 async function exigirCelularParaAgendamento(user) {
     if (!user) return false;
+
     // Busca o doc no path correto (subcoleção clientes do empresario)
     const docRef = doc(db, "empresarios", state.empresaId, "clientes", user.uid); 
     let perfil = {};
+
     try {
         const snap = await getDoc(docRef);
         perfil = snap.exists() ? snap.data() : {};
-    } catch { perfil = {}; }
+    } catch { 
+        perfil = {}; 
+    }
 
     // Valida telefone (mínimo 9 dígitos)
     if (perfil.telefone && /^\d{9,15}$/.test(perfil.telefone)) return true;
 
     let telefone = "";
+
     while (!/^\d{9,15}$/.test(telefone)) {
         telefone = await pedirTelefoneModalPronti();
         if (telefone === null) return false; // Usuário cancelou
@@ -672,25 +677,32 @@ async function exigirCelularParaAgendamento(user) {
 
     // Salva no perfil Firebase
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
+
     return true;
 }
 
-// Intercepta clique no botão confirmar agendamento
+// =====================================================================
+// 🔥 INTERCEPTAÇÃO CORRETA DO BOTÃO (SEM QUEBRAR O SISTEMA)
+// =====================================================================
 document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function() { // Aguarda DOM, botão e Firebase carregarem
         const btn = document.getElementById('btn-confirmar-agendamento');
+
         if (btn) {
-            // Captura handler atual (addEventListener, não onclick direto)
-            const handlers = btn.onclick ? [btn.onclick] : [];
-            btn.onclick = async function (e) {
-                if (!auth.currentUser) {
-                    if (handlers[0]) return handlers[0].call(this, e);
-                    return;
-                }
+            btn.addEventListener('click', async function (e) {
+
+                // Se não estiver logado, deixa fluxo normal (já tratado em outro lugar)
+                if (!auth.currentUser) return;
+
                 const ok = await exigirCelularParaAgendamento(auth.currentUser);
-                if (!ok) return;
-                if (handlers[0]) return handlers[0].call(this, e);
-            };
+
+                // 🔥 Se usuário cancelar ou não informar telefone válido → BLOQUEIA agendamento
+                if (!ok) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                }
+
+            }, true); // 🔥 CAPTURE = TRUE (executa antes do handler original)
         }
     }, 600);
 });
@@ -721,7 +733,11 @@ function pedirTelefoneModalPronti() {
             }
             fecha(val);
         }
-        function cancela() { fecha(null); }
+
+        function cancela() { 
+            fecha(null); 
+        }
+
         function fecha(retorno) {
             modal.style.display = "none";
             btnOk.removeEventListener("click", confirmar);
@@ -729,7 +745,11 @@ function pedirTelefoneModalPronti() {
             input.removeEventListener("keydown", enterHandler);
             resolve(retorno);
         }
-        function enterHandler(ev) { if(ev.key === "Enter") confirmar(); }
+
+        function enterHandler(ev) { 
+            if(ev.key === "Enter") confirmar(); 
+        }
+
         btnOk.addEventListener("click", confirmar);
         btnCancelar.addEventListener("click", cancela);
         input.addEventListener("keydown", enterHandler);
