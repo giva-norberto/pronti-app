@@ -665,7 +665,7 @@ async function exigirCelularParaAgendamento(user) {
     while (!/^\d{9,15}$/.test(telefone)) {
         telefone = await pedirTelefoneModalPronti();
         if (telefone === null) return false; // Usuário cancelou
-    } // <-- só fecha aqui!
+    }
 
     // Salva no perfil Firebase
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
@@ -691,3 +691,44 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }, 600);
 });
+
+// =====================================================================
+//      FUNÇÃO MODAL PRONTI - NÃO MEXA EM MAIS NADA AQUI!
+// =====================================================================
+function pedirTelefoneModalPronti() {
+    return new Promise(resolve => {
+        const modal = document.getElementById("modal-telefone-pronti");
+        const input = document.getElementById("modal-telefone-input");
+        const erro = document.getElementById("modal-telefone-erro");
+        const btnOk = document.getElementById("modal-telefone-ok");
+        const btnCancelar = document.getElementById("modal-telefone-cancelar");
+
+        modal.style.display = "flex";
+        input.value = "";
+        erro.style.display = "none";
+        input.focus();
+
+        function confirmar() {
+            let val = input.value.replace(/\D/g, "");
+            if (val.length < 9) {
+                erro.textContent = "Telefone inválido. Informe com DDD e somente números.";
+                erro.style.display = "block";
+                input.focus();
+                return;
+            }
+            fecha(val);
+        }
+        function cancela() { fecha(null); }
+        function fecha(retorno) {
+            modal.style.display = "none";
+            btnOk.removeEventListener("click", confirmar);
+            btnCancelar.removeEventListener("click", cancela);
+            input.removeEventListener("keydown", enterHandler);
+            resolve(retorno);
+        }
+        function enterHandler(ev) { if(ev.key === "Enter") confirmar(); }
+        btnOk.addEventListener("click", confirmar);
+        btnCancelar.addEventListener("click", cancela);
+        input.addEventListener("keydown", enterHandler);
+    });
+}
