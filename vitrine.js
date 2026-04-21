@@ -641,3 +641,55 @@ async function entrarNaFilaDeAgendamento() {
 }
 // Expondo a função para o HTML (onclick)
 window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
+// =====================================================================
+//    BLOCO CIRÚRGICO - EXIGIR CELULAR NO PRIMEIRO AGENDAMENTO
+// =====================================================================
+
+// ATENÇÃO: Se "clientes" não é sua collection, ajuste o nome abaixo!
+
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+// Função utilitária para buscar ou exigir celular do cliente
+async function exigirCelularParaAgendamento(user) {
+    if (!user) return false;
+    // Substitua "clientes" pela sua collection se precisar.
+    const docRef = doc(db, "clientes", user.uid); 
+    let perfil = {};
+    try {
+        const snap = await getDoc(docRef);
+        perfil = snap.exists() ? snap.data() : {};
+    } catch { perfil = {}; }
+    // Valida celular (mínimo 9 digitos)
+    if (perfil.celular && /^\d{9,15}$/.test(perfil.celular)) return true;
+    // Pede celular
+    let celular = "";
+    while (!/^\d{9,15}$/.test(celular)) {
+        celular = prompt("Para continuar, informe seu telefone celular (apenas números, com DDD):") || "";
+        if (celular === null) return false; // Usuário cancelou
+        celular = celular.replace(/\D/g, "");
+        if (celular.length < 9) alert("Celular inválido. Informe com DDD e apenas números.");
+    }
+    // Salva no perfil Firebase
+    await setDoc(docRef, { ...perfil, celular }, { merge: true });
+    return true;
+}
+
+// Intercepta clique no botão confirmar agendamento
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function() { // Aguarda DOM, botão e Firebase carregarem
+        const btn = document.getElementById('btn-confirmar-agendamento');
+        if (btn) {
+            // Captura handler atual (addEventListener, não onclick direto)
+            const handlers = btn.onclick ? [btn.onclick] : [];
+            btn.onclick = async function (e) {
+                if (!auth.currentUser) {
+                    if (handlers[0]) return handlers[0].call(this, e);
+                    return;
+                }
+                const ok = await exigirCelularParaAgendamento(auth.currentUser);
+                if (!ok) return;
+                if (handlers[0]) return handlers[0].call(this, e);
+            };
+        }
+    }, 600);
+});
