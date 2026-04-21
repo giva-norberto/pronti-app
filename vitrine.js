@@ -731,9 +731,9 @@ function pedirTelefoneModalPronti() {
             fechar(val);
         }
 
-        // ✅ NOVO COMPORTAMENTO
+       // ✅ BOTÃO "SEGUIR SEM CELULAR"
        function cancelar() {
-           fechar(null); // ← AGORA CANCELA DE VERDADE
+           fechar("skip"); // ← agora segue o fluxo
        }
 
         function fechar(retorno) {
