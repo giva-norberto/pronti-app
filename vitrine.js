@@ -513,11 +513,14 @@ async function handleConfirmarAgendamento() {
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
         
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
-        await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
-        resetarAgendamento();
+       await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
+       resetarAgendamento();
 
-        UI.trocarAba('menu-visualizacao');
-        handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+       UI.trocarAba('menu-visualizacao');
+       // Aguarda o DOM exibir o painel de reservas, DEPOIS ativa o filtro
+       setTimeout(() => {
+           handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+       }, 120);
 
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
