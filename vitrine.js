@@ -474,7 +474,13 @@ async function handleConfirmarAgendamento() {
         if (UI.abrirModalLogin) UI.abrirModalLogin();
         return;
     }
+
+    // 🔥 AQUI (fora do if!)
+    const podeSeguir = await exigirCelularParaAgendamento(state.currentUser);
+    if (!podeSeguir) return;
+
     const { profissional, servicos, data, horario } = state.agendamento;
+
     if (!profissional || !servicos || servicos.length === 0 || !data || !horario) {
         await UI.mostrarAlerta("Informação Incompleta", "Por favor, selecione profissional, serviço(s), data e horário.");
         return;
@@ -652,9 +658,8 @@ import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/
 
 // Função utilitária para buscar ou exigir o telefone do cliente
 async function exigirCelularParaAgendamento(user) {
-    if (!user) return false;
+    if (!user) return true;
 
-    // Busca o doc no path correto (subcoleção clientes do empresario)
     const docRef = doc(db, "empresarios", state.empresaId, "clientes", user.uid); 
     let perfil = {};
 
@@ -665,50 +670,40 @@ async function exigirCelularParaAgendamento(user) {
         perfil = {}; 
     }
 
-    // Valida telefone (mínimo 9 dígitos)
+    // Se já tem telefone válido → segue normal
     if (perfil.telefone && /^\d{9,15}$/.test(perfil.telefone)) return true;
 
-    let telefone = "";
+    let telefone;
 
-    while (!/^\d{9,15}$/.test(telefone)) {
+    while (true) {
         telefone = await pedirTelefoneModalPronti();
-        if (telefone === null) return false; // Usuário cancelou
+
+        // ✅ Usuário escolheu continuar sem telefone
+        if (telefone === "skip") return true;
+
+        // 🔥 segurança extra
+        if (telefone === null) return false;
+
+        telefone = telefone.replace(/\D/g, "");
+
+        if (/^\d{9,15}$/.test(telefone)) break;
     }
 
-    // Salva no perfil Firebase
+    // Salva telefone
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
 
     return true;
 }
 
 // =====================================================================
-// 🔥 INTERCEPTAÇÃO CORRETA DO BOTÃO (SEM QUEBRAR O SISTEMA)
+// ⚠️ IMPORTANTE: NÃO INTERCEPTAR BOTÃO AQUI
 // =====================================================================
-document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(function() { // Aguarda DOM, botão e Firebase carregarem
-        const btn = document.getElementById('btn-confirmar-agendamento');
+// 👉 A validação deve ser chamada DENTRO do handleConfirmarAgendamento
+// 👉 Isso evita TODOS os bugs que você enfrentou
 
-        if (btn) {
-            btn.addEventListener('click', async function (e) {
-
-                // Se não estiver logado, deixa fluxo normal (já tratado em outro lugar)
-                if (!auth.currentUser) return;
-
-                const ok = await exigirCelularParaAgendamento(auth.currentUser);
-
-                // 🔥 Se usuário cancelar ou não informar telefone válido → BLOQUEIA agendamento
-                if (!ok) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                }
-
-            }, true); // 🔥 CAPTURE = TRUE (executa antes do handler original)
-        }
-    }, 600);
-});
 
 // =====================================================================
-//      FUNÇÃO MODAL PRONTI - NÃO MEXA EM MAIS NADA AQUI!
+//      FUNÇÃO MODAL PRONTI (COM BOTÃO SEGUIR SEM CELULAR)
 // =====================================================================
 function pedirTelefoneModalPronti() {
     return new Promise(resolve => {
@@ -725,33 +720,38 @@ function pedirTelefoneModalPronti() {
 
         function confirmar() {
             let val = input.value.replace(/\D/g, "");
+
             if (val.length < 9) {
                 erro.textContent = "Telefone inválido. Informe com DDD e somente números.";
                 erro.style.display = "block";
                 input.focus();
                 return;
             }
-            fecha(val);
+
+            fechar(val);
         }
 
-        function cancela() { 
-            fecha(null); 
+        // ✅ NOVO COMPORTAMENTO
+        function cancelar() {
+            fechar("skip"); // seguir sem telefone
         }
 
-        function fecha(retorno) {
+        function fechar(retorno) {
             modal.style.display = "none";
+
             btnOk.removeEventListener("click", confirmar);
-            btnCancelar.removeEventListener("click", cancela);
+            btnCancelar.removeEventListener("click", cancelar);
             input.removeEventListener("keydown", enterHandler);
+
             resolve(retorno);
         }
 
-        function enterHandler(ev) { 
-            if(ev.key === "Enter") confirmar(); 
+        function enterHandler(ev) {
+            if (ev.key === "Enter") confirmar();
         }
 
         btnOk.addEventListener("click", confirmar);
-        btnCancelar.addEventListener("click", cancela);
+        btnCancelar.addEventListener("click", cancelar);
         input.addEventListener("keydown", enterHandler);
     });
 }
