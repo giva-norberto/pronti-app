@@ -703,7 +703,7 @@ async function exigirCelularParaAgendamento(user) {
 
 
 // =====================================================================
-//      FUNÇÃO MODAL PRONTI (COM BOTÃO SEGUIR SEM CELULAR)
+//      FUNÇÃO MODAL PRONTI (CORRIGIDA - SEM BUG NO CANCELAR)
 // =====================================================================
 function pedirTelefoneModalPronti() {
     return new Promise(resolve => {
@@ -726,13 +726,6 @@ function pedirTelefoneModalPronti() {
         erro.style.display = "none";
         input.focus();
 
-        // 🔥 remove listeners antigos (ESSENCIAL)
-        btnOk.replaceWith(btnOk.cloneNode(true));
-        btnCancelar.replaceWith(btnCancelar.cloneNode(true));
-
-        const newBtnOk = document.getElementById("modal-telefone-ok");
-        const newBtnCancelar = document.getElementById("modal-telefone-cancelar");
-
         function confirmar() {
             let val = input.value.replace(/\D/g, "");
 
@@ -748,16 +741,17 @@ function pedirTelefoneModalPronti() {
 
         // ✅ BOTÃO "SEGUIR SEM CELULAR"
         function cancelar() {
-            console.log("Clique em seguir sem celular");
+            console.log("CLICOU EM SEGUIR SEM CELULAR");
             fechar("skip");
         }
 
         function fechar(retorno) {
             modal.style.display = "none";
 
-            newBtnOk.removeEventListener("click", confirmar);
-            newBtnCancelar.removeEventListener("click", cancelar);
-            input.removeEventListener("keydown", enterHandler);
+            // limpa handlers (importante pra não duplicar)
+            btnOk.onclick = null;
+            btnCancelar.onclick = null;
+            input.onkeydown = null;
 
             resolve(retorno);
         }
@@ -766,8 +760,9 @@ function pedirTelefoneModalPronti() {
             if (ev.key === "Enter") confirmar();
         }
 
-        newBtnOk.addEventListener("click", confirmar);
-        newBtnCancelar.addEventListener("click", cancelar);
-        input.addEventListener("keydown", enterHandler);
+        // 🔥 AQUI ESTÁ A CORREÇÃO PRINCIPAL
+        btnOk.onclick = confirmar;
+        btnCancelar.onclick = cancelar;
+        input.onkeydown = enterHandler;
     });
 }
