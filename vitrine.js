@@ -656,7 +656,6 @@ window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
 
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Função utilitária para buscar ou exigir o telefone do cliente
 async function exigirCelularParaAgendamento(user) {
     if (!user) return true;
 
@@ -670,35 +669,37 @@ async function exigirCelularParaAgendamento(user) {
         perfil = {}; 
     }
 
-    // Se já tem telefone válido → segue normal
+    // ✅ Se já tem telefone válido → segue normal
     if (perfil.telefone && /^\d{9,15}$/.test(perfil.telefone)) return true;
 
     let telefone;
+
     while (true) {
         telefone = await pedirTelefoneModalPronti();
 
-        // Usuário clicou em "seguir sem celular"
-        if (telefone === "skip") {
-            return true;
-        }
+        // ❌ Cancelou tudo → para o agendamento
+        if (telefone === null) return false;
 
-        // Usuário cancelou (clicou cancelar/fechou modal)
-        if (telefone === null) {
-            return false;
-        }
+        // ✅ Seguir sem telefone → segue fluxo NORMAL (sem salvar)
+        if (telefone === "skip") return true;
+
+        // 🔥 segurança
+        if (!telefone) continue;
 
         telefone = telefone.replace(/\D/g, "");
+
         if (/^\d{9,15}$/.test(telefone)) break;
     }
 
-    // Salva telefone e segue
+    // ✅ Salva telefone válido
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
+
     return true;
 }
 
 
 // =====================================================================
-//      FUNÇÃO MODAL PRONTI (CORRIGIDA - CANCELAR/SKIP/ESC)
+//      FUNÇÃO MODAL PRONTI (CORRIGIDA FINAL)
 // =====================================================================
 function pedirTelefoneModalPronti() {
     return new Promise(resolve => {
@@ -708,7 +709,7 @@ function pedirTelefoneModalPronti() {
         const erro = document.getElementById("modal-telefone-erro");
         const btnOk = document.getElementById("modal-telefone-ok");
         const btnCancelar = document.getElementById("modal-telefone-cancelar");
-        const btnSkip = document.getElementById("modal-telefone-skip"); // Botão "Seguir sem celular"
+        const btnSkip = document.getElementById("modal-telefone-skip");
 
         if (!modal || !input || !btnOk || !btnCancelar || !btnSkip) {
             console.error("Modal de telefone não encontrado no DOM");
@@ -723,31 +724,37 @@ function pedirTelefoneModalPronti() {
 
         function confirmar() {
             let val = input.value.replace(/\D/g, "");
+
             if (val.length < 9) {
                 erro.textContent = "Telefone inválido. Informe com DDD e somente números.";
                 erro.style.display = "block";
                 input.focus();
                 return;
             }
+
             fechar(val);
         }
 
+        // ❌ cancelar tudo
         function cancelar() {
             fechar(null);
         }
 
+        // ✅ seguir sem telefone
         function skip() {
             fechar("skip");
         }
 
         function fechar(retorno) {
             modal.style.display = "none";
+
             btnOk.onclick = null;
             btnCancelar.onclick = null;
             btnSkip.onclick = null;
             input.onkeydown = null;
             modal.onmousedown = null;
             window.removeEventListener("keydown", escHandler);
+
             resolve(retorno);
         }
 
@@ -762,8 +769,14 @@ function pedirTelefoneModalPronti() {
         btnOk.onclick = confirmar;
         btnCancelar.onclick = cancelar;
         btnSkip.onclick = skip;
+
         input.onkeydown = enterHandler;
-        modal.onmousedown = (ev) => { if (ev.target === modal) cancelar(); };
+
+        // clicar fora = cancelar
+        modal.onmousedown = (ev) => {
+            if (ev.target === modal) cancelar();
+        };
+
         window.addEventListener("keydown", escHandler);
     });
 }
