@@ -521,15 +521,21 @@ async function handleConfirmarAgendamento() {
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
        await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
        resetarAgendamento();
+    
+UI.trocarAba('menu-visualizacao');
 
-      UI.trocarAba('menu-visualizacao');
+// força UI renderizar antes de filtrar
+requestAnimationFrame(() => {
+    const btn = document.getElementById('btn-ver-ativos');
 
-      queueMicrotask(async () => {
-          await handleFiltroAgendamentos({
-              target: document.getElementById('btn-ver-ativos')
-          });
-      });
+    if (!btn) return;
 
+    btn.classList.add('ativo');
+
+    handleFiltroAgendamentos({
+        target: btn
+    });
+});
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         await UI.mostrarAlerta("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
