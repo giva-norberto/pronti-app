@@ -669,8 +669,16 @@ async function exigirCelularParaAgendamento(user) {
         perfil = {}; 
     }
 
+    // 🔥 CORREÇÃO: normaliza o telefone antes de validar
+    const telefoneSalvo = (perfil.telefone || "")
+        .toString()
+        .replace(/\D/g, "")
+        .trim();
+
     // ✅ Se já tem telefone válido → segue normal
-    if (perfil.telefone && /^\d{9,15}$/.test(perfil.telefone)) return true;
+    if (telefoneSalvo.length >= 9 && telefoneSalvo.length <= 15) {
+        return true;
+    }
 
     let telefone;
 
@@ -680,18 +688,17 @@ async function exigirCelularParaAgendamento(user) {
         // ❌ Cancelou tudo → para o agendamento
         if (telefone === null) return false;
 
-        // ✅ Seguir sem telefone → segue fluxo NORMAL (sem salvar)
+        // ✅ Seguir sem telefone → segue fluxo NORMAL
         if (telefone === "skip") return true;
 
-        // 🔥 segurança
         if (!telefone) continue;
 
         telefone = telefone.replace(/\D/g, "");
 
-        if (/^\d{9,15}$/.test(telefone)) break;
+        if (telefone.length >= 9 && telefone.length <= 15) break;
     }
 
-    // ✅ Salva telefone válido
+    // ✅ Salva telefone limpo (SEM máscara)
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
 
     return true;
@@ -699,7 +706,7 @@ async function exigirCelularParaAgendamento(user) {
 
 
 // =====================================================================
-//      FUNÇÃO MODAL PRONTI (CORRIGIDA FINAL)
+//      FUNÇÃO MODAL PRONTI (OK - MANTIDA)
 // =====================================================================
 function pedirTelefoneModalPronti() {
     return new Promise(resolve => {
@@ -735,12 +742,10 @@ function pedirTelefoneModalPronti() {
             fechar(val);
         }
 
-        // ❌ cancelar tudo
         function cancelar() {
             fechar(null);
         }
 
-        // ✅ seguir sem telefone
         function skip() {
             fechar("skip");
         }
@@ -772,7 +777,6 @@ function pedirTelefoneModalPronti() {
 
         input.onkeydown = enterHandler;
 
-        // clicar fora = cancelar
         modal.onmousedown = (ev) => {
             if (ev.target === modal) cancelar();
         };
