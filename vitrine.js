@@ -669,13 +669,13 @@ async function exigirCelularParaAgendamento(user) {
         perfil = {}; 
     }
 
-    // 🔥 CORREÇÃO: normaliza o telefone antes de validar
+    // 🔥 normaliza telefone
     const telefoneSalvo = (perfil.telefone || "")
         .toString()
         .replace(/\D/g, "")
         .trim();
 
-    // ✅ Se já tem telefone válido → segue normal
+    // ✅ já tem telefone válido
     if (telefoneSalvo.length >= 9 && telefoneSalvo.length <= 15) {
         return true;
     }
@@ -685,11 +685,8 @@ async function exigirCelularParaAgendamento(user) {
     while (true) {
         telefone = await pedirTelefoneModalPronti();
 
-        // ❌ Cancelou tudo → para o agendamento
-        if (telefone === null) return false;
-
-        // ✅ Seguir sem telefone → segue fluxo NORMAL
-        if (telefone === "skip") return true;
+        if (telefone === null) return false;   // cancelou
+        if (telefone === "skip") return true;  // seguir sem
 
         if (!telefone) continue;
 
@@ -698,7 +695,7 @@ async function exigirCelularParaAgendamento(user) {
         if (telefone.length >= 9 && telefone.length <= 15) break;
     }
 
-    // ✅ Salva telefone limpo (SEM máscara)
+    // ✅ salva limpo
     await setDoc(docRef, { ...perfil, telefone }, { merge: true });
 
     return true;
@@ -706,7 +703,7 @@ async function exigirCelularParaAgendamento(user) {
 
 
 // =====================================================================
-//      FUNÇÃO MODAL PRONTI (OK - MANTIDA)
+//      FUNÇÃO MODAL PRONTI (CORRIGIDA)
 // =====================================================================
 function pedirTelefoneModalPronti() {
     return new Promise(resolve => {
@@ -716,7 +713,9 @@ function pedirTelefoneModalPronti() {
         const erro = document.getElementById("modal-telefone-erro");
         const btnOk = document.getElementById("modal-telefone-ok");
         const btnCancelar = document.getElementById("modal-telefone-cancelar");
-        const btnSkip = document.getElementById("modal-telefone-skip");
+
+        // 🔥 CORREÇÃO AQUI
+        const btnSkip = document.getElementById("modal-telefone-seguir-sem");
 
         if (!modal || !input || !btnOk || !btnCancelar || !btnSkip) {
             console.error("Modal de telefone não encontrado no DOM");
@@ -727,13 +726,14 @@ function pedirTelefoneModalPronti() {
         modal.style.display = "flex";
         input.value = "";
         erro.style.display = "none";
-        input.focus();
+
+        setTimeout(() => input.focus(), 100);
 
         function confirmar() {
             let val = input.value.replace(/\D/g, "");
 
             if (val.length < 9) {
-                erro.textContent = "Telefone inválido. Informe com DDD e somente números.";
+                erro.textContent = "Telefone inválido. Informe com DDD.";
                 erro.style.display = "block";
                 input.focus();
                 return;
