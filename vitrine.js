@@ -522,11 +522,13 @@ async function handleConfirmarAgendamento() {
        await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
        resetarAgendamento();
 
-       UI.trocarAba('menu-visualizacao');
-       // Aguarda o DOM exibir o painel de reservas, DEPOIS ativa o filtro
-       setTimeout(() => {
-           handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
-       }, 120);
+      UI.trocarAba('menu-visualizacao');
+
+      queueMicrotask(async () => {
+          await handleFiltroAgendamentos({
+              target: document.getElementById('btn-ver-ativos')
+          });
+      });
 
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
