@@ -792,3 +792,29 @@ function pedirTelefoneModalPronti() {
         window.addEventListener("keydown", escHandler);
     });
 }
+window.salvarSalaoPronti = function () {
+    const img = document.getElementById("logo-empresa");
+
+    if (!img) {
+        console.warn("Elemento logo-empresa não encontrado");
+        return;
+    }
+
+    const src = img.getAttribute("src");
+
+    if (!src) {
+        alert("Logo ainda não carregou");
+        return;
+    }
+
+    try {
+        const link = document.createElement("a");
+        link.href = src;
+        link.download = "logo-salao.png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (e) {
+        console.error("Erro ao baixar logo:", e);
+    }
+};
