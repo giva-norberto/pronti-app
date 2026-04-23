@@ -792,29 +792,46 @@ function pedirTelefoneModalPronti() {
         window.addEventListener("keydown", escHandler);
     });
 }
-window.salvarSalaoPronti = function () {
+// =====================================================================
+// 📥 SALVAR LOGO DO SALÃO NO CELULAR (VERSÃO ROBUSTA)
+// =====================================================================
+window.salvarSalaoPronti = async function () {
     const img = document.getElementById("logo-empresa");
 
     if (!img) {
-        console.warn("Elemento logo-empresa não encontrado");
+        console.warn("Elemento #logo-empresa não encontrado no HTML");
+        alert("Erro: logo não encontrada na tela.");
         return;
     }
 
-    const src = img.getAttribute("src");
+    const src = img.src || img.getAttribute("src");
 
-    if (!src) {
-        alert("Logo ainda não carregou");
+    if (!src || src.trim() === "") {
+        alert("A logo ainda não carregou. Aguarde um pouco e tente novamente.");
         return;
     }
 
     try {
+        // 🔥 tenta baixar como arquivo
+        const response = await fetch(src);
+        const blob = await response.blob();
+
+        const url = window.URL.createObjectURL(blob);
+
         const link = document.createElement("a");
-        link.href = src;
+        link.href = url;
         link.download = "logo-salao.png";
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    } catch (e) {
-        console.error("Erro ao baixar logo:", e);
+
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.warn("Download direto falhou, abrindo imagem...", error);
+
+        // 🔥 fallback: abre a imagem (funciona melhor em celular)
+        window.open(src, "_blank");
     }
 };
