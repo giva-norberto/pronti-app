@@ -341,97 +341,84 @@ async function enviarWhatsAppEvolution({ telefone, mensagem }) {
 }
 
 // ============================================================================
-// ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO
+// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) - FOCO EM PUSH E AUTO-LIMPEZA
 // ============================================================================
-exports.notificarDonoInstantaneo = onDocumentCreated(
+exports.enviarNotificacaoFCM = onDocumentCreated(
   {
-    document: "empresarios/{empresaId}/agendamentos/{agendamentoId}",
+    document: "filaDeNotificacoes/{bilheteId}",
     region: "southamerica-east1",
     database: "pronti-app",
+    secrets: [],
   },
   async (event) => {
-    const agendamento = event.data?.data();
-    const empresaId = event.params?.empresaId;
-    const agendamentoId = event.params?.agendamentoId;
-    if (!agendamento || !empresaId) {
-      logger.warn("Dados insuficientes para notificar dono", {
-        agendamento,
-        empresaId,
-      });
+    const bilhete =
+      event.data && event.data.data ? event.data.data() : null;
+    const bilheteId =
+      event.params && event.params.bilheteId ? event.params.bilheteId : null;
+
+    if (!bilhete || bilhete.status === "processado") {
       return;
     }
-    try {
-      const empresaDoc = await db.collection("empresarios").doc(empresaId).get();
-      if (!empresaDoc.exists) {
-        logger.warn(`Empresa ${empresaId} não encontrada`);
+
+    return db.runTransaction(async (transaction) => {
+      const freshDoc = await transaction.get(event.data.ref);
+      const bilheteAtualizado = freshDoc.data();
+
+      if (
+        !bilheteAtualizado ||
+        bilheteAtualizado.status !== "pendente" ||
+        bilheteAtualizado.processando === true
+      ) {
         return;
       }
-      const empresaData = empresaDoc.data();
-      const donoId = empresaData.donoId || empresaData.userId || empresaId;
-      const tokenDoc = await db.collection("mensagensTokens").doc(donoId).get();
-      if (!tokenDoc.exists) {
-        logger.warn(`Documento de token não encontrado para dono ${donoId}`);
+
+      transaction.update(event.data.ref, { processando: true });
+
+      const donoId = bilheteAtualizado.donoId;
+      const titulo = bilheteAtualizado.titulo || "Notificação PRONTI";
+      const mensagem = bilheteAtualizado.mensagem || "Você tem uma nova atividade.";
+
+      if (!donoId) {
+        transaction.update(event.data.ref, { status: "processado_com_erro", processando: false });
         return;
       }
-      const tokenData = tokenDoc.data();
-      const fcmToken = tokenData?.fcmToken;
-      if (!fcmToken) {
-        logger.warn(`FCM Token vazio para dono ${donoId}`);
-        return;
+
+      const tokenRef = db.collection("mensagensTokens").doc(donoId);
+      const tokenSnap = await tokenRef.get();
+
+      let fcmEnviado = false;
+      let fcmMessageId = null;
+
+      // --- PUSH FCM ---
+      if (tokenSnap.exists && tokenSnap.data().fcmToken) {
+        try {
+          fcmMessageId = await fcm.send({
+            token: tokenSnap.data().fcmToken,
+            notification: { title: titulo, body: mensagem },
+            data: { tipo: "fila", bilheteId: bilheteId || "" }
+          });
+          fcmEnviado = true;
+        } catch (error) {
+          logger.error(`❌ Erro Push:`, error.message);
+        }
       }
-      const notificationTitle = "📝 Novo Agendamento!";
-      const notificationBody = `${
-        agendamento.clienteNome || "Alguém"
-      } marcou ${agendamento.servicoNome || "um serviço"} às ${
-        agendamento.horario || "horário indefinido"
-      }`;
-      const message = {
-        token: fcmToken,
-        notification: {
-          title: notificationTitle,
-          body: notificationBody,
-        },
-        data: {
-          tipo: "novo_agendamento",
-          empresaId: empresaId,
-          agendamentoId: agendamentoId,
-          link: "https://prontiapp.com.br/agenda.html",
-        },
-        android: {
-          priority: "high",
-          notification: {
-            sound: "default",
-            priority: "high",
-            clickAction: "FLUTTER_NOTIFICATION_CLICK",
-          },
-        },
-        apns: {
-          headers: {
-            "apns-priority": "10",
-          },
-          payload: {
-            aps: {
-              sound: "default",
-              badge: 1,
-            },
-          },
-        },
-        webpush: {
-          notification: {
-            title: notificationTitle,
-            body: notificationBody,
-            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-          },
-          fcmOptions: {
-            link: "https://prontiapp.com.br/agenda.html",
-          },
-        },
-      };
-      await fcm.send(message);
-      logger.info(`✅ Push enviado com sucesso ao dono ${donoId}`);
-    } catch (error) {
-      logger.error(`❌ Erro ao notificar dono:`, error.message);
-    }
+
+      // --- STATUS FINAL E AUTO-LIMPEZA ---
+      if (fcmEnviado) {
+        // Se o Push foi enviado com sucesso, deletamos o registro da fila.
+        // Isso impede a "bola de neve" no painel do dono.
+        transaction.delete(event.data.ref);
+        logger.info(`✅ Push enviado para ${donoId} e registro removido da fila.`);
+      } else {
+        // Se falhou (sem token ou erro no envio), mantemos o registro com status de erro.
+        transaction.update(event.data.ref, {
+          status: "processado_com_erro",
+          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          fcmEnviado: false,
+          processando: false,
+        });
+      }
+    });
   }
 );
 
