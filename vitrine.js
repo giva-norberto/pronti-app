@@ -72,6 +72,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setEmpresa(empresaId, dados);
+        if (document.getElementById("logo-empresa")) document.getElementById("logo-empresa").src = dados.logoUrl;
+        if (document.getElementById("main-title")) document.getElementById("main-title").textContent = dados.nomeFantasia;
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
 
