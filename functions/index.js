@@ -341,7 +341,102 @@ async function enviarWhatsAppEvolution({ telefone, mensagem }) {
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) COM AUTO-LIMPEZA (CIRÚRGICO)
+// ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO
+// ============================================================================
+exports.notificarDonoInstantaneo = onDocumentCreated(
+  {
+    document: "empresarios/{empresaId}/agendamentos/{agendamentoId}",
+    region: "southamerica-east1",
+    database: "pronti-app",
+  },
+  async (event) => {
+    const agendamento = event.data?.data();
+    const empresaId = event.params?.empresaId;
+    const agendamentoId = event.params?.agendamentoId;
+    if (!agendamento || !empresaId) {
+      logger.warn("Dados insuficientes para notificar dono", {
+        agendamento,
+        empresaId,
+      });
+      return;
+    }
+    try {
+      const empresaDoc = await db.collection("empresarios").doc(empresaId).get();
+      if (!empresaDoc.exists) {
+        logger.warn(`Empresa ${empresaId} não encontrada`);
+        return;
+      }
+      const empresaData = empresaDoc.data();
+      const donoId = empresaData.donoId || empresaData.userId || empresaId;
+      const tokenDoc = await db.collection("mensagensTokens").doc(donoId).get();
+      if (!tokenDoc.exists) {
+        logger.warn(`Documento de token não encontrado para dono ${donoId}`);
+        return;
+      }
+      const tokenData = tokenDoc.data();
+      const fcmToken = tokenData?.fcmToken;
+      if (!fcmToken) {
+        logger.warn(`FCM Token vazio para dono ${donoId}`);
+        return;
+      }
+      const notificationTitle = "📝 Novo Agendamento!";
+      const notificationBody = `${
+        agendamento.clienteNome || "Alguém"
+      } marcou ${agendamento.servicoNome || "um serviço"} às ${
+        agendamento.horario || "horário indefinido"
+      }`;
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: notificationTitle,
+          body: notificationBody,
+        },
+        data: {
+          tipo: "novo_agendamento",
+          empresaId: empresaId,
+          agendamentoId: agendamentoId,
+          link: "https://prontiapp.com.br/agenda.html",
+        },
+        android: {
+          priority: "high",
+          notification: {
+            sound: "default",
+            priority: "high",
+            clickAction: "FLUTTER_NOTIFICATION_CLICK",
+          },
+        },
+        apns: {
+          headers: {
+            "apns-priority": "10",
+          },
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+            },
+          },
+        },
+        webpush: {
+          notification: {
+            title: notificationTitle,
+            body: notificationBody,
+            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+          },
+          fcmOptions: {
+            link: "https://prontiapp.com.br/agenda.html",
+          },
+        },
+      };
+      await fcm.send(message);
+      logger.info(`✅ Push enviado com sucesso ao dono ${donoId}`);
+    } catch (error) {
+      logger.error(`❌ Erro ao notificar dono:`, error.message);
+    }
+  }
+);
+
+// ============================================================================
+// FUNÇÃO DE NOTIFICAÇÃO — PUSH AO DONO (FILA) + WHATSAPP
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
@@ -351,46 +446,42 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     secrets: [],
   },
   async (event) => {
-    const bilhete = event.data ? event.data.data() : null;
-    const bilheteId = event.params ? event.params.bilheteId : null;
-
-    // Se o bilhete não existe ou já foi marcado como processado por outro processo, ignora
+    const bilhete =
+      event.data && event.data.data ? event.data.data() : null;
+    const bilheteId =
+      event.params && event.params.bilheteId ? event.params.bilheteId : null;
     if (!bilhete || bilhete.status === "processado") {
       return;
     }
-
     return db.runTransaction(async (transaction) => {
       const freshDoc = await transaction.get(event.data.ref);
       const bilheteAtualizado = freshDoc.data();
-
-      // Verifica se o bilhete ainda é válido e se não está sendo processado
       if (
         !bilheteAtualizado ||
+        bilheteAtualizado.status !== "pendente" ||
         bilheteAtualizado.processando === true
       ) {
         return;
       }
-
-      // Trava o documento para este processo
       transaction.update(event.data.ref, { processando: true });
-
       const donoId = bilheteAtualizado.donoId;
-      const titulo = bilheteAtualizado.titulo || "Notificação PRONTI";
+      const titulo = bilheteAtualizado.titulo || "Notificação Pronti";
       const mensagem = bilheteAtualizado.mensagem || "Você tem uma nova atividade.";
-
+      const telefoneWhatsapp = bilheteAtualizado.telefone || bilheteAtualizado.whatsapp || null;
       if (!donoId) {
-        transaction.delete(event.data.ref); // Se não tem donoId, remove da fila por segurança
+        transaction.update(event.data.ref, { status: "processado_com_erro", processando: false });
         return;
       }
-
       const tokenRef = db.collection("mensagensTokens").doc(donoId);
       const tokenSnap = await tokenRef.get();
       let fcmEnviado = false;
-
-      // --- ENVIAR APENAS PUSH FCM (WhatsApp removido conforme solicitado) ---
+      let fcmMessageId = null;
+      let whatsappEnviado = false;
+      let whatsappInfo = null;
+      // --- PUSH FCM ---
       if (tokenSnap.exists && tokenSnap.data().fcmToken) {
         try {
-          await fcm.send({
+          fcmMessageId = await fcm.send({
             token: tokenSnap.data().fcmToken,
             notification: { title: titulo, body: mensagem },
             data: { tipo: "fila", bilheteId: bilheteId || "" }
@@ -400,24 +491,32 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
           logger.error(`❌ Erro Push:`, error.message);
         }
       }
-
-      // --- CONCLUSÃO: AUTO-LIMPEZA ---
-      // Se enviou o Push OU se o documento já constar como "processado", deletamos.
-      if (fcmEnviado || bilheteAtualizado.status === "processado") {
-        transaction.delete(event.data.ref);
-        logger.info(`✅ Notificação processada e removida da fila para evitar acúmulo.`);
-      } else {
-        // Caso falhe totalmente, marca o erro mas libera o "processando"
-        transaction.update(event.data.ref, {
-          status: "processado_com_erro",
-          processadoEm: admin.firestore.FieldValue.serverTimestamp(),
-          fcmEnviado: false,
-          processando: false,
-        });
+      // --- WHATSAPP ---
+      if (telefoneWhatsapp) {
+        try {
+          whatsappInfo = await enviarWhatsAppEvolution({
+            telefone: telefoneWhatsapp,
+            mensagem,
+          });
+          whatsappEnviado = !!whatsappInfo?.enviado;
+        } catch (error) {
+          logger.error(`❌ Erro WhatsApp:`, error.message);
+        }
       }
+      // --- STATUS FINAL ---
+      transaction.update(event.data.ref, {
+        status: (fcmEnviado || whatsappEnviado) ? "processado" : "processado_com_erro",
+        processadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        fcmEnviado,
+        fcmMessageId: fcmMessageId || null,
+        whatsappEnviado,
+        processando: false,
+      });
     });
   }
-);// ============================================================================
+);
+
+// ============================================================================
 // rotinaLembreteAgendamento - VERSÃO ANTIGA RESTAURADA
 // ============================================================================
 exports.rotinaLembreteAgendamento = onSchedule(
