@@ -45,7 +45,7 @@ $data = json_decode($rawBody, true);
 
 error_log("📩 Webhook recebido: " . $rawBody);
 
-// Formato correto do Mercado Pago
+// valida webhook
 if (
     !isset($data['type']) ||
     $data['type'] !== 'preapproval' ||
@@ -59,6 +59,7 @@ if (
 $preapprovalId = $data['data']['id'];
 
 try {
+
     $client = new PreApprovalClient();
     $preapproval = $client->get($preapprovalId);
 
@@ -72,7 +73,7 @@ try {
     }
 
     // -------------------------------------------------
-    // MAPEAMENTO DE STATUS
+    // STATUS
     // -------------------------------------------------
     $statusMP = $preapproval->status;
 
@@ -103,24 +104,30 @@ try {
     $usuarioRef = $db->collection('usuarios')->document($donoId);
 
     // -------------------------------------------------
-    // ATUALIZAÇÕES (IDEMPOTENTES)
+    // 📌 VALIDADE AUTOMÁTICA (30 DIAS)
     // -------------------------------------------------
-    $isPremium = ($novoStatus === 'ativo');
+    $novaValidade = (new DateTime())->modify('+30 days');
 
+    // -------------------------------------------------
+    // ATUALIZAÇÕES SEGURAS
+    // -------------------------------------------------
     $usuarioRef->update([
-        ['path' => 'isPremium', 'value' => $isPremium],
+        ['path' => 'isPremium', 'value' => ($novoStatus === 'ativo')],
     ]);
 
     $empresaRef->update([
         ['path' => 'statusAssinatura', 'value' => $novoStatus],
         ['path' => 'mercadoPagoAssinaturaId', 'value' => $preapprovalId],
+
+        // 🔥 AQUI ESTÁ O IMPORTANTE
+        ['path' => 'assinaturaValidaAte', 'value' => new \Google\Cloud\Core\Timestamp($novaValidade)],
+
         ['path' => 'ultimaAtualizacaoMP', 'value' => new \Google\Cloud\Core\Timestamp(new DateTime())],
     ]);
 
     error_log("✅ Assinatura atualizada | Empresa: {$empresaId} | Status: {$novoStatus}");
 
 } catch (\Exception $e) {
-    // NUNCA retornar 500 para o Mercado Pago
     error_log("❌ Erro no webhook MP: " . $e->getMessage());
 }
 
