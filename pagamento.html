@@ -253,6 +253,17 @@
             20: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cd27c2649a1f4262813cb2e44cf6842f",
         };
 
+        // NOVO: Objeto com preços fixos
+        const precosPlanos = {
+            1: 49.90,
+            2: 79.90,
+            3: 129.90,
+            5: 179.90,
+            10: 299.90,
+            15: 399.90,
+            20: 499.90
+        };
+
         const infoPlanoAtual = document.getElementById("info-plano-atual");
         const infoEquipeAtual = document.getElementById("info-equipe-atual");
         const listaPlanosContainer = document.querySelector(".lista-planos");
@@ -297,40 +308,19 @@
         }
 
         // =====================================================================
-        // SUA LÓGICA ORIGINAL - SEM MUDANÇAS
+        // FUNÇÃO DE CÁLCULO REMOVIDA - AGORA USAMOS PREÇOS FIXOS
         // =====================================================================
-        function calcularPreco(totalFuncionarios) {
-            const configuracaoPrecos = {
-                precoIndividual: 29.90, precoBase: 59.90, funcionariosInclusos: 2,
-                faixasDePrecoExtra: [ { de: 3, ate: 10, valor: 29.90 }, { de: 11, ate: 50, valor: 24.90 } ]
-            };
-            if (totalFuncionarios <= 0) return 0;
-            if (totalFuncionarios === 1) return configuracaoPrecos.precoIndividual;
-            if (totalFuncionarios === 2) return configuracaoPrecos.precoBase;
-            let precoTotal = configuracaoPrecos.precoBase;
-            const funcionariosExtras = totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
-            let funcionariosJaPrecificados = 0;
-            for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
-                const funcionariosNaFaixa = (faixa.ate - faixa.de) + 1;
-                const extrasNestaFaixa = Math.min(funcionariosExtras - funcionariosJaPrecificados, funcionariosNaFaixa);
-                if (extrasNestaFaixa > 0) {
-                    precoTotal += extrasNestaFaixa * faixa.valor;
-                    funcionariosJaPrecificados += extrasNestaFaixa;
-                }
-                if (funcionariosJaPrecificados >= funcionariosExtras) break;
-            }
-            return Number(precoTotal.toFixed(2));
-        }
 
         // =====================================================================
-        // SUA LÓGICA ORIGINAL - SEM MUDANÇAS
+        // SUA LÓGICA ORIGINAL - COM MUDANÇA PARA PREÇO FIXO
         // =====================================================================
         function gerarCardsDePlano() {
             listaPlanosContainer.innerHTML = "";
             const planosOrdenados = Object.keys(linksDosPlanos).map(Number).sort((a, b) => a - b);
 
             planosOrdenados.forEach((num) => {
-                const preco = calcularPreco(num);
+                // NOVO: Pega o preço do objeto precosPlanos
+                const preco = precosPlanos[num];
                 const card = document.createElement("div");
                 const isDesabilitado = num < licencasNecessarias;
                 card.className = `card-plano ${isDesabilitado ? "desabilitado" : ""}`;
@@ -372,9 +362,6 @@
         // ==================================================
         function handleMercadoPago() {
             if (!planoSelecionado) return;
-
-            // Removido o "Redirecionando..." para abrir o modal
-            // botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Redirecionando...</button>`;
 
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get("empresaId");
@@ -576,7 +563,7 @@
                 try {
                     await addDoc(collection(db, "mail"), {
                         to: "giva.norberto@gmail.com",
-                        subject: `Pagamento confirmado: ${planoSelecionado ? planoSelecionado.nome : ''}`, // NOTA: .nome não existe em 'planoSelecionado', é só um número
+                        subject: `Pagamento confirmado: Plano ${planoSelecionado}`,
                         body: `O usuário ${user.displayName || user.email} confirmou pagamento por PIX.
 Empresa: ${empresaId}
 Plano: ${planoSelecionado ? planoSelecionado : ''}
