@@ -1,13 +1,13 @@
 import { db } from "./firebase-config.js";
-import { collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { PLANOS_PRONTI } from "./planos-config.js";
+import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { PLANOS_PRONTI } from "./planos-pronti.js";
 
 async function sincronizarPlanos() {
     try {
         console.log("🚀 Iniciando sincronização de planos...");
 
         for (const plano of PLANOS_PRONTI) {
-            const ref = doc(collection(db, "planosPronti"), plano.id);
+            const ref = doc(db, "planosPronti", plano.id);
 
             await setDoc(ref, {
                 nome: plano.nome,
@@ -28,5 +28,4 @@ async function sincronizarPlanos() {
     }
 }
 
-// deixa disponível no botão
 window.sincronizarPlanos = sincronizarPlanos;
