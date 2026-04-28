@@ -138,7 +138,7 @@ function renderizarDados(empresas) {
         </div>
     `;
 
-    // ================= EMPRESAS (ORIGINAL) =================
+    // ================= EMPRESAS =================
     if (abaAtual === "empresas") {
         html += '<h2>Gestão de Empresas</h2>';
 
@@ -179,15 +179,26 @@ function renderizarDados(empresas) {
 
     render(html);
 
-    document.getElementById("tab-empresas").onclick = () => {
-        abaAtual = "empresas";
-        renderizarDados(currentData);
-    };
+    // =====================================================
+    // 🔥 CORREÇÃO ADICIONADA (SEGURA)
+    // =====================================================
 
-    document.getElementById("tab-planos").onclick = async () => {
-        abaAtual = "planos";
-        await carregarPlanos();
-    };
+    const tabEmpresas = document.getElementById("tab-empresas");
+    const tabPlanos = document.getElementById("tab-planos");
+
+    if (tabEmpresas) {
+        tabEmpresas.onclick = () => {
+            abaAtual = "empresas";
+            renderizarDados(currentData);
+        };
+    }
+
+    if (tabPlanos) {
+        tabPlanos.onclick = async () => {
+            abaAtual = "planos";
+            await carregarPlanos();
+        };
+    }
 }
 
 // =====================================================
@@ -228,7 +239,7 @@ function inicializarPainelAdmin() {
 inicializarPainelAdmin();
 
 // =====================================================
-// GLOBAL (necessário para onclick funcionar)
+// GLOBAL
 // =====================================================
 window.salvarPlano = salvarPlano;
 window.aplicarAumento = aplicarAumento;
