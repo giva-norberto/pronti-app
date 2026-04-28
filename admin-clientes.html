@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Administração de Clientes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <style>
         body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; } 
         .main { margin-left: 260px; padding: 32px; } 
@@ -69,6 +68,25 @@
         }
         .btn-pendentes:hover {
             background-color: #d97706;
+        }
+
+        .btn-planos {
+            background-color: #2563eb;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin-right: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-planos:hover {
+            background-color: #174ca5;
         }
     </style>
 </head>
@@ -176,26 +194,32 @@
         }
         
         // =====================================================================
-        // ÚNICA FUNÇÃO ALTERADA (Apenas para adicionar o botão no cabeçalho)
+        // ALTERADO: Cabeçalho com botão Planos ao lado de Pagamentos Pendentes
         // =====================================================================
         function renderizarDados(empresas) {
             currentData = empresas;
             
-            // Adicionado o cabeçalho da página com o título e o novo botão
+            // Cabeçalho com botão "Planos" ao lado do "Pagamentos Pendentes"
             let htmlFinal = `
                 <div class="page-header">
                     <h2>Gestão de Empresas e Funcionários</h2>
-                    <a href="aprovacao-manual.html" class="btn-pendentes">
-                        <i class="fa-solid fa-bell"></i>
-                        Pagamentos Pendentes
-                    </a>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="planos-pronti.html" class="btn-planos" target="_blank">
+                            <i class="fa-solid fa-list"></i>
+                            Planos
+                        </a>
+                        <a href="aprovacao-manual.html" class="btn-pendentes">
+                            <i class="fa-solid fa-bell"></i>
+                            Pagamentos Pendentes
+                        </a>
+                    </div>
                 </div>
             `;
 
             if (empresas.length === 0) {
                 htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
             } else {
-                // O resto da renderização é o seu código original, concatenado ao cabeçalho
+                // Seu código original segue normal:
                 htmlFinal += empresas.map(empresa => {
                     const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0;
                     const licencaValue = empresa.usuariosLicenciados === undefined ? totalFuncionarios : empresa.usuariosLicenciados;
@@ -293,6 +317,5 @@
             carregarDados();
         });
     </script>
-
 </body>
 </html>
