@@ -19,7 +19,7 @@ function render(html) {
 }
 
 // =====================================================
-// AÇÕES EXISTENTES (SEM ALTERAÇÃO)
+// AÇÕES EXISTENTES
 // =====================================================
 
 async function toggleBloqueio(empresaId, novoStatus, button) {
@@ -36,10 +36,15 @@ async function toggleBloqueio(empresaId, novoStatus, button) {
 
         const profCollectionRef = collection(db, "empresarios", empresaId, "profissionais");
         const profSnap = await getDocs(profCollectionRef);
-        const updates = profSnap.docs.map(p => updateDoc(p.ref, { bloqueado: novoStatus }));
+
+        const updates = profSnap.docs.map(p =>
+            updateDoc(p.ref, { bloqueado: novoStatus })
+        );
+
         await Promise.all(updates);
 
         carregarDados();
+
     } catch (error) {
         alert("Erro ao atualizar status.");
     } finally {
@@ -64,6 +69,7 @@ async function excluirEmpresa(empresaId, button) {
 
         await deleteDoc(empresaRef);
         carregarDados();
+
     } catch (error) {
         alert("Erro ao excluir.");
     }
@@ -81,14 +87,15 @@ async function salvarLicencas(empresaId) {
 }
 
 // =====================================================
-// 🔥 PLANOS PRONTI
+// PLANOS PRONTI
 // =====================================================
 
 async function carregarPlanos() {
     const snap = await getDocs(collection(db, "planosPronti"));
-    planosCache = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+
+    planosCache = snap.docs.map(d => ({
+        id: d.id,
+        ...d.data()
     }));
 
     renderizarDados(currentData);
@@ -121,7 +128,7 @@ async function aplicarAumento() {
 }
 
 // =====================================================
-// RENDER COM ABAS
+// RENDER ABAS
 // =====================================================
 
 function renderizarDados(empresas) {
@@ -134,6 +141,7 @@ function renderizarDados(empresas) {
         </div>
     `;
 
+    // EMPRESAS
     if (abaAtual === "empresas") {
         html += '<h2>Gestão de Empresas</h2>';
 
@@ -154,6 +162,7 @@ function renderizarDados(empresas) {
         }).join('');
     }
 
+    // PLANOS
     if (abaAtual === "planos") {
         html += `
             <h2>Planos Pronti</h2>
@@ -174,10 +183,10 @@ function renderizarDados(empresas) {
     render(html);
 
     // =====================================================
-    // 🔥 CORREÇÃO PRINCIPAL (AQUI ESTAVA O BUG)
+    // FIX DEFINITIVO DAS ABAS
     // =====================================================
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
         const tabEmpresas = document.getElementById("tab-empresas");
         const tabPlanos = document.getElementById("tab-planos");
 
@@ -194,7 +203,7 @@ function renderizarDados(empresas) {
                 await carregarPlanos();
             };
         }
-    }, 0);
+    });
 }
 
 // =====================================================
@@ -206,8 +215,8 @@ async function carregarDados() {
 
     const snap = await getDocs(collection(db, "empresarios"));
 
-    const dados = await Promise.all(snap.docs.map(async docu => {
-        const empresa = { uid: docu.id, ...docu.data() };
+    const dados = await Promise.all(snap.docs.map(async d => {
+        const empresa = { uid: d.id, ...d.data() };
 
         const profSnap = await getDocs(collection(db, "empresarios", empresa.uid, "profissionais"));
         empresa.funcionarios = profSnap.docs.map(p => p.data());
@@ -237,6 +246,7 @@ inicializarPainelAdmin();
 // =====================================================
 // GLOBAL
 // =====================================================
+
 window.salvarPlano = salvarPlano;
 window.aplicarAumento = aplicarAumento;
 window.salvarLicencas = salvarLicencas;
