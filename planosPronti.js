@@ -1,63 +1,78 @@
 // ======================================================================
 // 📁 Arquivo: planosPronti.js
 // 🎯 Objetivo:
-// Sincronizar (criar/atualizar) todos os planos no Firestore
-// a partir da configuração local (PLANOS_PRONTI)
+// Sincronizar (criar/atualizar) planos no Firestore
+// Suporta sincronização total e atualizações individuais da UI
 // ======================================================================
 
 // 🔌 Importa instância do Firestore já configurada
 import { db } from "./firebase-config.js";
 
 // 🔥 Funções do Firestore para criar/atualizar documentos
-import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { 
+    doc, 
+    setDoc, 
+    serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // 📦 Importa a fonte de verdade dos planos (arquivo versionado no GitHub)
 import { PLANOS_PRONTI } from "./planos-pronti.js";
 
+
+// ======================================================================
+// 🚀 FUNÇÃO: sincronizarPlanosUnico
+// ======================================================================
+// Recebe um objeto de plano e salva no Firestore.
+// Usada pela tela de administração para salvar edições manuais.
+// ======================================================================
+async function sincronizarPlanosUnico(plano) {
+    try {
+        const ref = doc(db, "planosPronti", plano.id);
+
+        await setDoc(ref, {
+            id: plano.id,
+            nome: plano.nome,
+            limiteFuncionarios: plano.limiteFuncionarios,
+            preco: plano.preco,
+            linkMP: plano.linkMP,
+            updatedAt: serverTimestamp() // Garante horário preciso do servidor
+        }, { merge: true });
+
+        console.log(`✅ Documento ${plano.id} sincronizado com sucesso.`);
+    } catch (error) {
+        console.error(`❌ Erro ao sincronizar plano ${plano.id}:`, error);
+        throw error;
+    }
+}
+
+
 // ======================================================================
 // 🚀 FUNÇÃO PRINCIPAL: sincronizarPlanos
 // ======================================================================
-// Percorre todos os planos definidos no arquivo local
-// e envia (ou atualiza) no Firestore na coleção "planosPronti"
+// Percorre todos os planos definidos no arquivo local (planos-pronti.js)
+// e realiza a carga em massa para o Firestore.
 // ======================================================================
 async function sincronizarPlanos() {
     try {
-        console.log("🚀 Iniciando sincronização de planos...");
+        console.log("🚀 Iniciando sincronização em massa...");
 
-        // 🔁 Loop em todos os planos definidos no arquivo local
         for (const plano of PLANOS_PRONTI) {
-
-            // 📍 Referência do documento no Firestore
-            // Exemplo: planosPronti/plano_1
-            const ref = doc(db, "planosPronti", plano.id);
-
-            // 💾 Cria ou sobrescreve o documento com os dados do plano
-            await setDoc(ref, {
-                id: plano.id,
-                nome: plano.nome, // Nome do plano (ex: "Plano Básico")
-                limiteFuncionarios: plano.limiteFuncionarios, // Quantidade máxima de usuários
-                preco: plano.preco, // Valor mensal do plano
-                linkMP: plano.linkMP, // Link de pagamento Mercado Pago
-                updatedAt: serverTimestamp() // Usa o horário do servidor para consistência
-            }, { merge: true }); // Merge garante que não deletaremos campos extras por acidente
-
-            // 🧾 Log individual por plano (útil para debug)
-            console.log(`✅ Plano ${plano.id} atualizado`);
+            await sincronizarPlanosUnico(plano);
         }
 
-        // 🎉 Feedback visual para o admin
-        alert("🔥 Todos os 11 planos foram sincronizados com sucesso!");
+        alert("🔥 Todos os planos foram sincronizados com o Firebase!");
 
     } catch (error) {
-        // ❌ Tratamento de erro
-        console.error("❌ Erro ao sincronizar planos:", error);
-        alert("Erro ao sincronizar planos. Verifique o console.");
+        console.error("❌ Erro na sincronização em massa:", error);
+        alert("Erro ao sincronizar todos os planos. Verifique o console.");
     }
 }
+
 
 // ======================================================================
 // 🌐 EXPOSIÇÃO GLOBAL
 // ======================================================================
-// Torna a função acessível no HTML (ex: botão onclick)
+// Torna as funções acessíveis para chamadas via HTML (onclick)
 // ======================================================================
 window.sincronizarPlanos = sincronizarPlanos;
+window.sincronizarPlanosUnico = sincronizarPlanosUnico;
