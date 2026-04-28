@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Planos Pronti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9fafb;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .top-actions {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-percent {
+            background: #4f46e5;
+            color: #fff;
+        }
+
+        .btn-save {
+            background: #10b981;
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        input {
+            width: 100px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>⚙️ Planos Pronti</h1>
+
+    <div class="top-actions">
+        <button class="btn-percent" onclick="aplicarAumento(10)">+10%</button>
+        <button class="btn-percent" onclick="aplicarAumento(20)">+20%</button>
+        <button class="btn-save" onclick="salvarAlteracoes()">💾 Salvar no Firebase</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Plano</th>
+                <th>Funcionários</th>
+                <th>Preço (R$)</th>
+                <th>Link MP</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-planos"></tbody>
+    </table>
+
+    <script type="module">
+        import { PLANOS_PRONTI } from "./planos-pronti.js";
+        import "./planosPronti.js";
+
+        let planos = JSON.parse(JSON.stringify(PLANOS_PRONTI));
+
+        const tabela = document.getElementById("tabela-planos");
+
+        function render() {
+            tabela.innerHTML = "";
+
+            planos.forEach((plano, index) => {
+                const tr = document.createElement("tr");
+
+                tr.innerHTML = `
+                    <td>${plano.nome}</td>
+                    <td>${plano.limiteFuncionarios}</td>
+                    <td>
+                        <input type="number" step="0.01" value="${plano.preco}" 
+                        onchange="editarPreco(${index}, this.value)">
+                    </td>
+                    <td style="font-size:12px;">${plano.linkMP}</td>
+                `;
+
+                tabela.appendChild(tr);
+            });
+        }
+
+        window.editarPreco = (index, valor) => {
+            planos[index].preco = parseFloat(valor);
+        };
+
+        window.aplicarAumento = (percentual) => {
+            planos.forEach(p => {
+                p.preco = parseFloat((p.preco * (1 + percentual / 100)).toFixed(2));
+            });
+
+            render();
+        };
+
+        window.salvarAlteracoes = async () => {
+            if (!confirm("Deseja salvar as alterações no Firebase?")) return;
+
+            try {
+                for (const plano of planos) {
+                    await window.sincronizarPlanosUnico(plano);
+                }
+
+                alert("🔥 Planos atualizados com sucesso!");
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao salvar");
+            }
+        };
+
+        render();
+    </script>
+
+</body>
+</html>
+</body>
+</html>
