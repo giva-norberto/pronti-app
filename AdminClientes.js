@@ -1,7 +1,3 @@
-// ======================================================================
-// Arquivo: admin-clientes-logic.js
-// ======================================================================
-
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -85,7 +81,7 @@ async function salvarLicencas(empresaId) {
 }
 
 // =====================================================
-// 🔥 NOVO: PLANOS PRONTI
+// 🔥 PLANOS PRONTI
 // =====================================================
 
 async function carregarPlanos() {
@@ -138,7 +134,6 @@ function renderizarDados(empresas) {
         </div>
     `;
 
-    // ================= EMPRESAS =================
     if (abaAtual === "empresas") {
         html += '<h2>Gestão de Empresas</h2>';
 
@@ -159,7 +154,6 @@ function renderizarDados(empresas) {
         }).join('');
     }
 
-    // ================= PLANOS =================
     if (abaAtual === "planos") {
         html += `
             <h2>Planos Pronti</h2>
@@ -180,25 +174,27 @@ function renderizarDados(empresas) {
     render(html);
 
     // =====================================================
-    // 🔥 CORREÇÃO ADICIONADA (SEGURA)
+    // 🔥 CORREÇÃO PRINCIPAL (AQUI ESTAVA O BUG)
     // =====================================================
 
-    const tabEmpresas = document.getElementById("tab-empresas");
-    const tabPlanos = document.getElementById("tab-planos");
+    setTimeout(() => {
+        const tabEmpresas = document.getElementById("tab-empresas");
+        const tabPlanos = document.getElementById("tab-planos");
 
-    if (tabEmpresas) {
-        tabEmpresas.onclick = () => {
-            abaAtual = "empresas";
-            renderizarDados(currentData);
-        };
-    }
+        if (tabEmpresas) {
+            tabEmpresas.onclick = () => {
+                abaAtual = "empresas";
+                renderizarDados(currentData);
+            };
+        }
 
-    if (tabPlanos) {
-        tabPlanos.onclick = async () => {
-            abaAtual = "planos";
-            await carregarPlanos();
-        };
-    }
+        if (tabPlanos) {
+            tabPlanos.onclick = async () => {
+                abaAtual = "planos";
+                await carregarPlanos();
+            };
+        }
+    }, 0);
 }
 
 // =====================================================
