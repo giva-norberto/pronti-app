@@ -1,41 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Administração de Clientes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; } 
+        .main { margin-left: 260px; padding: 32px; } 
+        @media (max-width: 900px ) { .main { margin-left: 0; } } 
+
+        .empresa { border: 1px solid #eee; margin-bottom: 32px; border-radius: 8px; padding: 16px; background: #fafbfc; } 
+        .empresa-header { display: flex; align-items: center; justify-content: space-between; } 
+
+        .btn-block { background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } 
+        .btn-unblock { background: #10b981; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } 
+
+        .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; } 
+
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+            min-height: 100vh;
+            color: #fff;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            padding-top: 24px;
+        }
+
+        .page-header {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom: 20px;
+        }
+
+        .btn-pendentes {
+            background:#2563eb;
+            color:#fff;
+            padding:10px 16px;
+            border:none;
+            border-radius:6px;
+            cursor:pointer;
+        }
+
+        .btn-planos {
+            background:#f59e0b;
+            color:#fff;
+            padding:10px 16px;
+            border:none;
+            border-radius:6px;
+            cursor:pointer;
+        }
+
+        table { width:100%; border-collapse: collapse; }
+        th, td { padding:8px; border-bottom:1px solid #eee; }
+    </style>
+</head>
+
+<body>
+
+<aside class="sidebar"></aside>
+
+<div class="main">
+    <div id="conteudo-admin"></div>
+</div>
+
+<script type="module">
+
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import {
+    collection,
+    getDocs,
+    doc,
+    updateDoc,
+    deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-const conteudoDiv = document.getElementById('conteudo-admin');
+const conteudoDiv = document.getElementById("conteudo-admin");
 
 let empresasCache = [];
 let planosCache = [];
-let telaAtual = "empresas";
+let tela = "empresas";
 
-// =====================================================
-// RENDER BASE
-// =====================================================
+// ================= RENDER BASE =================
 function render(html) {
     conteudoDiv.innerHTML = html;
 }
 
-// =====================================================
-// BOTÕES TOPO (NAVEGAÇÃO REAL)
-// =====================================================
-function menuTopo() {
+// ================= MENU =================
+function menu() {
     return `
-        <div style="margin-bottom:20px;">
-            <button onclick="abrirEmpresas()" style="${telaAtual==='empresas'?'font-weight:bold':''}">
-                Empresas
-            </button>
+        <div class="page-header">
+            <h2>${tela === "empresas" ? "Empresas" : "Planos Pronti"}</h2>
 
-            <button onclick="abrirPlanos()" style="${telaAtual==='planos'?'font-weight:bold':''}">
-                Planos Pronti
-            </button>
+            <div>
+                <button class="btn-planos" id="btnEmp">Empresas</button>
+                <button class="btn-pendentes" id="btnPlanos">Planos</button>
+            </div>
         </div>
     `;
 }
 
-// =====================================================
-// EMPRESAS
-// =====================================================
+// ================= EMPRESAS =================
 async function carregarEmpresas() {
     const snap = await getDocs(collection(db, "empresarios"));
 
@@ -49,43 +120,37 @@ async function carregarEmpresas() {
         empresa.funcionarios = profSnap.docs.map(p => p.data());
         return empresa;
     }));
+
+    renderEmpresas();
 }
 
 function renderEmpresas() {
-    telaAtual = "empresas";
+    tela = "empresas";
 
-    let html = menuTopo();
+    let html = menu();
 
-    html += `<h2>Gestão de Empresas</h2>`;
+    html += `<h3>Gestão de Empresas</h3>`;
 
-    if (empresasCache.length === 0) {
-        html += `<p>Nenhuma empresa encontrada</p>`;
-    } else {
-        html += empresasCache.map(e => {
-            const total = e.funcionarios?.length || 0;
-            const lic = e.usuariosLicenciados || total;
+    html += empresasCache.map(e => `
+        <div class="empresa">
+            <strong>${e.nome || e.email}</strong><br>
+            Funcionários: ${e.funcionarios?.length || 0}<br>
 
-            return `
-                <div style="margin-bottom:10px;">
-                    <strong>${e.nome || e.email}</strong><br>
-                    Funcionários: ${total}<br>
-
-                    Licenças:
-                    <input type="number" id="license-input-${e.uid}" value="${lic}">
-                    <button onclick="salvarLicencas('${e.uid}')">Salvar</button>
-                </div>
-            `;
-        }).join('');
-    }
+            Licenças:
+            <input id="license-${e.uid}" value="${e.usuariosLicenciados || 0}">
+            <button onclick="salvarLicencas('${e.uid}')">Salvar</button>
+        </div>
+    `).join("");
 
     render(html);
+
+    document.getElementById("btnEmp").onclick = renderEmpresas;
+    document.getElementById("btnPlanos").onclick = carregarPlanos;
 }
 
-// =====================================================
-// PLANOS (SEPARADO 100%)
-// =====================================================
-async function abrirPlanos() {
-    telaAtual = "planos";
+// ================= PLANOS =================
+async function carregarPlanos() {
+    tela = "planos";
 
     const snap = await getDocs(collection(db, "planosPronti"));
 
@@ -94,102 +159,65 @@ async function abrirPlanos() {
         ...d.data()
     }));
 
-    let html = menuTopo();
+    let html = menu();
 
-    html += `<h2>Planos Pronti</h2>`;
-
-    html += `<input id="percentual" placeholder="% aumento">
-             <button onclick="aplicarAumento()">Aplicar</button>`;
+    html += `<h3>Planos Pronti</h3>`;
 
     if (planosCache.length === 0) {
-        html += `<p>Nenhum plano cadastrado</p>`;
+        html += `<p>Nenhum plano encontrado</p>`;
     } else {
+        html += `
+        <table>
+            <tr>
+                <th>Nome</th>
+                <th>Funcionários</th>
+                <th>Preço</th>
+                <th>Link MP</th>
+            </tr>
+        `;
+
         html += planosCache.map(p => `
-            <div style="margin-top:10px;">
-                <b>${p.nome}</b><br>
+            <tr>
+                <td>${p.nome}</td>
+                <td>${p.limiteFuncionarios}</td>
+                <td>R$ ${p.preco}</td>
+                <td><a href="${p.linkMP}" target="_blank">Abrir</a></td>
+            </tr>
+        `).join("");
 
-                Funcionários: ${p.limiteFuncionarios}<br>
-
-                Preço:
-                <input type="number" id="preco-${p.id}" value="${p.preco}">
-
-                <button onclick="salvarPlano('${p.id}')">Salvar</button><br>
-
-                <a href="${p.linkMP}" target="_blank">Link Mercado Pago</a>
-            </div>
-        `).join('');
+        html += `</table>`;
     }
 
     render(html);
+
+    document.getElementById("btnEmp").onclick = renderEmpresas;
+    document.getElementById("btnPlanos").onclick = carregarPlanos;
 }
 
-// =====================================================
-// AÇÕES
-// =====================================================
-async function salvarLicencas(empresaId) {
-    const input = document.getElementById(`license-input-${empresaId}`);
-    const valor = parseInt(input.value);
+// ================= SALVAR LICENÇA =================
+async function salvarLicencas(id) {
+    const input = document.getElementById(`license-${id}`);
 
-    await updateDoc(doc(db, "empresarios", empresaId), {
-        usuariosLicenciados: valor
+    await updateDoc(doc(db, "empresarios", id), {
+        usuariosLicenciados: parseInt(input.value)
     });
 
-    alert("Licenças atualizadas");
+    alert("Salvo!");
 }
 
-async function salvarPlano(planoId) {
-    const input = document.getElementById(`preco-${planoId}`);
-    const valor = parseFloat(input.value);
-
-    await updateDoc(doc(db, "planosPronti", planoId), {
-        preco: valor
-    });
-
-    alert("Plano atualizado!");
-    abrirPlanos();
-}
-
-async function aplicarAumento() {
-    const percentual = parseFloat(document.getElementById("percentual").value);
-
-    for (const plano of planosCache) {
-        const novo = plano.preco * (1 + percentual / 100);
-
-        await updateDoc(doc(db, "planosPronti", plano.id), {
-            preco: parseFloat(novo.toFixed(2))
-        });
+// ================= LOGIN =================
+onAuthStateChanged(auth, async user => {
+    if (user && user.uid === ADMIN_UID) {
+        carregarEmpresas();
+    } else {
+        render("Acesso negado");
     }
+});
 
-    alert("Aumento aplicado!");
-    abrirPlanos();
-}
-
-// =====================================================
-// LOGIN
-// =====================================================
-function inicializarPainelAdmin() {
-    onAuthStateChanged(auth, async (user) => {
-        if (user && user.uid === ADMIN_UID) {
-            await carregarEmpresas();
-            renderEmpresas();
-        } else {
-            render("Acesso negado");
-        }
-    });
-}
-
-inicializarPainelAdmin();
-
-// =====================================================
-// GLOBAL
-// =====================================================
-window.abrirEmpresas = async () => {
-    await carregarEmpresas();
-    renderEmpresas();
-};
-
-window.abrirPlanos = abrirPlanos;
-
-window.salvarPlano = salvarPlano;
-window.aplicarAumento = aplicarAumento;
+// ================= GLOBAL =================
 window.salvarLicencas = salvarLicencas;
+
+</script>
+
+</body>
+</html>
