@@ -136,12 +136,12 @@ function renderizarDados(empresas) {
 
     let html = `
         <div style="margin-bottom:20px;">
-            <button id="tab-empresas">Empresas</button>
-            <button id="tab-planos">Planos Pronti</button>
+            <button id="tab-empresas"${abaAtual === "empresas" ? ' style="font-weight:bold;"' : ""}>Empresas</button>
+            <button id="tab-planos"${abaAtual === "planos" ? ' style="font-weight:bold;"' : ""}>Planos Pronti</button>
         </div>
     `;
 
-    // EMPRESAS
+    // ====== ABA "EMPRESAS" ========
     if (abaAtual === "empresas") {
         html += '<h2>Gestão de Empresas</h2>';
 
@@ -162,30 +162,37 @@ function renderizarDados(empresas) {
         }).join('');
     }
 
-    // PLANOS
+    // ======= ABA "PLANOS" ========
     if (abaAtual === "planos") {
         html += `
             <h2>Planos Pronti</h2>
-
-            <input id="percentual" placeholder="% aumento">
-            <button onclick="aplicarAumento()">Aplicar</button>
+            <div style="margin-bottom:12px;">
+                <input id="percentual" placeholder="% aumento" style="width:90px;">
+                <button onclick="aplicarAumento()">Aplicar</button>
+            </div>
         `;
 
-        html += planosCache.map(p => `
-            <div>
-                ${p.nome} (${p.limiteFuncionarios})
-                <input type="number" id="preco-${p.id}" value="${p.preco}">
-                <button onclick="salvarPlano('${p.id}')">Salvar</button>
-            </div>
-        `).join('');
+        if (planosCache.length === 0) {
+            html += `<div style="padding:14px;color:#888;">Nenhum plano cadastrado no sistema!</div>`;
+        } else {
+            html += planosCache.map(p => `
+                <div style="margin-bottom:12px;padding:10px 0;border-bottom:1px solid #eee;">
+                    <b>${p.nome}</b> (${p.limiteFuncionarios} funcionário${p.limiteFuncionarios > 1 ? 's' : ''})<br>
+                    Preço: <input type="number" id="preco-${p.id}" value="${p.preco}" style="width:90px;"> 
+                    <button onclick="salvarPlano('${p.id}')">Salvar</button>
+                    <span style="font-size:0.95em;color:#555;margin-left:10px;">
+                        <a href="${p.linkMP}" target="_blank">Link Mercado Pago</a>
+                    </span>
+                </div>
+            `).join('');
+        }
     }
 
     render(html);
 
-    // =====================================================
-    // FIX DEFINITIVO DAS ABAS
-    // =====================================================
-
+    // =================================
+    // FIX DAS ABAS SEM RECICLAR TELA
+    // =================================
     requestAnimationFrame(() => {
         const tabEmpresas = document.getElementById("tab-empresas");
         const tabPlanos = document.getElementById("tab-planos");
