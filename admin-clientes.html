@@ -17,16 +17,16 @@ function render(html) {
 }
 
 // =====================================================
-// MENU TOPO (SEM QUEBRAR EVENTOS)
+// BOTÕES TOPO (NAVEGAÇÃO REAL)
 // =====================================================
 function menuTopo() {
     return `
         <div style="margin-bottom:20px;">
-            <button onclick="abrirEmpresas()" style="${telaAtual === 'empresas' ? 'font-weight:bold' : ''}">
+            <button onclick="abrirEmpresas()" style="${telaAtual==='empresas'?'font-weight:bold':''}">
                 Empresas
             </button>
 
-            <button onclick="abrirPlanos()" style="${telaAtual === 'planos' ? 'font-weight:bold' : ''}">
+            <button onclick="abrirPlanos()" style="${telaAtual==='planos'?'font-weight:bold':''}">
                 Planos Pronti
             </button>
         </div>
@@ -55,6 +55,7 @@ function renderEmpresas() {
     telaAtual = "empresas";
 
     let html = menuTopo();
+
     html += `<h2>Gestão de Empresas</h2>`;
 
     if (empresasCache.length === 0) {
@@ -81,7 +82,7 @@ function renderEmpresas() {
 }
 
 // =====================================================
-// PLANOS (SEPARADO CORRETAMENTE)
+// PLANOS (SEPARADO 100%)
 // =====================================================
 async function abrirPlanos() {
     telaAtual = "planos";
@@ -97,19 +98,17 @@ async function abrirPlanos() {
 
     html += `<h2>Planos Pronti</h2>`;
 
-    html += `
-        <div style="margin-bottom:12px;">
-            <input id="percentual" placeholder="% aumento">
-            <button onclick="aplicarAumento()">Aplicar</button>
-        </div>
-    `;
+    html += `<input id="percentual" placeholder="% aumento">
+             <button onclick="aplicarAumento()">Aplicar</button>`;
 
     if (planosCache.length === 0) {
-        html += `<p>Nenhum plano cadastrado no sistema</p>`;
+        html += `<p>Nenhum plano cadastrado</p>`;
     } else {
         html += planosCache.map(p => `
-            <div style="margin-bottom:10px;">
-                <b>${p.nome}</b> (${p.limiteFuncionarios})<br>
+            <div style="margin-top:10px;">
+                <b>${p.nome}</b><br>
+
+                Funcionários: ${p.limiteFuncionarios}<br>
 
                 Preço:
                 <input type="number" id="preco-${p.id}" value="${p.preco}">
@@ -125,7 +124,7 @@ async function abrirPlanos() {
 }
 
 // =====================================================
-// AÇÕES FIREBASE
+// AÇÕES
 // =====================================================
 async function salvarLicencas(empresaId) {
     const input = document.getElementById(`license-input-${empresaId}`);
@@ -147,7 +146,7 @@ async function salvarPlano(planoId) {
     });
 
     alert("Plano atualizado!");
-    await abrirPlanos();
+    abrirPlanos();
 }
 
 async function aplicarAumento() {
@@ -162,11 +161,11 @@ async function aplicarAumento() {
     }
 
     alert("Aumento aplicado!");
-    await abrirPlanos();
+    abrirPlanos();
 }
 
 // =====================================================
-// LOGIN ADMIN
+// LOGIN
 // =====================================================
 function inicializarPainelAdmin() {
     onAuthStateChanged(auth, async (user) => {
@@ -182,7 +181,7 @@ function inicializarPainelAdmin() {
 inicializarPainelAdmin();
 
 // =====================================================
-// GLOBAIS (OBRIGATÓRIO)
+// GLOBAL
 // =====================================================
 window.abrirEmpresas = async () => {
     await carregarEmpresas();
@@ -190,6 +189,7 @@ window.abrirEmpresas = async () => {
 };
 
 window.abrirPlanos = abrirPlanos;
+
 window.salvarPlano = salvarPlano;
 window.aplicarAumento = aplicarAumento;
 window.salvarLicencas = salvarLicencas;
