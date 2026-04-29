@@ -30,7 +30,6 @@
 
     .app { display: flex; min-height: 100vh; }
 
-    /* Sidebar do Manual */
     .sidebar {
       width: 280px;
       background: white;
@@ -86,7 +85,6 @@
       color: white;
     }
 
-    /* Conteúdo Principal */
     .content {
       margin-left: 280px;
       flex: 1;
@@ -118,7 +116,7 @@
     .text-content {
       font-size: 16px;
       color: #334155;
-      white-space: pre-wrap; /* Mantém as quebras de linha do editor */
+      white-space: pre-wrap;
       margin-bottom: 32px;
     }
 
@@ -167,17 +165,24 @@
       
       <div class="menu-title">Tópicos de Ajuda</div>
       <nav class="nav-menu">
-        <button class="nav-item active" data-section="inicio"><i class="fa-solid fa-house"></i> Início</button>
-        <button class="nav-item" data-section="login"><i class="fa-solid fa-lock"></i> Login</button>
-        <button class="nav-item" data-section="empresa"><i class="fa-solid fa-building"></i> Criar empresa</button>
-        <button class="nav-item" data-section="servicos"><i class="fa-solid fa-scissors"></i> Serviços</button>
-        <button class="nav-item" data-section="novo-servico"><i class="fa-solid fa-plus"></i> Novo serviço</button>
-        <button class="nav-item" data-section="profissionais"><i class="fa-solid fa-users"></i> Profissionais</button>
-        <button class="nav-item" data-section="agenda"><i class="fa-solid fa-calendar"></i> Agenda</button>
-        <button class="nav-item" data-section="promocoes"><i class="fa-solid fa-tag"></i> Promoções</button>
-        <button class="nav-item" data-section="clientes-retorno"><i class="fa-solid fa-heart"></i> Retorno</button>
-        <button class="nav-item" data-section="vitrine"><i class="fa-solid fa-globe"></i> Vitrine</button>
-        <button class="nav-item" data-section="pagamentos"><i class="fa-solid fa-credit-card"></i> Pagamentos</button>
+        <button class="nav-item active" data-section="inicio">Início</button>
+        <button class="nav-item" data-section="login">Login e acesso</button>
+        <button class="nav-item" data-section="empresa">Empresa</button>
+        <button class="nav-item" data-section="dashboard">Dashboard</button>
+        <button class="nav-item" data-section="agenda">Agenda</button>
+        <button class="nav-item" data-section="equipe">Equipe</button>
+        <button class="nav-item" data-section="servicos">Serviços</button>
+        <button class="nav-item" data-section="promocoes">Promoções</button>
+        <button class="nav-item" data-section="clientes">Clientes</button>
+        <button class="nav-item" data-section="clientes-retorno">Retorno</button>
+        <button class="nav-item" data-section="fila-inteligente">Fila inteligente</button>
+        <button class="nav-item" data-section="vitrine">Vitrine</button>
+        <button class="nav-item" data-section="pagamentos">Pagamentos</button>
+        <button class="nav-item" data-section="planos">Planos</button>
+        <button class="nav-item" data-section="relatorios">Relatórios</button>
+        <button class="nav-item" data-section="permissoes">Permissões</button>
+        <button class="nav-item" data-section="notificacoes">Notificações</button>
+        <button class="nav-item" data-section="duvidas">Dúvidas frequentes</button>
       </nav>
     </aside>
 
@@ -223,7 +228,6 @@
         } else {
           viewContainer.innerHTML = `
             <div class="loading">
-              <i class="fa-solid fa-circle-info"></i><br>
               Esta seção ainda não foi configurada no editor.
             </div>
           `;
@@ -234,7 +238,6 @@
       }
     }
 
-    // Gerenciar cliques no menu
     document.querySelectorAll(".nav-item").forEach(botao => {
       botao.addEventListener("click", () => {
         document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
@@ -243,7 +246,6 @@
       });
     });
 
-    // Carregar seção inicial
     carregarConteudo("inicio");
   </script>
 
