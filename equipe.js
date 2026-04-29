@@ -537,12 +537,49 @@ async function gerarLinkDeConvite() {
 
 // --- ATIVAR FUNCIONÁRIO SEMPRE COM MENSAGEM DE CONFIRMAÇÃO ---
 async function ativarFuncionario(profissionalId) {
-    const confirmado = await showCustomConfirm("Ativar Funcionário", "Deseja ativar este profissional? Ele terá acesso ao sistema.");
-    if(!confirmado) return;
+
+    const confirmado = await showCustomConfirm(
+        "Ativar Funcionário",
+        "Deseja ativar este profissional? Ele terá acesso ao sistema."
+    );
+    if (!confirmado) return;
+
     try {
+        // 🔥 BUSCAR DADOS DA EMPRESA
+        const empresaRef = doc(db, "empresarios", empresaId);
+        const empresaSnap = await getDoc(empresaRef);
+
+        const limite = empresaSnap.data().usuariosLicenciados || 1;
+
+        // 🔥 CONTAR FUNCIONÁRIOS ATIVOS
+        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+        const snap = await getDocs(profissionaisRef);
+
+        let totalAtivos = 0;
+
+        snap.forEach(doc => {
+            const p = doc.data();
+            if (p.status === "ativo") totalAtivos++;
+        });
+
+        // 🚨 BLOQUEIO
+        if (totalAtivos >= limite) {
+            await showAlert(
+                "Limite do plano atingido",
+                `Seu plano permite até ${limite} profissionais.<br><br>
+                Faça upgrade para ativar este funcionário.`
+            );
+
+            window.location.href = `pagamento.html?empresaId=${empresaId}`;
+            return;
+        }
+
+        // ✅ ATIVA NORMAL
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, { status: 'ativo' });
+
         await showAlert("Pronto!", "O profissional foi ativado e já pode acessar o sistema.");
+
     } catch (error) {
         await showAlert("Erro", "Ocorreu um erro ao ativar o profissional.");
     }
