@@ -8,182 +8,199 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 
 <style>
+* { box-sizing: border-box; }
+
 body {
-  margin:0;
-  font-family:Inter,Arial,sans-serif;
-  background:#f3f4ff;
-  color:#22223b;
-  display:flex;
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #f3f4ff;
+  color: #22223b;
+  display: flex;
 }
 
 .sidebar {
-  width:250px;
-  background:linear-gradient(180deg,#4f46e5,#6366f1);
-  min-height:100vh;
-  color:#fff;
-  display:flex;
-  flex-direction:column;
-  position:fixed;
-  padding-top:24px;
+  width: 250px;
+  background: linear-gradient(180deg,#4f46e5,#6366f1);
+  min-height: 100vh;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  padding-top: 24px;
 }
 
 .sidebar a {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:14px 18px;
-  color:#fff;
-  text-decoration:none;
-  font-weight:600;
-  border-radius:10px;
-  margin:4px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 10px;
+  margin: 4px 16px;
 }
 
 .sidebar a.active,
 .sidebar a:hover {
-  background:#fff;
-  color:#4f46e5;
+  background: #fff;
+  color: #4f46e5;
 }
 
 .main-content {
-  margin-left:250px;
-  padding:32px;
-  flex-grow:1;
+  margin-left: 250px;
+  padding: 32px;
+  flex-grow: 1;
+  width: calc(100% - 250px);
 }
 
 .card {
-  background:#fff;
-  border-radius:16px;
-  padding:24px;
-  margin-bottom:20px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.05);
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
-h2 { color:#4f46e5; }
+h2 { color: #4f46e5; }
 
 button {
-  cursor:pointer;
-  border:none;
-  border-radius:8px;
-  padding:10px 16px;
-  font-weight:600;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
 }
 
 img {
-  max-width:100%;
-  border-radius:12px;
-  margin-top:15px;
+  max-width: 100%;
+  border-radius: 12px;
+  margin-top: 15px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+@media (max-width: 800px) {
+  body { flex-direction: column; }
+
+  .sidebar {
+    position: relative;
+    width: 100%;
+    min-height: auto;
+    padding: 12px;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 18px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<!-- MENU -->
 <div class="sidebar">
   <a href="#" data-menu="inicio" class="active">🚀 Começar</a>
   <a href="#" data-menu="empresa">🏢 Empresa</a>
   <a href="#" data-menu="servicos">✂️ Serviços</a>
+  <a href="#" data-menu="novo-servico">➕ Novo Serviço</a>
   <a href="#" data-menu="promocoes">🏷️ Promoções</a>
   <a href="#" data-menu="agenda">📅 Agenda</a>
 </div>
 
-<!-- CONTEÚDO -->
 <main class="main-content">
 
-<!-- INÍCIO -->
 <div class="card" id="inicio">
   <h2>🚀 Comece a usar o Pronti</h2>
-
-  <p>Vamos te guiar passo a passo para configurar sua empresa e começar a usar o sistema.</p>
+  <p>Este manual vai te guiar pelos principais passos para configurar sua empresa e começar a usar o sistema.</p>
 
   <div style="margin-top:20px; display:grid; gap:10px;">
-    <button onclick="abrirPasso('empresa')" style="background:#4f46e5;color:white;">
-      1. Criar minha empresa
-    </button>
-
-    <button onclick="abrirPasso('servicos')" style="background:#16a34a;color:white;">
-      2. Cadastrar serviços
-    </button>
-
-    <button onclick="abrirPasso('promocoes')">
-      3. Criar promoções
-    </button>
-
-    <button onclick="abrirPasso('agenda')">
-      4. Começar agenda
-    </button>
+    <button onclick="abrirPasso('empresa')" style="background:#4f46e5;color:white;">1. Criar minha empresa</button>
+    <button onclick="abrirPasso('servicos')" style="background:#16a34a;color:white;">2. Cadastrar serviços</button>
+    <button onclick="abrirPasso('promocoes')" style="background:#f59e0b;color:white;">3. Criar promoções</button>
+    <button onclick="abrirPasso('agenda')" style="background:#2563eb;color:white;">4. Começar agenda</button>
   </div>
 </div>
 
-<!-- EMPRESA -->
 <div class="card" id="empresa" style="display:none;">
   <h2>🏢 Criar Empresa</h2>
-
-  <p>Antes de usar o sistema, você precisa cadastrar sua empresa.</p>
+  <p>Antes de cadastrar serviços ou usar a agenda, é necessário criar e salvar sua empresa.</p>
 
   <ol>
-    <li>Acesse a tela de empresa</li>
-    <li>Preencha os dados do seu negócio</li>
-    <li>Clique em salvar</li>
+    <li>Entre no sistema com seu login.</li>
+    <li>Clique em <strong>Criar Nova Empresa</strong>.</li>
+    <li>Preencha os dados do seu negócio.</li>
+    <li>Clique em <strong>Salvar</strong>.</li>
   </ol>
 
-  <p><strong>Resultado:</strong> Sua empresa estará pronta para uso.</p>
+  <p><strong>Resultado:</strong> sua empresa fica pronta para receber serviços, profissionais e agendamentos.</p>
 
-  <img src="imagens/manual/criar-empresa.jpeg">
+  <img src="imagens/manual/criar-empresa.png" alt="Tela de criar empresa">
+  <img src="imagens/manual/criar-empresa2.png" alt="Tela de perfil da empresa">
 </div>
 
-<!-- SERVIÇOS -->
 <div class="card" id="servicos" style="display:none;">
   <h2>✂️ Serviços</h2>
-
-  <p>Cadastre os serviços que seu negócio oferece.</p>
+  <p>A tela de Serviços mostra todos os serviços cadastrados no seu negócio.</p>
 
   <ol>
-    <li>Clique em <strong>Serviços</strong></li>
-    <li>Clique em <strong>Adicionar Novo Serviço</strong></li>
-    <li>Preencha as informações</li>
-    <li>Clique em salvar</li>
+    <li>Acesse <strong>Serviços</strong> pelo menu.</li>
+    <li>Veja os serviços já cadastrados.</li>
+    <li>Use <strong>Adicionar Novo Serviço</strong> para criar um novo.</li>
+    <li>Use <strong>Editar</strong> ou <strong>Excluir</strong> quando necessário.</li>
   </ol>
 
-  <p><strong>Resultado:</strong> O serviço aparecerá na lista.</p>
+  <p><strong>Importante:</strong> antes de cadastrar serviços, a empresa precisa estar criada e salva.</p>
 
-  <img src="imagens/manual/servicos.jpeg">
+  <img src="imagens/manual/servicos.jpeg" alt="Tela de serviços">
 </div>
 
-<!-- PROMOÇÕES -->
+<div class="card" id="novo-servico" style="display:none;">
+  <h2>➕ Novo Serviço</h2>
+  <p>Use esta tela para cadastrar um serviço que será usado na agenda e na vitrine.</p>
+
+  <ol>
+    <li>Clique em <strong>Adicionar Novo Serviço</strong>.</li>
+    <li>Preencha as informações do serviço.</li>
+    <li>Informe preço, duração e demais dados necessários.</li>
+    <li>Clique em <strong>Salvar</strong>.</li>
+  </ol>
+
+  <p><strong>Resultado:</strong> o serviço fica disponível para ser usado nos agendamentos.</p>
+
+  <img src="imagens/manual/novo-servico.jpeg" alt="Tela de novo serviço">
+</div>
+
 <div class="card" id="promocoes" style="display:none;">
   <h2>🏷️ Promoções</h2>
-
-  <p>Crie preços especiais para atrair mais clientes.</p>
+  <p>Use Preços Especiais para criar promoções e condições diferenciadas.</p>
 
   <ol>
-    <li>Acesse <strong>Serviços</strong></li>
-    <li>Clique em <strong>Preços Especiais</strong></li>
-    <li>Configure a promoção</li>
-    <li>Salve</li>
+    <li>Acesse <strong>Serviços</strong>.</li>
+    <li>Clique em <strong>Preços Especiais</strong>.</li>
+    <li>Configure a promoção desejada.</li>
+    <li>Salve as informações.</li>
   </ol>
 
-  <p><strong>Resultado:</strong> Os clientes verão o preço promocional.</p>
+  <p><strong>Resultado:</strong> o preço especial poderá ser usado para atrair mais clientes.</p>
 
-  <img src="imagens/manual/promocoes.jpeg">
+  <img src="imagens/manual/promocoes.jpeg" alt="Tela de promoções">
 </div>
 
-<!-- AGENDA -->
 <div class="card" id="agenda" style="display:none;">
   <h2>📅 Agenda</h2>
-
-  <p>Gerencie seus atendimentos e horários.</p>
+  <p>A agenda é onde você acompanha e organiza seus atendimentos.</p>
 
   <ol>
-    <li>Acesse <strong>Agenda</strong></li>
-    <li>Visualize os horários</li>
-    <li>Clique em um horário para agendar</li>
+    <li>Acesse <strong>Agenda</strong>.</li>
+    <li>Visualize os horários disponíveis e ocupados.</li>
+    <li>Crie ou acompanhe os agendamentos.</li>
   </ol>
 
-  <p><strong>Resultado:</strong> Seus atendimentos ficam organizados.</p>
+  <p><strong>Resultado:</strong> seus atendimentos ficam organizados em um só lugar.</p>
 
-  <img src="imagens/manual/agenda.jpeg">
+  <img src="imagens/manual/agenda.jpeg" alt="Tela de agenda">
 </div>
 
 </main>
@@ -192,22 +209,23 @@ img {
 const links = document.querySelectorAll('.sidebar a');
 const cards = document.querySelectorAll('.card');
 
+function abrirPasso(menu) {
+  links.forEach(l => l.classList.remove('active'));
+  cards.forEach(c => c.style.display = 'none');
+
+  const card = document.getElementById(menu);
+  const link = document.querySelector(`[data-menu="${menu}"]`);
+
+  if (card) card.style.display = 'block';
+  if (link) link.classList.add('active');
+}
+
 links.forEach(link => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
-    const menu = link.getAttribute('data-menu');
-
-    links.forEach(l => l.classList.remove('active'));
-    link.classList.add('active');
-
-    cards.forEach(c => c.style.display = c.id === menu ? 'block' : 'none');
+    abrirPasso(link.getAttribute('data-menu'));
   });
 });
-
-function abrirPasso(menu) {
-  cards.forEach(c => c.style.display = 'none');
-  document.getElementById(menu).style.display = 'block';
-}
 </script>
 
 </body>
