@@ -10,7 +10,8 @@
 
   <style>
     :root {
-      --primary: #2563eb;
+      --primary: #4f46e5;
+      --primary-2: #6366f1;
       --bg: #f8fafc;
       --text-main: #0f172a;
       --text-muted: #64748b;
@@ -21,10 +22,9 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* ✅ ALTERADO AQUI (GRADIENTE PRONTI) */
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      background: linear-gradient(135deg, #eef6ff 0%, #f4efff 45%, #eef2ff 100%);
       color: var(--text-main);
       line-height: 1.6;
     }
@@ -32,68 +32,115 @@
     .app { display: flex; min-height: 100vh; }
 
     .sidebar {
-      width: 280px;
-      background: white;
-      border-right: 1px solid var(--border);
-      padding: 24px;
+      width: 250px;
+      background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+      min-height: 100vh;
+      color: #fff;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
       position: fixed;
-      height: 100vh;
-      overflow-y: auto;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      padding-top: 24px;
+      box-sizing: border-box;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 32px;
-      color: var(--primary);
-      font-weight: 800;
-      font-size: 20px;
+    .sidebar-brand {
+      display: block;
+      padding: 0 32px 12px 32px;
+      margin-bottom: 8px;
+      text-align: center;
       text-decoration: none;
+    }
+
+    .sidebar-brand img {
+      max-width: 150px;
+      height: auto;
+      min-height: 50px;
+      display: block;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .sidebar hr {
+      margin: 0 32px 16px 32px;
+      border: none;
+      border-top: 1px solid #787cff55;
     }
 
     .menu-title {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      margin: 0 24px 14px 24px;
+      font-weight: 800;
     }
 
-    .nav-menu { display: grid; gap: 8px; }
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 24px 24px 24px;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
 
     .nav-item {
       width: 100%;
-      padding: 12px 16px;
-      border: none;
-      background: transparent;
-      text-align: left;
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-main);
       display: flex;
       align-items: center;
-      gap: 10px;
-      transition: 0.2s;
+      gap: 12px;
+      background: #fff;
+      color: #4f46e5;
+      font-weight: 600;
+      font-size: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+      transition: background 0.3s ease, color 0.3s ease, border 0.3s ease;
+      padding: 14px 18px;
+      text-decoration: none;
+      border: 2px solid transparent;
+      box-sizing: border-box;
+      cursor: pointer;
+      text-align: left;
     }
 
-    .nav-item:hover { background: #f1f5f9; }
-    .nav-item.active {
-      background: var(--primary);
-      color: white;
+    .nav-item span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+    }
+
+    .nav-item.active,
+    .nav-item:focus {
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 700;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+      outline: none;
+    }
+
+    .nav-item:hover:not(.active) {
+      background: #f0f1ff;
+      color: #3b2fd6;
+      border-color: #d1d5fa;
     }
 
     .content {
-      margin-left: 280px;
+      margin-left: 250px;
       flex: 1;
       padding: 40px;
       max-width: 1000px;
     }
 
-    /* ✅ ALTERADO AQUI (RESPIRO ENTRE CARDS) */
     .manual-card {
       background: white;
       border-radius: 24px;
@@ -140,52 +187,48 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 200px;
+      min-height: 200px;
       color: var(--text-muted);
       font-weight: 600;
+      text-align: center;
+      gap: 10px;
     }
 
     @media (max-width: 850px) {
       .app { flex-direction: column; }
+
       .sidebar {
         width: 100%;
+        min-height: auto;
         height: auto;
         position: relative;
         border-right: none;
         border-bottom: 1px solid var(--border);
       }
-      .content { margin-left: 0; padding: 20px; }
+
+      .content {
+        margin-left: 0;
+        padding: 20px;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
 <body>
 
   <div class="app">
-    <aside class="sidebar">
-      <a href="../index.html" class="logo">
-        <i class="fa-solid fa-circle-chevron-left"></i> Voltar
+    <aside class="sidebar" id="sidebar">
+      <a href="../index.html" class="sidebar-brand">
+        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/config%2Flogo-pronti-app.png?alt=media&token=9a9983d1-bee4-4549-b878-8d3060792674"
+             alt="Logo Pronti" id="sidebar-logo">
       </a>
-      
+
+      <hr />
+
       <div class="menu-title">Tópicos de Ajuda</div>
-      <nav class="nav-menu">
-        <button class="nav-item active" data-section="inicio">Início</button>
-        <button class="nav-item" data-section="login">Login e acesso</button>
-        <button class="nav-item" data-section="empresa">Empresa</button>
-        <button class="nav-item" data-section="dashboard">Dashboard</button>
-        <button class="nav-item" data-section="agenda">Agenda</button>
-        <button class="nav-item" data-section="equipe">Equipe</button>
-        <button class="nav-item" data-section="servicos">Serviços</button>
-        <button class="nav-item" data-section="promocoes">Promoções</button>
-        <button class="nav-item" data-section="clientes">Clientes</button>
-        <button class="nav-item" data-section="clientes-retorno">Retorno</button>
-        <button class="nav-item" data-section="fila-inteligente">Fila inteligente</button>
-        <button class="nav-item" data-section="vitrine">Vitrine</button>
-        <button class="nav-item" data-section="pagamentos">Pagamentos</button>
-        <button class="nav-item" data-section="planos">Planos</button>
-        <button class="nav-item" data-section="relatorios">Relatórios</button>
-        <button class="nav-item" data-section="permissoes">Permissões</button>
-        <button class="nav-item" data-section="notificacoes">Notificações</button>
-        <button class="nav-item" data-section="duvidas">Dúvidas frequentes</button>
+
+      <nav class="nav-menu" id="nav-menu">
+        <div class="loading">Carregando tópicos...</div>
       </nav>
     </aside>
 
@@ -202,6 +245,36 @@
 
     const COLECAO_MANUAL = "manual_global";
     const viewContainer = document.getElementById("manual-view");
+    const navMenu = document.getElementById("nav-menu");
+
+    const SECOES_MANUAL = [
+      { id: "inicio", nome: "Início", icon: "fa-house" },
+      { id: "login", nome: "Login e acesso", icon: "fa-user-lock" },
+      { id: "empresa", nome: "Empresa", icon: "fa-building" },
+      { id: "dashboard", nome: "Dashboard", icon: "fa-chart-pie" },
+      { id: "agenda", nome: "Agenda", icon: "fa-calendar-days" },
+      { id: "equipe", nome: "Equipe", icon: "fa-users" },
+      { id: "servicos", nome: "Serviços", icon: "fa-scissors" },
+      { id: "promocoes", nome: "Promoções", icon: "fa-tags" },
+      { id: "clientes", nome: "Clientes", icon: "fa-user" },
+      { id: "clientes-retorno", nome: "Retorno", icon: "fa-clock-rotate-left" },
+      { id: "fila-inteligente", nome: "Fila inteligente", icon: "fa-users-line" },
+      { id: "vitrine", nome: "Vitrine", icon: "fa-store" },
+      { id: "pagamentos", nome: "Pagamentos", icon: "fa-credit-card" },
+      { id: "planos", nome: "Planos", icon: "fa-file-invoice-dollar" },
+      { id: "relatorios", nome: "Relatórios", icon: "fa-chart-line" },
+      { id: "permissoes", nome: "Permissões", icon: "fa-sliders" },
+      { id: "notificacoes", nome: "Notificações", icon: "fa-bell" },
+      { id: "duvidas", nome: "Dúvidas frequentes", icon: "fa-circle-question" }
+    ];
+
+    function temConteudoPreenchido(dados) {
+      return (
+        (dados?.titulo && dados.titulo.trim()) ||
+        (dados?.conteudo && dados.conteudo.trim()) ||
+        (dados?.imagem && String(dados.imagem).trim())
+      );
+    }
 
     async function carregarConteudo(secaoId) {
       viewContainer.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Buscando no manual...</div>';
@@ -241,15 +314,69 @@
       }
     }
 
-    document.querySelectorAll(".nav-item").forEach(botao => {
-      botao.addEventListener("click", () => {
-        document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
-        botao.classList.add("active");
-        carregarConteudo(botao.dataset.section);
-      });
-    });
+    async function carregarMenuDisponivel() {
+      navMenu.innerHTML = '<div class="loading">Carregando tópicos...</div>';
 
-    carregarConteudo("inicio");
+      try {
+        navMenu.innerHTML = "";
+        let primeiraSecao = null;
+        let primeiroBotao = null;
+
+        for (const secao of SECOES_MANUAL) {
+          const docRef = doc(db, COLECAO_MANUAL, secao.id);
+          const docSnap = await getDoc(docRef);
+
+          if (!docSnap.exists()) continue;
+
+          const dados = docSnap.data();
+
+          if (!temConteudoPreenchido(dados)) continue;
+
+          const botao = document.createElement("button");
+          botao.className = "nav-item";
+          botao.dataset.section = secao.id;
+          botao.innerHTML = `
+            <span><i class="fa-solid ${secao.icon}"></i></span>
+            ${dados.nome || secao.nome}
+          `;
+
+          botao.addEventListener("click", () => {
+            document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+            botao.classList.add("active");
+            carregarConteudo(secao.id);
+          });
+
+          navMenu.appendChild(botao);
+
+          if (!primeiraSecao) {
+            primeiraSecao = secao.id;
+            primeiroBotao = botao;
+          }
+        }
+
+        if (primeiraSecao && primeiroBotao) {
+          primeiroBotao.classList.add("active");
+          carregarConteudo(primeiraSecao);
+        } else {
+          navMenu.innerHTML = "";
+          viewContainer.innerHTML = `
+            <div class="loading">
+              Nenhuma seção do manual foi preenchida ainda.
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error("Erro ao carregar menu:", error);
+        navMenu.innerHTML = "";
+        viewContainer.innerHTML = `
+          <div class="loading">
+            Erro ao carregar tópicos do manual.
+          </div>
+        `;
+      }
+    }
+
+    carregarMenuDisponivel();
   </script>
 
 </body>
