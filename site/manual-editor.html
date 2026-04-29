@@ -34,7 +34,7 @@
       background: var(--bg);
       color: var(--text-main);
       min-height: 100vh;
-      display: none; /* Oculto até validar acesso */
+      display: none;
     }
 
     .app {
@@ -42,7 +42,6 @@
       min-height: 100vh;
     }
 
-    /* Sidebar */
     .sidebar {
       width: 280px;
       background: linear-gradient(180deg, #1e40af, #2563eb, #4f46e5);
@@ -65,16 +64,22 @@
     }
 
     .logo-icon {
-      width: 42px;
-      height: 42px;
+      width: 56px;
+      height: 56px;
       background: white;
-      color: var(--primary);
       border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 20px;
+      padding: 5px;
+      overflow: hidden;
+    }
+
+    .logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
 
     .logo-text strong {
@@ -124,7 +129,6 @@
       background: rgba(255,255,255,0.18);
     }
 
-    /* Main Content */
     .main {
       margin-left: 280px;
       width: calc(100% - 280px);
@@ -209,7 +213,6 @@
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
     }
 
-    /* Upload Area */
     .upload-box {
       border: 2px dashed #bfdbfe;
       border-radius: 20px;
@@ -244,7 +247,6 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
 
-    /* Actions */
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -302,7 +304,6 @@
       background: #fecaca;
     }
 
-    /* Status Messages */
     .status {
       margin-top: 20px;
       padding: 16px;
@@ -334,10 +335,11 @@
 
 <body>
   <div class="app">
-    <!-- Sidebar Lateral -->
     <aside class="sidebar">
       <div class="logo">
-        <div class="logo-icon">P</div>
+        <div class="logo-icon">
+          <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/config%2Flogo-pronti-app.png?alt=media&token=9a9983d1-bee4-4549-b878-8d3060792674" alt="Logo Pronti">
+        </div>
         <div class="logo-text">
           <strong>Pronti</strong>
           <span>Editor do Manual</span>
@@ -347,20 +349,26 @@
       <div class="menu-title">Tópicos do Manual</div>
       <nav class="menu">
         <button class="active" data-section="inicio"><i class="fa-solid fa-house"></i> Início</button>
-        <button data-section="login"><i class="fa-solid fa-lock"></i> Login</button>
-        <button data-section="empresa"><i class="fa-solid fa-building"></i> Criar empresa</button>
-        <button data-section="servicos"><i class="fa-solid fa-scissors"></i> Serviços</button>
-        <button data-section="novo-servico"><i class="fa-solid fa-plus"></i> Novo serviço</button>
-        <button data-section="profissionais"><i class="fa-solid fa-users"></i> Profissionais</button>
+        <button data-section="login"><i class="fa-solid fa-lock"></i> Login e acesso</button>
+        <button data-section="empresa"><i class="fa-solid fa-building"></i> Empresa</button>
+        <button data-section="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</button>
         <button data-section="agenda"><i class="fa-solid fa-calendar"></i> Agenda</button>
+        <button data-section="equipe"><i class="fa-solid fa-users"></i> Equipe</button>
+        <button data-section="servicos"><i class="fa-solid fa-scissors"></i> Serviços</button>
         <button data-section="promocoes"><i class="fa-solid fa-tag"></i> Promoções</button>
+        <button data-section="clientes"><i class="fa-solid fa-user"></i> Clientes</button>
         <button data-section="clientes-retorno"><i class="fa-solid fa-heart"></i> Retorno</button>
+        <button data-section="fila-inteligente"><i class="fa-solid fa-list-check"></i> Fila inteligente</button>
         <button data-section="vitrine"><i class="fa-solid fa-globe"></i> Vitrine</button>
         <button data-section="pagamentos"><i class="fa-solid fa-credit-card"></i> Pagamentos</button>
+        <button data-section="planos"><i class="fa-solid fa-file-invoice-dollar"></i> Planos</button>
+        <button data-section="relatorios"><i class="fa-solid fa-chart-line"></i> Relatórios</button>
+        <button data-section="permissoes"><i class="fa-solid fa-sliders"></i> Permissões</button>
+        <button data-section="notificacoes"><i class="fa-solid fa-bell"></i> Notificações</button>
+        <button data-section="duvidas"><i class="fa-solid fa-circle-question"></i> Dúvidas frequentes</button>
       </nav>
     </aside>
 
-    <!-- Conteúdo Principal -->
     <main class="main">
       <div class="topbar">
         <div class="topbar-info">
@@ -419,7 +427,6 @@
     </main>
   </div>
 
-  <!-- Lógica Firebase -->
   <script type="module">
     import { auth, db, storage } from "../firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -430,10 +437,24 @@
     const COLECAO_MANUAL = "manual_global";
 
     const secoes = {
-      inicio: "Início", login: "Login", empresa: "Criar empresa", servicos: "Serviços",
-      "novo-servico": "Novo serviço", profissionais: "Profissionais", agenda: "Agenda",
-      promocoes: "Promoções", "clientes-retorno": "Clientes para retorno",
-      vitrine: "Vitrine do cliente", pagamentos: "Pagamentos"
+      inicio: "Início",
+      login: "Login e acesso",
+      empresa: "Empresa",
+      dashboard: "Dashboard",
+      agenda: "Agenda",
+      equipe: "Equipe",
+      servicos: "Serviços",
+      promocoes: "Promoções",
+      clientes: "Clientes",
+      "clientes-retorno": "Retorno",
+      "fila-inteligente": "Fila inteligente",
+      vitrine: "Vitrine",
+      pagamentos: "Pagamentos",
+      planos: "Planos",
+      relatorios: "Relatórios",
+      permissoes: "Permissões",
+      notificacoes: "Notificações",
+      duvidas: "Dúvidas frequentes"
     };
 
     let secaoAtual = "inicio";
@@ -449,7 +470,6 @@
     const statusMsg = document.getElementById("statusMsg");
     const btnSalvar = document.getElementById("btnSalvar");
 
-    // 1. Validação de Acesso
     onAuthStateChanged(auth, (user) => {
       if (user && user.uid === ADMIN_UID) {
         document.body.style.display = "block";
@@ -459,7 +479,6 @@
       }
     });
 
-    // 2. Navegação do Menu
     document.querySelectorAll(".menu button").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".menu button").forEach(b => b.classList.remove("active"));
@@ -469,7 +488,6 @@
       });
     });
 
-    // 3. Seleção de Imagem
     imagemInput.addEventListener("change", (e) => {
       arquivoParaUpload = e.target.files[0];
       if (arquivoParaUpload) {
@@ -482,7 +500,6 @@
       }
     });
 
-    // 4. Carregar Dados do Firebase
     async function carregarDados(secao) {
       sectionName.textContent = secoes[secao];
       statusMsg.style.display = "none";
@@ -515,7 +532,6 @@
       }
     }
 
-    // 5. Salvar (Storage + Firestore)
     async function salvar() {
       if (!tituloInput.value.trim()) {
         mostrarStatus("Por favor, insira um título.", "error");
@@ -528,14 +544,12 @@
       try {
         let urlFinal = imagemUrlExistente;
 
-        // Se selecionou nova foto, faz upload pro Storage
         if (arquivoParaUpload) {
           const storageRef = ref(storage, `manual_global/${secaoAtual}_${Date.now()}`);
           const uploadTask = await uploadBytes(storageRef, arquivoParaUpload);
           urlFinal = await getDownloadURL(uploadTask.ref);
         }
 
-        // Salva no Firestore
         await setDoc(doc(db, COLECAO_MANUAL, secaoAtual), {
           id: secaoAtual,
           nome: secoes[secaoAtual],
@@ -564,7 +578,6 @@
       if (tipo === "success") setTimeout(() => statusMsg.style.display = "none", 4000);
     }
 
-    // 6. Limpar
     document.getElementById("btnLimparImagem").onclick = () => {
       imagemUrlExistente = "";
       arquivoParaUpload = null;
@@ -581,7 +594,6 @@
     };
 
     document.getElementById("btnSalvar").onclick = salvar;
-
   </script>
 </body>
 </html>
