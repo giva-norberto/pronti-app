@@ -16,9 +16,18 @@ body {
   background: #f3f4ff;
   color: #22223b;
   display: flex;
+  visibility: hidden;
 }
 
-.sidebar {
+body.loaded {
+  visibility: visible;
+}
+
+#menu-container {
+  flex-shrink: 0;
+}
+
+.manual-sidebar {
   width: 250px;
   background: linear-gradient(180deg,#4f46e5,#6366f1);
   min-height: 100vh;
@@ -26,10 +35,11 @@ body {
   display: flex;
   flex-direction: column;
   position: fixed;
+  left: 250px;
   padding-top: 24px;
 }
 
-.sidebar a {
+.manual-sidebar a {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -41,17 +51,17 @@ body {
   margin: 4px 16px;
 }
 
-.sidebar a.active,
-.sidebar a:hover {
+.manual-sidebar a.active,
+.manual-sidebar a:hover {
   background: #fff;
   color: #4f46e5;
 }
 
 .main-content {
-  margin-left: 250px;
+  margin-left: 500px;
   padding: 32px;
   flex-grow: 1;
-  width: calc(100% - 250px);
+  width: calc(100% - 500px);
 }
 
 .card {
@@ -79,11 +89,12 @@ img {
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   body { flex-direction: column; }
 
-  .sidebar {
+  .manual-sidebar {
     position: relative;
+    left: 0;
     width: 100%;
     min-height: auto;
     padding: 12px;
@@ -100,7 +111,9 @@ img {
 
 <body>
 
-<div class="sidebar">
+<div id="menu-container"></div>
+
+<div class="manual-sidebar">
   <a href="#" data-menu="inicio" class="active">🚀 Começar</a>
   <a href="#" data-menu="empresa">🏢 Empresa</a>
   <a href="#" data-menu="servicos">✂️ Serviços</a>
@@ -205,8 +218,58 @@ img {
 
 </main>
 
+<script type="module">
+import { verificarAcesso } from './userService.js';
+
+async function carregarMenuEPainel() {
+  try {
+    const sessao = await verificarAcesso();
+
+    if (!sessao || !sessao.user) return;
+
+    const empresaId = localStorage.getItem("empresaAtivaId") || sessao.empresaAtivaId || sessao.empresaId;
+
+    if (!empresaId) {
+      window.location.replace("selecionar-empresa.html");
+      return;
+    }
+
+    let papelUsuario = sessao.papeis || [];
+
+    if (!Array.isArray(papelUsuario)) {
+      papelUsuario = [papelUsuario];
+    }
+
+    if (papelUsuario.length === 0) {
+      if (sessao.isAdmin) papelUsuario.push("admin");
+      if (sessao.isOwner) papelUsuario.push("dono");
+      if (papelUsuario.length === 0) papelUsuario.push("funcionario");
+    }
+
+    const response = await fetch("menu-lateral.html");
+    if (!response.ok) throw new Error("menu-lateral.html não encontrado");
+
+    document.getElementById("menu-container").innerHTML = await response.text();
+
+    const menuModule = await import("./menu-lateral.js");
+
+    if (menuModule.ativarMenuLateral) {
+      await menuModule.ativarMenuLateral(papelUsuario);
+    }
+
+    document.body.classList.add("loaded");
+
+  } catch (error) {
+    console.error("Erro ao inicializar o manual:", error);
+    window.location.replace("index.html");
+  }
+}
+
+carregarMenuEPainel();
+</script>
+
 <script>
-const links = document.querySelectorAll('.sidebar a');
+const links = document.querySelectorAll('.manual-sidebar a');
 const cards = document.querySelectorAll('.card');
 
 function abrirPasso(menu) {
