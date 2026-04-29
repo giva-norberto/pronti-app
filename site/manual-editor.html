@@ -33,11 +33,7 @@
       background: var(--bg);
       color: var(--text-main);
       min-height: 100vh;
-      visibility: hidden;
-    }
-
-    body.editor-autorizado {
-      visibility: visible;
+      display: none; /* Começa oculto para validação */
     }
 
     .app {
@@ -364,42 +360,20 @@
     </main>
   </div>
 
+  <!-- Validação de Admin Firebase -->
   <script type="module">
-    import { verificarAcesso } from './userService.js';
+    import { auth } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    async function validarAcessoEditorManual() {
-      try {
-        const sessao = await verificarAcesso();
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-        if (!sessao || !sessao.user) {
-          return;
+    onAuthStateChanged(auth, (user) => {
+        if (!user || user.uid !== ADMIN_UID) {
+            window.location.href = "index.html";
+        } else {
+            document.body.style.display = "block";
         }
-
-        const empresaId = localStorage.getItem("empresaAtivaId") || sessao.empresaAtivaId || sessao.empresaId;
-
-        if (!empresaId) {
-          window.location.replace("selecionar-empresa.html");
-          return;
-        }
-
-        const papeis = Array.isArray(sessao.papeis) ? sessao.papeis : [];
-        const isDono = sessao.isOwner === true || sessao.isDono === true || papeis.includes("dono") || sessao.papel === "dono";
-        const isAdmin = sessao.isAdmin === true || papeis.includes("admin") || sessao.papel === "admin";
-
-        if (!isDono && !isAdmin) {
-          window.location.replace("index.html");
-          return;
-        }
-
-        document.body.classList.add("editor-autorizado");
-
-      } catch (error) {
-        console.error("Erro ao validar acesso ao editor do manual:", error);
-        window.location.replace("index.html");
-      }
-    }
-
-    validarAcessoEditorManual();
+    });
   </script>
 
   <script>
@@ -528,7 +502,12 @@
       statusMsg.style.display = "none";
     }
 
-    carregarSecao(secaoAtual);
+    carregarManual(); // Inicia carregando a seção padrão
+    
+    // Ajuste para carregar a seção inicial ao abrir
+    function carregarManual() {
+        carregarSecao(secaoAtual);
+    }
   </script>
 </body>
 </html>
