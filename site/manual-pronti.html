@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual do Pronti</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #4f46e5, #3b82f6);
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .subtitulo {
+      text-align: center;
+      opacity: 0.8;
+      margin-bottom: 40px;
+    }
+
+    .manual-card {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      background: rgba(255,255,255,0.1);
+      padding: 25px;
+      border-radius: 20px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+
+    .manual-texto {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .manual-texto h2 {
+      margin-top: 0;
+    }
+
+    .manual-dica {
+      margin-top: 15px;
+      padding: 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+    }
+
+    .manual-imagem {
+      flex: 1;
+      text-align: center;
+    }
+
+    .manual-imagem img {
+      max-width: 100%;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    @media(max-width: 768px) {
+      .manual-card {
+        flex-direction: column;
+      }
+    }
+  </style>
+
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Manual do Pronti</h1>
+  <p class="subtitulo">Guia por Telas</p>
+
+  <!-- LOGIN -->
+
+  <section class="manual-card">
+    <div class="manual-texto">
+      <h2>1. Login</h2>
+
+```
+  <p>Essa é a tela de acesso ao sistema Pronti.</p>
+  <p>Digite seu e-mail e senha para entrar.</p>
+
+  <div class="manual-dica">
+    💡 Se for seu primeiro acesso, você precisará criar sua empresa.
+  </div>
+</div>
+
+<div class="manual-imagem">
+  <img src="imagens/manual/login.png" alt="Tela de login">
+</div>
+```
+
+  </section>
+
+  <!-- CRIAR EMPRESA -->
+
+  <section class="manual-card">
+    <div class="manual-texto">
+      <h2>2. Criar Nova Empresa</h2>
+
+```
+  <p>Após entrar sem empresa cadastrada, essa tela será exibida.</p>
+  <p>Clique em <strong>“Criar Nova Empresa”</strong>.</p>
+
+  <div class="manual-dica">
+    💡 Esse é o primeiro passo para usar o sistema.
+  </div>
+</div>
+
+<div class="manual-imagem">
+  <img src="imagens/manual/criar-empresa.png" alt="Criar empresa">
+</div>
+```
+
+  </section>
+
+  <!-- PERFIL EMPRESA -->
+
+  <section class="manual-card">
+    <div class="manual-texto">
+      <h2>3. Perfil da Empresa</h2>
+
+```
+  <p>Preencha os dados do seu negócio nesta tela.</p>
+  <p>Depois clique em <strong>Salvar</strong>.</p>
+
+  <div class="manual-dica">
+    💡 Essas informações serão usadas em todo o sistema.
+  </div>
+</div>
+
+<div class="manual-imagem">
+  <img src="imagens/manual/criar-empresa2.png" alt="Perfil da empresa">
+</div>
+```
+
+  </section>
+
+</div>
+
+</body>
+</html>
