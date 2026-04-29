@@ -3,7 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editor do Manual - Pronti</title>
+  <title>Editor do Manual - Pronti (MODO FORÇADO)</title>
+
+  <script>
+    // BLOQUEIO AGRESSIVO DE REDIRECIONAMENTO
+    // Isso impede que qualquer script externo (como o userService.js) te tire desta página
+    (function() {
+        const originalReplace = window.location.replace;
+        const originalAssign = window.location.assign;
+        
+        window.location.replace = function(url) {
+            console.log("Tentativa de redirecionamento bloqueada (replace):", url);
+        };
+        window.location.assign = function(url) {
+            console.log("Tentativa de redirecionamento bloqueada (assign):", url);
+        };
+        
+        // Protege a propriedade href
+        Object.defineProperty(window.location, 'href', {
+            set: function(url) {
+                console.log("Tentativa de redirecionamento bloqueada (href):", url);
+                return false;
+            },
+            configurable: false
+        });
+    })();
+  </script>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -33,7 +58,8 @@
       background: var(--bg);
       color: var(--text-main);
       min-height: 100vh;
-      display: none; /* Começa oculto para validação */
+      display: block !important; /* FORÇA A EXIBIÇÃO */
+      visibility: visible !important;
     }
 
     .app {
@@ -360,68 +386,6 @@
     </main>
   </div>
 
-  <!-- Validação de Admin e Empresa Firebase -->
-  <script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-
-    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-
-    function getEmpresaIdAtiva() {
-        return localStorage.getItem("empresaAtivaId") || null;
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-        console.log("Estado de autenticação alterado. Usuário:", user ? user.uid : "Nenhum");
-        
-        if (user) {
-            try {
-                const empresaId = getEmpresaIdAtiva();
-                console.log("Empresa Ativa ID:", empresaId);
-                
-                if (!empresaId) {
-                    console.warn("Nenhuma empresa ativa encontrada no localStorage.");
-                    window.location.href = "selecionar-empresa.html";
-                    return;
-                }
-
-                // Validação de Dono/Admin
-                const empresaRef = doc(db, "empresarios", empresaId);
-                const empresaSnap = await getDoc(empresaRef);
-                
-                let isDono = false;
-                if (empresaSnap.exists()) {
-                    const dados = empresaSnap.data();
-                    console.log("Dados da empresa carregados. DonoID:", dados.donoId);
-                    isDono = (dados.donoId === user.uid) || (user.uid === ADMIN_UID);
-                } else {
-                    console.warn("Documento da empresa não encontrado no Firestore.");
-                    if (user.uid === ADMIN_UID) isDono = true;
-                }
-
-                if (!isDono) {
-                    console.error("Acesso negado: Usuário não é dono nem admin master.");
-                    alert("Acesso negado. Seu UID: " + user.uid);
-                    window.location.href = "index.html";
-                } else {
-                    console.log("Acesso autorizado!");
-                    document.body.style.display = "block";
-                    if (typeof carregarManual === "function") carregarManual();
-                }
-
-            } catch (error) {
-                console.error("Erro crítico na validação:", error);
-                alert("Erro na validação: " + error.message);
-                window.location.href = "index.html";
-            }
-        } else {
-            console.warn("Usuário não autenticado. Redirecionando para login.");
-            window.location.href = "login.html";
-        }
-    });
-  </script>
-
   <script>
     const secoes = {
       inicio: "Início",
@@ -548,9 +512,8 @@
       statusMsg.style.display = "none";
     }
 
-    function carregarManual() {
-        carregarSecao(secaoAtual);
-    }
+    // Carrega a seção inicial
+    carregarSecao(secaoAtual);
   </script>
 </body>
 </html>
