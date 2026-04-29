@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor do Manual - Pronti</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #6366f1;
+      --bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --white: #ffffff;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --danger: #ef4444;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #1e40af, #2563eb, #4f46e5);
+      color: white;
+      padding: 24px 18px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      overflow-y: auto;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 30px;
+      padding: 0 8px;
+    }
+
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      background: white;
+      color: var(--primary);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .logo-text strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .logo-text span {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .menu-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.75;
+      margin: 20px 8px 10px;
+      font-weight: 700;
+    }
+
+    .menu {
+      display: grid;
+      gap: 8px;
+    }
+
+    .menu button {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: white;
+      padding: 13px 14px;
+      border-radius: 14px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .menu button:hover,
+    .menu button.active {
+      background: rgba(255,255,255,0.18);
+    }
+
+    .main {
+      margin-left: 280px;
+      width: calc(100% - 280px);
+      padding: 34px;
+    }
+
+    .topbar {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      margin-bottom: 24px;
+    }
+
+    .topbar h1 {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .topbar p {
+      color: var(--text-muted);
+    }
+
+    .editor-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      max-width: 980px;
+    }
+
+    .section-badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: var(--primary);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      transition: 0.2s ease;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .upload-box {
+      border: 2px dashed #bfdbfe;
+      border-radius: 20px;
+      padding: 22px;
+      background: #f8fbff;
+    }
+
+    .upload-box input {
+      margin-top: 10px;
+    }
+
+    .preview {
+      margin-top: 18px;
+      display: none;
+    }
+
+    .preview img {
+      max-width: 100%;
+      max-height: 340px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: none;
+      cursor: pointer;
+      border-radius: 14px;
+      padding: 14px 20px;
+      font-weight: 800;
+      font-family: inherit;
+      transition: 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #eef2ff;
+      color: var(--primary);
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+
+    .status {
+      margin-top: 18px;
+      font-weight: 800;
+      color: var(--success);
+      display: none;
+    }
+
+    @media (max-width: 820px) {
+      .app {
+        display: block;
+      }
+
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+      }
+
+      .main {
+        margin-left: 0;
+        width: 100%;
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">P</div>
+        <div class="logo-text">
+          <strong>Pronti</strong>
+          <span>Editor do Manual</span>
+        </div>
+      </div>
+
+      <div class="menu-title">Manual do Cliente</div>
+
+      <nav class="menu">
+        <button class="active" data-section="inicio">🏠 Início</button>
+        <button data-section="login">🔐 Login</button>
+        <button data-section="empresa">🏢 Criar empresa</button>
+        <button data-section="servicos">💇 Serviços</button>
+        <button data-section="novo-servico">➕ Novo serviço</button>
+        <button data-section="profissionais">👥 Profissionais</button>
+        <button data-section="agenda">📅 Agenda</button>
+        <button data-section="promocoes">🏷️ Promoções</button>
+        <button data-section="clientes-retorno">💙 Clientes para retorno</button>
+        <button data-section="vitrine">🌐 Vitrine do cliente</button>
+        <button data-section="pagamentos">💳 Pagamentos</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <h1>Editor do Manual do Pronti</h1>
+        <p>Escolha uma seção no menu lateral e edite somente as informações daquela parte.</p>
+      </div>
+
+      <section class="editor-card">
+        <span class="section-badge" id="sectionName">Início</span>
+
+        <div class="form-group">
+          <label for="titulo">Título da seção</label>
+          <input type="text" id="titulo" placeholder="Ex: Como usar a agenda" />
+        </div>
+
+        <div class="form-group">
+          <label for="conteudo">Conteúdo explicativo</label>
+          <textarea id="conteudo" placeholder="Escreva aqui o texto que o cliente vai ver no manual..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Imagem da seção</label>
+          <div class="upload-box">
+            <p>Escolha uma imagem do seu computador. Ela será salva junto com esta seção.</p>
+            <input type="file" id="imagem" accept="image/*" />
+          </div>
+
+          <div class="preview" id="previewBox">
+            <img id="previewImg" alt="Prévia da imagem" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" onclick="salvarSecao()">Salvar seção</button>
+          <button class="btn btn-secondary" onclick="limparImagem()">Remover imagem</button>
+          <button class="btn btn-danger" onclick="limparSecao()">Limpar seção</button>
+        </div>
+
+        <div class="status" id="status">Seção salva com sucesso!</div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const secoes = {
+      inicio: "Início",
+      login: "Login",
+      empresa: "Criar empresa",
+      servicos: "Serviços",
+      "novo-servico": "Novo serviço",
+      profissionais: "Profissionais",
+      agenda: "Agenda",
+      promocoes: "Promoções",
+      "clientes-retorno": "Clientes para retorno",
+      vitrine: "Vitrine do cliente",
+      pagamentos: "Pagamentos"
+    };
+
+    let secaoAtual = "inicio";
+    let imagemAtual = "";
+
+    const tituloInput = document.getElementById("titulo");
+    const conteudoInput = document.getElementById("conteudo");
+    const imagemInput = document.getElementById("imagem");
+    const previewBox = document.getElementById("previewBox");
+    const previewImg = document.getElementById("previewImg");
+    const sectionName = document.getElementById("sectionName");
+    const statusMsg = document.getElementById("status");
+
+    document.querySelectorAll(".menu button").forEach(botao => {
+      botao.addEventListener("click", () => {
+        document.querySelectorAll(".menu button").forEach(b => b.classList.remove("active"));
+        botao.classList.add("active");
+
+        secaoAtual = botao.dataset.section;
+        carregarSecao(secaoAtual);
+      });
+    });
+
+    imagemInput.addEventListener("change", function () {
+      const arquivo = this.files[0];
+
+      if (!arquivo) return;
+
+      const leitor = new FileReader();
+
+      leitor.onload = function (evento) {
+        imagemAtual = evento.target.result;
+        previewImg.src = imagemAtual;
+        previewBox.style.display = "block";
+      };
+
+      leitor.readAsDataURL(arquivo);
+    });
+
+    function carregarSecao(secao) {
+      const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
+      const dadosSecao = dadosSalvos[secao] || {};
+
+      sectionName.textContent = secoes[secao] || "Seção";
+
+      tituloInput.value = dadosSecao.titulo || "";
+      conteudoInput.value = dadosSecao.conteudo || "";
+      imagemAtual = dadosSecao.imagem || "";
+
+      imagemInput.value = "";
+
+      if (imagemAtual) {
+        previewImg.src = imagemAtual;
+        previewBox.style.display = "block";
+      } else {
+        previewImg.src = "";
+        previewBox.style.display = "none";
+      }
+
+      esconderStatus();
+    }
+
+    function salvarSecao() {
+      const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
+
+      dadosSalvos[secaoAtual] = {
+        id: secaoAtual,
+        nome: secoes[secaoAtual],
+        titulo: tituloInput.value.trim(),
+        conteudo: conteudoInput.value.trim(),
+        imagem: imagemAtual
+      };
+
+      localStorage.setItem("manualPronti", JSON.stringify(dadosSalvos));
+
+      statusMsg.textContent = "Seção salva com sucesso!";
+      statusMsg.style.display = "block";
+
+      setTimeout(esconderStatus, 2500);
+    }
+
+    function limparImagem() {
+      imagemAtual = "";
+      imagemInput.value = "";
+      previewImg.src = "";
+      previewBox.style.display = "none";
+    }
+
+    function limparSecao() {
+      const confirmar = confirm("Tem certeza que deseja limpar somente esta seção?");
+
+      if (!confirmar) return;
+
+      const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
+
+      delete dadosSalvos[secaoAtual];
+
+      localStorage.setItem("manualPronti", JSON.stringify(dadosSalvos));
+
+      tituloInput.value = "";
+      conteudoInput.value = "";
+      limparImagem();
+
+      statusMsg.textContent = "Seção limpa com sucesso!";
+      statusMsg.style.display = "block";
+
+      setTimeout(esconderStatus, 2500);
+    }
+
+    function esconderStatus() {
+      statusMsg.style.display = "none";
+    }
+
+    carregarSecao(secaoAtual);
+  </script>
+</body>
+</html>
