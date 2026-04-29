@@ -1,295 +1,251 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manual do Pronti</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual do Cliente - Pronti</title>
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-<style>
-* { box-sizing: border-box; }
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --white: #ffffff;
+      --border: #e2e8f0;
+      --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
 
-body {
-  margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  background: #f3f4ff;
-  color: #22223b;
-  display: flex;
-  visibility: hidden;
-}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-body.loaded {
-  visibility: visible;
-}
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
 
-#menu-container {
-  flex-shrink: 0;
-}
+    .app { display: flex; min-height: 100vh; }
 
-.manual-sidebar {
-  width: 250px;
-  background: linear-gradient(180deg,#4f46e5,#6366f1);
-  min-height: 100vh;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  left: 250px;
-  padding-top: 24px;
-}
+    /* Sidebar do Manual */
+    .sidebar {
+      width: 280px;
+      background: white;
+      border-right: 1px solid var(--border);
+      padding: 24px;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+    }
 
-.manual-sidebar a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  border-radius: 10px;
-  margin: 4px 16px;
-}
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 20px;
+      text-decoration: none;
+    }
 
-.manual-sidebar a.active,
-.manual-sidebar a:hover {
-  background: #fff;
-  color: #4f46e5;
-}
+    .menu-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
 
-.main-content {
-  margin-left: 500px;
-  padding: 32px;
-  flex-grow: 1;
-  width: calc(100% - 500px);
-}
+    .nav-menu { display: grid; gap: 8px; }
 
-.card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
+    .nav-item {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: 0.2s;
+    }
 
-h2 { color: #4f46e5; }
+    .nav-item:hover { background: #f1f5f9; }
+    .nav-item.active {
+      background: var(--primary);
+      color: white;
+    }
 
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-weight: 600;
-}
+    /* Conteúdo Principal */
+    .content {
+      margin-left: 280px;
+      flex: 1;
+      padding: 40px;
+      max-width: 1000px;
+    }
 
-img {
-  max-width: 100%;
-  border-radius: 12px;
-  margin-top: 15px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-}
+    .manual-card {
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
 
-@media (max-width: 900px) {
-  body { flex-direction: column; }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #eff6ff;
+      color: var(--primary);
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
 
-  .manual-sidebar {
-    position: relative;
-    left: 0;
-    width: 100%;
-    min-height: auto;
-    padding: 12px;
-  }
+    h1 { font-size: 32px; font-weight: 800; margin-bottom: 20px; }
+    
+    .text-content {
+      font-size: 16px;
+      color: #334155;
+      white-space: pre-wrap; /* Mantém as quebras de linha do editor */
+      margin-bottom: 32px;
+    }
 
-  .main-content {
-    margin-left: 0;
-    width: 100%;
-    padding: 18px;
-  }
-}
-</style>
+    .image-container {
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: none;
+    }
+
+    .image-container img {
+      width: 100%;
+      display: block;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    @media (max-width: 850px) {
+      .app { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .content { margin-left: 0; padding: 20px; }
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="menu-container"></div>
+  <div class="app">
+    <aside class="sidebar">
+      <a href="../index.html" class="logo">
+        <i class="fa-solid fa-circle-chevron-left"></i> Voltar
+      </a>
+      
+      <div class="menu-title">Tópicos de Ajuda</div>
+      <nav class="nav-menu">
+        <button class="nav-item active" data-section="inicio"><i class="fa-solid fa-house"></i> Início</button>
+        <button class="nav-item" data-section="login"><i class="fa-solid fa-lock"></i> Login</button>
+        <button class="nav-item" data-section="empresa"><i class="fa-solid fa-building"></i> Criar empresa</button>
+        <button class="nav-item" data-section="servicos"><i class="fa-solid fa-scissors"></i> Serviços</button>
+        <button class="nav-item" data-section="novo-servico"><i class="fa-solid fa-plus"></i> Novo serviço</button>
+        <button class="nav-item" data-section="profissionais"><i class="fa-solid fa-users"></i> Profissionais</button>
+        <button class="nav-item" data-section="agenda"><i class="fa-solid fa-calendar"></i> Agenda</button>
+        <button class="nav-item" data-section="promocoes"><i class="fa-solid fa-tag"></i> Promoções</button>
+        <button class="nav-item" data-section="clientes-retorno"><i class="fa-solid fa-heart"></i> Retorno</button>
+        <button class="nav-item" data-section="vitrine"><i class="fa-solid fa-globe"></i> Vitrine</button>
+        <button class="nav-item" data-section="pagamentos"><i class="fa-solid fa-credit-card"></i> Pagamentos</button>
+      </nav>
+    </aside>
 
-<div class="manual-sidebar">
-  <a href="#" data-menu="inicio" class="active">🚀 Começar</a>
-  <a href="#" data-menu="empresa">🏢 Empresa</a>
-  <a href="#" data-menu="servicos">✂️ Serviços</a>
-  <a href="#" data-menu="novo-servico">➕ Novo Serviço</a>
-  <a href="#" data-menu="promocoes">🏷️ Promoções</a>
-  <a href="#" data-menu="agenda">📅 Agenda</a>
-</div>
-
-<main class="main-content">
-
-<div class="card" id="inicio">
-  <h2>🚀 Comece a usar o Pronti</h2>
-  <p>Este manual vai te guiar pelos principais passos para configurar sua empresa e começar a usar o sistema.</p>
-
-  <div style="margin-top:20px; display:grid; gap:10px;">
-    <button onclick="abrirPasso('empresa')" style="background:#4f46e5;color:white;">1. Criar minha empresa</button>
-    <button onclick="abrirPasso('servicos')" style="background:#16a34a;color:white;">2. Cadastrar serviços</button>
-    <button onclick="abrirPasso('promocoes')" style="background:#f59e0b;color:white;">3. Criar promoções</button>
-    <button onclick="abrirPasso('agenda')" style="background:#2563eb;color:white;">4. Começar agenda</button>
+    <main class="content">
+      <div id="manual-view" class="manual-card">
+        <div class="loading">Carregando informações...</div>
+      </div>
+    </main>
   </div>
-</div>
 
-<div class="card" id="empresa" style="display:none;">
-  <h2>🏢 Criar Empresa</h2>
-  <p>Antes de cadastrar serviços ou usar a agenda, é necessário criar e salvar sua empresa.</p>
+  <script type="module">
+    import { db } from "../firebase-config.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-  <ol>
-    <li>Entre no sistema com seu login.</li>
-    <li>Clique em <strong>Criar Nova Empresa</strong>.</li>
-    <li>Preencha os dados do seu negócio.</li>
-    <li>Clique em <strong>Salvar</strong>.</li>
-  </ol>
+    const COLECAO_MANUAL = "manual_global";
+    const viewContainer = document.getElementById("manual-view");
 
-  <p><strong>Resultado:</strong> sua empresa fica pronta para receber serviços, profissionais e agendamentos.</p>
+    async function carregarConteudo(secaoId) {
+      viewContainer.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Buscando no manual...</div>';
+      
+      try {
+        const docRef = doc(db, COLECAO_MANUAL, secaoId);
+        const docSnap = await getDoc(docRef);
 
-  <img src="imagens/manual/criar-empresa.png" alt="Tela de criar empresa">
-  <img src="imagens/manual/criar-empresa2.png" alt="Tela de perfil da empresa">
-</div>
+        if (docSnap.exists()) {
+          const dados = docSnap.data();
+          
+          let html = `
+            <span class="badge">${dados.nome || 'Manual'}</span>
+            <h1>${dados.titulo || 'Sem título'}</h1>
+            <div class="text-content">${dados.conteudo || 'Esta seção ainda não possui conteúdo explicativo.'}</div>
+          `;
 
-<div class="card" id="servicos" style="display:none;">
-  <h2>✂️ Serviços</h2>
-  <p>A tela de Serviços mostra todos os serviços cadastrados no seu negócio.</p>
+          if (dados.imagem) {
+            html += `
+              <div class="image-container" style="display: block;">
+                <img src="${dados.imagem}" alt="Instrução visual">
+              </div>
+            `;
+          }
 
-  <ol>
-    <li>Acesse <strong>Serviços</strong> pelo menu.</li>
-    <li>Veja os serviços já cadastrados.</li>
-    <li>Use <strong>Adicionar Novo Serviço</strong> para criar um novo.</li>
-    <li>Use <strong>Editar</strong> ou <strong>Excluir</strong> quando necessário.</li>
-  </ol>
-
-  <p><strong>Importante:</strong> antes de cadastrar serviços, a empresa precisa estar criada e salva.</p>
-
-  <img src="imagens/manual/servicos.jpeg" alt="Tela de serviços">
-</div>
-
-<div class="card" id="novo-servico" style="display:none;">
-  <h2>➕ Novo Serviço</h2>
-  <p>Use esta tela para cadastrar um serviço que será usado na agenda e na vitrine.</p>
-
-  <ol>
-    <li>Clique em <strong>Adicionar Novo Serviço</strong>.</li>
-    <li>Preencha as informações do serviço.</li>
-    <li>Informe preço, duração e demais dados necessários.</li>
-    <li>Clique em <strong>Salvar</strong>.</li>
-  </ol>
-
-  <p><strong>Resultado:</strong> o serviço fica disponível para ser usado nos agendamentos.</p>
-
-  <img src="imagens/manual/novo-servico.jpeg" alt="Tela de novo serviço">
-</div>
-
-<div class="card" id="promocoes" style="display:none;">
-  <h2>🏷️ Promoções</h2>
-  <p>Use Preços Especiais para criar promoções e condições diferenciadas.</p>
-
-  <ol>
-    <li>Acesse <strong>Serviços</strong>.</li>
-    <li>Clique em <strong>Preços Especiais</strong>.</li>
-    <li>Configure a promoção desejada.</li>
-    <li>Salve as informações.</li>
-  </ol>
-
-  <p><strong>Resultado:</strong> o preço especial poderá ser usado para atrair mais clientes.</p>
-
-  <img src="imagens/manual/promocoes.jpeg" alt="Tela de promoções">
-</div>
-
-<div class="card" id="agenda" style="display:none;">
-  <h2>📅 Agenda</h2>
-  <p>A agenda é onde você acompanha e organiza seus atendimentos.</p>
-
-  <ol>
-    <li>Acesse <strong>Agenda</strong>.</li>
-    <li>Visualize os horários disponíveis e ocupados.</li>
-    <li>Crie ou acompanhe os agendamentos.</li>
-  </ol>
-
-  <p><strong>Resultado:</strong> seus atendimentos ficam organizados em um só lugar.</p>
-
-  <img src="imagens/manual/agenda.jpeg" alt="Tela de agenda">
-</div>
-
-</main>
-
-<script type="module">
-import { verificarAcesso } from './userService.js';
-
-async function carregarMenuEPainel() {
-  try {
-    const sessao = await verificarAcesso();
-
-    if (!sessao || !sessao.user) return;
-
-    const empresaId = localStorage.getItem("empresaAtivaId") || sessao.empresaAtivaId || sessao.empresaId;
-
-    if (!empresaId) {
-      window.location.replace("selecionar-empresa.html");
-      return;
+          viewContainer.innerHTML = html;
+        } else {
+          viewContainer.innerHTML = `
+            <div class="loading">
+              <i class="fa-solid fa-circle-info"></i><br>
+              Esta seção ainda não foi configurada no editor.
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error("Erro ao carregar:", error);
+        viewContainer.innerHTML = '<div class="loading">Erro ao carregar dados do Firebase.</div>';
+      }
     }
 
-    let papelUsuario = sessao.papeis || [];
+    // Gerenciar cliques no menu
+    document.querySelectorAll(".nav-item").forEach(botao => {
+      botao.addEventListener("click", () => {
+        document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+        botao.classList.add("active");
+        carregarConteudo(botao.dataset.section);
+      });
+    });
 
-    if (!Array.isArray(papelUsuario)) {
-      papelUsuario = [papelUsuario];
-    }
-
-    if (papelUsuario.length === 0) {
-      if (sessao.isAdmin) papelUsuario.push("admin");
-      if (sessao.isOwner) papelUsuario.push("dono");
-      if (papelUsuario.length === 0) papelUsuario.push("funcionario");
-    }
-
-    const response = await fetch("menu-lateral.html");
-    if (!response.ok) throw new Error("menu-lateral.html não encontrado");
-
-    document.getElementById("menu-container").innerHTML = await response.text();
-
-    const menuModule = await import("./menu-lateral.js");
-
-    if (menuModule.ativarMenuLateral) {
-      await menuModule.ativarMenuLateral(papelUsuario);
-    }
-
-    document.body.classList.add("loaded");
-
-  } catch (error) {
-    console.error("Erro ao inicializar o manual:", error);
-    window.location.replace("index.html");
-  }
-}
-
-carregarMenuEPainel();
-</script>
-
-<script>
-const links = document.querySelectorAll('.manual-sidebar a');
-const cards = document.querySelectorAll('.card');
-
-function abrirPasso(menu) {
-  links.forEach(l => l.classList.remove('active'));
-  cards.forEach(c => c.style.display = 'none');
-
-  const card = document.getElementById(menu);
-  const link = document.querySelector(`[data-menu="${menu}"]`);
-
-  if (card) card.style.display = 'block';
-  if (link) link.classList.add('active');
-}
-
-links.forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    abrirPasso(link.getAttribute('data-menu'));
-  });
-});
-</script>
+    // Carregar seção inicial
+    carregarConteudo("inicio");
+  </script>
 
 </body>
 </html>
