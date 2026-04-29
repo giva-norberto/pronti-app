@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editor do Manual - Pronti</title>
+  <title>Editor do Manual - Pronti (Firebase Global)</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -350,9 +350,9 @@
         </div>
 
         <div class="actions">
-          <button class="btn btn-primary" onclick="salvarSecao()">Salvar seção</button>
-          <button class="btn btn-secondary" onclick="limparImagem()">Remover imagem</button>
-          <button class="btn btn-danger" onclick="limparSecao()">Limpar seção</button>
+          <button class="btn btn-primary" id="btnSalvar">Salvar seção</button>
+          <button class="btn btn-secondary" id="btnLimparImagem">Remover imagem</button>
+          <button class="btn btn-danger" id="btnLimparSecao">Limpar seção</button>
         </div>
 
         <div class="status" id="status">Seção salva com sucesso!</div>
@@ -360,50 +360,15 @@
     </main>
   </div>
 
-  <!-- Validação de Acesso -->
+  <!-- Lógica do Firebase Firestore -->
   <script type="module">
-    import { auth, db } from "../firebase-config.js"; // Ajustado para subir uma pasta se necessário
+    import { auth, db } from "../firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+    const COLECAO_MANUAL = "manual_global";
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const empresaId = localStorage.getItem("empresaAtivaId");
-            
-            // Se for o Admin Master, libera direto
-            if (user.uid === ADMIN_UID) {
-                document.body.style.display = "block";
-                carregarSecao(secaoAtual);
-                return;
-            }
-
-            // Se não for admin, valida se é o dono da empresa
-            if (empresaId) {
-                try {
-                    const empresaRef = doc(db, "empresarios", empresaId);
-                    const empresaSnap = await getDoc(empresaRef);
-                    if (empresaSnap.exists() && empresaSnap.data().donoId === user.uid) {
-                        document.body.style.display = "block";
-                        carregarSecao(secaoAtual);
-                    } else {
-                        window.location.href = "../index.html";
-                    }
-                } catch (e) {
-                    console.error("Erro na validação:", e);
-                    window.location.href = "../index.html";
-                }
-            } else {
-                window.location.href = "../selecionar-empresa.html";
-            }
-        } else {
-            window.location.href = "../login.html";
-        }
-    });
-  </script>
-
-  <script>
     const secoes = {
       inicio: "Início",
       login: "Login",
@@ -429,16 +394,27 @@
     const sectionName = document.getElementById("sectionName");
     const statusMsg = document.getElementById("status");
 
+    // Validação de Acesso
+    onAuthStateChanged(auth, async (user) => {
+        if (user && user.uid === ADMIN_UID) {
+            document.body.style.display = "block";
+            carregarSecao(secaoAtual);
+        } else {
+            window.location.href = "../index.html";
+        }
+    });
+
+    // Menu Lateral
     document.querySelectorAll(".menu button").forEach(botao => {
       botao.addEventListener("click", () => {
         document.querySelectorAll(".menu button").forEach(b => b.classList.remove("active"));
         botao.classList.add("active");
-
         secaoAtual = botao.dataset.section;
         carregarSecao(secaoAtual);
       });
     });
 
+    // Upload de Imagem (Base64 para simplificar)
     imagemInput.addEventListener("change", function () {
       const arquivo = this.files[0];
       if (!arquivo) return;
@@ -451,39 +427,61 @@
       leitor.readAsDataURL(arquivo);
     });
 
-    function carregarSecao(secao) {
-      const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
-      const dadosSecao = dadosSalvos[secao] || {};
+    // Carregar do Firebase
+    async function carregarSecao(secao) {
       sectionName.textContent = secoes[secao] || "Seção";
-      tituloInput.value = dadosSecao.titulo || "";
-      conteudoInput.value = dadosSecao.conteudo || "";
-      imagemAtual = dadosSecao.imagem || "";
-      imagemInput.value = "";
-      if (imagemAtual) {
-        previewImg.src = imagemAtual;
-        previewBox.style.display = "block";
-      } else {
-        previewImg.src = "";
-        previewBox.style.display = "none";
+      statusMsg.style.display = "none";
+      
+      try {
+        const docRef = doc(db, COLECAO_MANUAL, secao);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const dados = docSnap.data();
+          tituloInput.value = dados.titulo || "";
+          conteudoInput.value = dados.conteudo || "";
+          imagemAtual = dados.imagem || "";
+        } else {
+          tituloInput.value = "";
+          conteudoInput.value = "";
+          imagemAtual = "";
+        }
+
+        if (imagemAtual) {
+          previewImg.src = imagemAtual;
+          previewBox.style.display = "block";
+        } else {
+          previewImg.src = "";
+          previewBox.style.display = "none";
+        }
+      } catch (error) {
+        console.error("Erro ao carregar do Firebase:", error);
       }
-      esconderStatus();
     }
 
-    function salvarSecao() {
-      const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
-      dadosSalvos[secaoAtual] = {
-        id: secaoAtual,
-        nome: secoes[secaoAtual],
-        titulo: tituloInput.value.trim(),
-        conteudo: conteudoInput.value.trim(),
-        imagem: imagemAtual
-      };
-      localStorage.setItem("manualPronti", JSON.stringify(dadosSalvos));
-      statusMsg.textContent = "Seção salva com sucesso!";
-      statusMsg.style.display = "block";
-      setTimeout(esconderStatus, 2500);
+    // Salvar no Firebase
+    async function salvarSecao() {
+      try {
+        const docRef = doc(db, COLECAO_MANUAL, secaoAtual);
+        await setDoc(docRef, {
+          id: secaoAtual,
+          nome: secoes[secaoAtual],
+          titulo: tituloInput.value.trim(),
+          conteudo: conteudoInput.value.trim(),
+          imagem: imagemAtual,
+          ultimaAtualizacao: new Date()
+        });
+
+        statusMsg.textContent = "Seção salva no Firebase com sucesso!";
+        statusMsg.style.display = "block";
+        setTimeout(() => statusMsg.style.display = "none", 2500);
+      } catch (error) {
+        console.error("Erro ao salvar no Firebase:", error);
+        alert("Erro ao salvar: " + error.message);
+      }
     }
 
+    // Limpar Imagem
     function limparImagem() {
       imagemAtual = "";
       imagemInput.value = "";
@@ -491,22 +489,31 @@
       previewBox.style.display = "none";
     }
 
-    function limparSecao() {
-      if (!confirm("Tem certeza que deseja limpar somente esta seção?")) return;
-      const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
-      delete dadosSalvos[secaoAtual];
-      localStorage.setItem("manualPronti", JSON.stringify(dadosSalvos));
-      tituloInput.value = "";
-      conteudoInput.value = "";
-      limparImagem();
-      statusMsg.textContent = "Seção limpa com sucesso!";
-      statusMsg.style.display = "block";
-      setTimeout(esconderStatus, 2500);
+    // Limpar Seção (Deletar do Firebase)
+    async function limparSecao() {
+      if (!confirm("Tem certeza que deseja apagar esta seção do Firebase?")) return;
+      
+      try {
+        const docRef = doc(db, COLECAO_MANUAL, secaoAtual);
+        await deleteDoc(docRef);
+        
+        tituloInput.value = "";
+        conteudoInput.value = "";
+        limparImagem();
+        
+        statusMsg.textContent = "Seção apagada com sucesso!";
+        statusMsg.style.display = "block";
+        setTimeout(() => statusMsg.style.display = "none", 2500);
+      } catch (error) {
+        console.error("Erro ao apagar:", error);
+      }
     }
 
-    function esconderStatus() {
-      statusMsg.style.display = "none";
-    }
+    // Event Listeners dos Botões
+    document.getElementById("btnSalvar").onclick = salvarSecao;
+    document.getElementById("btnLimparImagem").onclick = limparImagem;
+    document.getElementById("btnLimparSecao").onclick = limparSecao;
+
   </script>
 </body>
 </html>
