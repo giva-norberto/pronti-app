@@ -1,3 +1,5 @@
+
+manual-editor.html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -360,18 +362,64 @@
     </main>
   </div>
 
-  <!-- Validação de Admin Firebase -->
+  <!-- Validação de Admin e Empresa Firebase -->
   <script type="module">
-    import { auth } from "./firebase-config.js";
+    import { auth, db } from "./firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-    onAuthStateChanged(auth, (user) => {
-        if (!user || user.uid !== ADMIN_UID) {
-            window.location.href = "index.html";
+    function getEmpresaIdAtiva() {
+        return localStorage.getItem("empresaAtivaId") || null;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        console.log("Estado de autenticação alterado. Usuário:", user ? user.uid : "Nenhum");
+        
+        if (user) {
+            try {
+                const empresaId = getEmpresaIdAtiva();
+                console.log("Empresa Ativa ID:", empresaId);
+                
+                if (!empresaId) {
+                    console.warn("Nenhuma empresa ativa encontrada no localStorage.");
+                    window.location.href = "selecionar-empresa.html";
+                    return;
+                }
+
+                // Validação de Dono/Admin
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaRef);
+                
+                let isDono = false;
+                if (empresaSnap.exists()) {
+                    const dados = empresaSnap.data();
+                    console.log("Dados da empresa carregados. DonoID:", dados.donoId);
+                    isDono = (dados.donoId === user.uid) || (user.uid === ADMIN_UID);
+                } else {
+                    console.warn("Documento da empresa não encontrado no Firestore.");
+                    if (user.uid === ADMIN_UID) isDono = true;
+                }
+
+                if (!isDono) {
+                    console.error("Acesso negado: Usuário não é dono nem admin master.");
+                    alert("Acesso negado. Seu UID: " + user.uid);
+                    window.location.href = "index.html";
+                } else {
+                    console.log("Acesso autorizado!");
+                    document.body.style.display = "block";
+                    if (typeof carregarManual === "function") carregarManual();
+                }
+
+            } catch (error) {
+                console.error("Erro crítico na validação:", error);
+                alert("Erro na validação: " + error.message);
+                window.location.href = "index.html";
+            }
         } else {
-            document.body.style.display = "block";
+            console.warn("Usuário não autenticado. Redirecionando para login.");
+            window.location.href = "login.html";
         }
     });
   </script>
@@ -502,9 +550,6 @@
       statusMsg.style.display = "none";
     }
 
-    carregarManual(); // Inicia carregando a seção padrão
-    
-    // Ajuste para carregar a seção inicial ao abrir
     function carregarManual() {
         carregarSecao(secaoAtual);
     }
