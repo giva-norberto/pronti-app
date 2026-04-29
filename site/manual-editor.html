@@ -3,32 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Editor do Manual - Pronti (MODO FORÇADO)</title>
-
-  <script>
-    // BLOQUEIO AGRESSIVO DE REDIRECIONAMENTO
-    // Isso impede que qualquer script externo (como o userService.js) te tire desta página
-    (function() {
-        const originalReplace = window.location.replace;
-        const originalAssign = window.location.assign;
-        
-        window.location.replace = function(url) {
-            console.log("Tentativa de redirecionamento bloqueada (replace):", url);
-        };
-        window.location.assign = function(url) {
-            console.log("Tentativa de redirecionamento bloqueada (assign):", url);
-        };
-        
-        // Protege a propriedade href
-        Object.defineProperty(window.location, 'href', {
-            set: function(url) {
-                console.log("Tentativa de redirecionamento bloqueada (href):", url);
-                return false;
-            },
-            configurable: false
-        });
-    })();
-  </script>
+  <title>Editor do Manual - Pronti</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -58,8 +33,7 @@
       background: var(--bg);
       color: var(--text-main);
       min-height: 100vh;
-      display: block !important; /* FORÇA A EXIBIÇÃO */
-      visibility: visible !important;
+      display: none; /* Oculto até validar acesso */
     }
 
     .app {
@@ -386,6 +360,49 @@
     </main>
   </div>
 
+  <!-- Validação de Acesso -->
+  <script type="module">
+    import { auth, db } from "../firebase-config.js"; // Ajustado para subir uma pasta se necessário
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const empresaId = localStorage.getItem("empresaAtivaId");
+            
+            // Se for o Admin Master, libera direto
+            if (user.uid === ADMIN_UID) {
+                document.body.style.display = "block";
+                carregarSecao(secaoAtual);
+                return;
+            }
+
+            // Se não for admin, valida se é o dono da empresa
+            if (empresaId) {
+                try {
+                    const empresaRef = doc(db, "empresarios", empresaId);
+                    const empresaSnap = await getDoc(empresaRef);
+                    if (empresaSnap.exists() && empresaSnap.data().donoId === user.uid) {
+                        document.body.style.display = "block";
+                        carregarSecao(secaoAtual);
+                    } else {
+                        window.location.href = "../index.html";
+                    }
+                } catch (e) {
+                    console.error("Erro na validação:", e);
+                    window.location.href = "../index.html";
+                }
+            } else {
+                window.location.href = "../selecionar-empresa.html";
+            }
+        } else {
+            window.location.href = "../login.html";
+        }
+    });
+  </script>
+
   <script>
     const secoes = {
       inicio: "Início",
@@ -424,32 +441,24 @@
 
     imagemInput.addEventListener("change", function () {
       const arquivo = this.files[0];
-
       if (!arquivo) return;
-
       const leitor = new FileReader();
-
       leitor.onload = function (evento) {
         imagemAtual = evento.target.result;
         previewImg.src = imagemAtual;
         previewBox.style.display = "block";
       };
-
       leitor.readAsDataURL(arquivo);
     });
 
     function carregarSecao(secao) {
       const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
       const dadosSecao = dadosSalvos[secao] || {};
-
       sectionName.textContent = secoes[secao] || "Seção";
-
       tituloInput.value = dadosSecao.titulo || "";
       conteudoInput.value = dadosSecao.conteudo || "";
       imagemAtual = dadosSecao.imagem || "";
-
       imagemInput.value = "";
-
       if (imagemAtual) {
         previewImg.src = imagemAtual;
         previewBox.style.display = "block";
@@ -457,13 +466,11 @@
         previewImg.src = "";
         previewBox.style.display = "none";
       }
-
       esconderStatus();
     }
 
     function salvarSecao() {
       const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
-
       dadosSalvos[secaoAtual] = {
         id: secaoAtual,
         nome: secoes[secaoAtual],
@@ -471,12 +478,9 @@
         conteudo: conteudoInput.value.trim(),
         imagem: imagemAtual
       };
-
       localStorage.setItem("manualPronti", JSON.stringify(dadosSalvos));
-
       statusMsg.textContent = "Seção salva com sucesso!";
       statusMsg.style.display = "block";
-
       setTimeout(esconderStatus, 2500);
     }
 
@@ -488,32 +492,21 @@
     }
 
     function limparSecao() {
-      const confirmar = confirm("Tem certeza que deseja limpar somente esta seção?");
-
-      if (!confirmar) return;
-
+      if (!confirm("Tem certeza que deseja limpar somente esta seção?")) return;
       const dadosSalvos = JSON.parse(localStorage.getItem("manualPronti")) || {};
-
       delete dadosSalvos[secaoAtual];
-
       localStorage.setItem("manualPronti", JSON.stringify(dadosSalvos));
-
       tituloInput.value = "";
       conteudoInput.value = "";
       limparImagem();
-
       statusMsg.textContent = "Seção limpa com sucesso!";
       statusMsg.style.display = "block";
-
       setTimeout(esconderStatus, 2500);
     }
 
     function esconderStatus() {
       statusMsg.style.display = "none";
     }
-
-    // Carrega a seção inicial
-    carregarSecao(secaoAtual);
   </script>
 </body>
 </html>
