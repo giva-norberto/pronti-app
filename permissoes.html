@@ -49,7 +49,7 @@
             min-height: 100px;
         }
         #qrcode-container canvas, #qrcode-container img {
-            margin: 0 auto; /* Centraliza o QR Code gerado */
+            margin: 0 auto;
         }
         #btn-gerar-qrcode {
             background-color: #4f46e5;
@@ -117,7 +117,6 @@
         const chavePixInput = document.getElementById("chave-pix-input");
         const observacoesInput = document.getElementById("observacoes-input");
         
-        // ================================================================= -->
         const nomeBeneficiarioInput = document.getElementById("nome-beneficiario-input");
         const cidadeBeneficiarioInput = document.getElementById("cidade-beneficiario-input");
         const btnGerarQrCode = document.getElementById("btn-gerar-qrcode");
@@ -125,12 +124,12 @@
 
         const menus = [
             "inicio", "dashboard", "agenda", "equipe", "servicos",
+            "manual", "manual-editor",
             "planos", "clientes", "perfil", "relatorios", "administracao", "permissoes"
         ];
         
         let permissoesAtuais = {};
 
-        // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
         async function carregarPermissoesGlobais() {
             const ref = doc(db, "configuracoesGlobais", "permissoes");
             const snap = await getDoc(ref);
@@ -147,7 +146,6 @@
             renderTabela();
         }
 
-        // ALTERADO: Apenas para carregar os novos campos também
         async function carregarConfiguracoesPagamento() {
             const ref = doc(db, "configuracoesGlobais", "pagamentos");
             const snap = await getDoc(ref);
@@ -155,13 +153,11 @@
                 const data = snap.data();
                 chavePixInput.value = data.chavePixPlataforma || "";
                 observacoesInput.value = data.observacoesPagamento || "";
-                // Carrega os novos campos
                 nomeBeneficiarioInput.value = data.nomeBeneficiario || "";
                 cidadeBeneficiarioInput.value = data.cidadeBeneficiario || "";
             }
         }
 
-        // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
         function renderTabela() {
             permissoesTabela.innerHTML = menus.map(menu => `
                 <tr>
@@ -173,13 +169,11 @@
             `).join("");
         }
 
-        // ALTERADO: Apenas para salvar os novos campos também
         salvarBtn.addEventListener("click", async () => {
             salvarBtn.disabled = true;
             salvarBtn.textContent = "Salvando...";
             
             try {
-                // SUA LÓGICA ORIGINAL DE SALVAR PERMISSÕES (INALTERADA)
                 const checkboxes = document.querySelectorAll("input[type=checkbox]");
                 const novasPermissoes = {};
                 checkboxes.forEach(chk => {
@@ -190,13 +184,12 @@
                 });
                 await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
 
-                // SUA LÓGICA DE SALVAR PAGAMENTOS (AGORA INCLUI OS NOVOS CAMPOS)
                 const pagamentosRef = doc(db, "configuracoesGlobais", "pagamentos");
                 await setDoc(pagamentosRef, {
                     chavePixPlataforma: chavePixInput.value,
                     observacoesPagamento: observacoesInput.value,
-                    nomeBeneficiario: nomeBeneficiarioInput.value, // Salva o nome
-                    cidadeBeneficiario: cidadeBeneficiarioInput.value // Salva a cidade
+                    nomeBeneficiario: nomeBeneficiarioInput.value,
+                    cidadeBeneficiario: cidadeBeneficiarioInput.value
                 }, { merge: true });
 
                 alert("Configurações globais salvas com sucesso!");
@@ -210,13 +203,10 @@
             }
         });
 
-        // ================================================================= -->
-        // ✅ 5. NOVA FUNÇÃO PARA GERAR O QR CODE                             -->
-        // ================================================================= -->
         btnGerarQrCode.addEventListener("click", () => {
             const chave = chavePixInput.value.trim();
-            const nome = nomeBeneficiarioInput.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove acentos
-            const cidade = cidadeBeneficiarioInput.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove acentos
+            const nome = nomeBeneficiarioInput.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const cidade = cidadeBeneficiarioInput.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
             if (!chave || !nome || !cidade) {
                 alert("Para gerar um QR Code Pix válido, preencha os campos: Chave Pix, Nome do Beneficiário e Cidade.");
@@ -263,7 +253,6 @@
             });
         });
 
-        // ... SUA LÓGICA ORIGINAL DE AUTENTICAÇÃO, 100% INALTERADA ...
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 if (user.uid === ADMIN_UID) {
