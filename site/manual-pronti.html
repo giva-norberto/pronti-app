@@ -1,134 +1,214 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Manual do Pronti</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual do Pronti</title>
 
-  <style>
-    * { box-sizing: border-box; }
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #4f46e5, #3b82f6);
-      color: #fff;
-    }
+<style>
+body {
+  margin:0;
+  font-family:Inter,Arial,sans-serif;
+  background:#f3f4ff;
+  color:#22223b;
+  display:flex;
+}
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
+.sidebar {
+  width:250px;
+  background:linear-gradient(180deg,#4f46e5,#6366f1);
+  min-height:100vh;
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  padding-top:24px;
+}
 
-    h1 {
-      text-align: center;
-      margin-bottom: 5px;
-    }
+.sidebar a {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 18px;
+  color:#fff;
+  text-decoration:none;
+  font-weight:600;
+  border-radius:10px;
+  margin:4px 16px;
+}
 
-    .subtitulo {
-      text-align: center;
-      opacity: 0.8;
-      margin-bottom: 40px;
-    }
+.sidebar a.active,
+.sidebar a:hover {
+  background:#fff;
+  color:#4f46e5;
+}
 
-    .manual-card {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 30px;
-      background: rgba(255,255,255,0.1);
-      padding: 25px;
-      border-radius: 20px;
-      margin-bottom: 30px;
-      backdrop-filter: blur(10px);
-    }
+.main-content {
+  margin-left:250px;
+  padding:32px;
+  flex-grow:1;
+}
 
-    .manual-texto {
-      flex: 1;
-      min-width: 250px;
-    }
+.card {
+  background:#fff;
+  border-radius:16px;
+  padding:24px;
+  margin-bottom:20px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.05);
+}
 
-    .manual-texto h2 {
-      margin-top: 0;
-    }
+h2 { color:#4f46e5; }
 
-    .manual-dica {
-      margin-top: 15px;
-      padding: 12px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 10px;
-    }
+button {
+  cursor:pointer;
+  border:none;
+  border-radius:8px;
+  padding:10px 16px;
+  font-weight:600;
+}
 
-    .manual-imagem {
-      flex: 1;
-      text-align: center;
-    }
-
-    .manual-imagem img {
-      max-width: 100%;
-      border-radius: 15px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    }
-
-    @media(max-width: 768px) {
-      .manual-card {
-        flex-direction: column;
-      }
-    }
-  </style>
+img {
+  max-width:100%;
+  border-radius:12px;
+  margin-top:15px;
+}
+</style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Manual do Pronti</h1>
-    <p class="subtitulo">Guia por Telas</p>
 
-    <section class="manual-card">
-      <div class="manual-texto">
-        <h2>1. Login</h2>
-        <p>Essa é a tela de acesso ao sistema Pronti.</p>
-        <p>Digite seu e-mail e senha para entrar.</p>
+<!-- MENU -->
+<div class="sidebar">
+  <a href="#" data-menu="inicio" class="active">🚀 Começar</a>
+  <a href="#" data-menu="empresa">🏢 Empresa</a>
+  <a href="#" data-menu="servicos">✂️ Serviços</a>
+  <a href="#" data-menu="promocoes">🏷️ Promoções</a>
+  <a href="#" data-menu="agenda">📅 Agenda</a>
+</div>
 
-        <div class="manual-dica">
-          💡 Se for seu primeiro acesso, você precisará criar sua empresa.
-        </div>
-      </div>
+<!-- CONTEÚDO -->
+<main class="main-content">
 
-      <div class="manual-imagem">
-        <img src="./imagens/manual/login.png" alt="Tela de login">
-      </div>
-    </section>
+<!-- INÍCIO -->
+<div class="card" id="inicio">
+  <h2>🚀 Comece a usar o Pronti</h2>
 
-    <section class="manual-card">
-      <div class="manual-texto">
-        <h2>2. Criar Nova Empresa</h2>
-        <p>Após entrar sem empresa cadastrada, essa tela será exibida.</p>
-        <p>Clique em <strong>“Criar Nova Empresa”</strong>.</p>
+  <p>Vamos te guiar passo a passo para configurar sua empresa e começar a usar o sistema.</p>
 
-        <div class="manual-dica">
-          💡 Esse é o primeiro passo para usar o sistema.
-        </div>
-      </div>
+  <div style="margin-top:20px; display:grid; gap:10px;">
+    <button onclick="abrirPasso('empresa')" style="background:#4f46e5;color:white;">
+      1. Criar minha empresa
+    </button>
 
-      <div class="manual-imagem">
-        <img src="./imagens/manual/criar-empresa.png" alt="Criar empresa">
-      </div>
-    </section>
+    <button onclick="abrirPasso('servicos')" style="background:#16a34a;color:white;">
+      2. Cadastrar serviços
+    </button>
 
-    <section class="manual-card">
-      <div class="manual-texto">
-        <h2>3. Perfil da Empresa</h2>
-        <p>Preencha os dados do seu negócio nesta tela.</p>
-        <p>Depois clique em <strong>Salvar</strong>.</p>
+    <button onclick="abrirPasso('promocoes')">
+      3. Criar promoções
+    </button>
 
-        <div class="manual-dica">
-          💡 Essas informações serão usadas em todo o sistema.
-        </div>
-      </div>
-
-      <div class="manual-imagem">
-        <img src="./imagens/manual/criar-empresa2.png" alt="Perfil da empresa">
-      </div>
-    </section>
+    <button onclick="abrirPasso('agenda')">
+      4. Começar agenda
+    </button>
   </div>
+</div>
+
+<!-- EMPRESA -->
+<div class="card" id="empresa" style="display:none;">
+  <h2>🏢 Criar Empresa</h2>
+
+  <p>Antes de usar o sistema, você precisa cadastrar sua empresa.</p>
+
+  <ol>
+    <li>Acesse a tela de empresa</li>
+    <li>Preencha os dados do seu negócio</li>
+    <li>Clique em salvar</li>
+  </ol>
+
+  <p><strong>Resultado:</strong> Sua empresa estará pronta para uso.</p>
+
+  <img src="imagens/manual/criar-empresa.jpeg">
+</div>
+
+<!-- SERVIÇOS -->
+<div class="card" id="servicos" style="display:none;">
+  <h2>✂️ Serviços</h2>
+
+  <p>Cadastre os serviços que seu negócio oferece.</p>
+
+  <ol>
+    <li>Clique em <strong>Serviços</strong></li>
+    <li>Clique em <strong>Adicionar Novo Serviço</strong></li>
+    <li>Preencha as informações</li>
+    <li>Clique em salvar</li>
+  </ol>
+
+  <p><strong>Resultado:</strong> O serviço aparecerá na lista.</p>
+
+  <img src="imagens/manual/servicos.jpeg">
+</div>
+
+<!-- PROMOÇÕES -->
+<div class="card" id="promocoes" style="display:none;">
+  <h2>🏷️ Promoções</h2>
+
+  <p>Crie preços especiais para atrair mais clientes.</p>
+
+  <ol>
+    <li>Acesse <strong>Serviços</strong></li>
+    <li>Clique em <strong>Preços Especiais</strong></li>
+    <li>Configure a promoção</li>
+    <li>Salve</li>
+  </ol>
+
+  <p><strong>Resultado:</strong> Os clientes verão o preço promocional.</p>
+
+  <img src="imagens/manual/promocoes.jpeg">
+</div>
+
+<!-- AGENDA -->
+<div class="card" id="agenda" style="display:none;">
+  <h2>📅 Agenda</h2>
+
+  <p>Gerencie seus atendimentos e horários.</p>
+
+  <ol>
+    <li>Acesse <strong>Agenda</strong></li>
+    <li>Visualize os horários</li>
+    <li>Clique em um horário para agendar</li>
+  </ol>
+
+  <p><strong>Resultado:</strong> Seus atendimentos ficam organizados.</p>
+
+  <img src="imagens/manual/agenda.jpeg">
+</div>
+
+</main>
+
+<script>
+const links = document.querySelectorAll('.sidebar a');
+const cards = document.querySelectorAll('.card');
+
+links.forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const menu = link.getAttribute('data-menu');
+
+    links.forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+
+    cards.forEach(c => c.style.display = c.id === menu ? 'block' : 'none');
+  });
+});
+
+function abrirPasso(menu) {
+  cards.forEach(c => c.style.display = 'none');
+  document.getElementById(menu).style.display = 'block';
+}
+</script>
+
 </body>
 </html>
