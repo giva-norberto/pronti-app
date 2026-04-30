@@ -11,7 +11,7 @@ import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES E FILA ---
 import { db, auth } from './vitrini-firebase.js';
-import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // =====================================================================
 // ✅ 1. IMPORTAÇÃO NECESSÁRIA ADICIONADA
