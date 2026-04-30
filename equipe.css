@@ -519,3 +519,34 @@ body {
         gap: 10px;
     }
 }
+/* CORREÇÃO FINAL MOBILE - destravar rolagem do perfil */
+@media (max-width: 768px) {
+    #modal-perfil-profissional.modal.show {
+        align-items: flex-start;
+        overflow-y: auto;
+        overflow-x: hidden;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+        padding: 12px 0;
+    }
+
+    #modal-perfil-profissional .modal-content {
+        max-height: none;
+        height: auto;
+        overflow: visible;
+        margin: 0 auto 24px auto;
+        touch-action: pan-y;
+    }
+
+    #modal-perfil-profissional .tab-content {
+        overflow: visible;
+        max-height: none;
+        touch-action: pan-y;
+    }
+
+    #modal-perfil-profissional #tab-content-horarios {
+        overflow: visible;
+        max-height: none;
+        touch-action: pan-y;
+    }
+}
