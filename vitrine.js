@@ -11,7 +11,7 @@ import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES E FILA ---
 import { db, auth } from './vitrini-firebase.js';
-import { collection, query, where, getDocs, limit, addDoc, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, query, where, getDocs, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // =====================================================================
 // ✅ 1. IMPORTAÇÃO NECESSÁRIA ADICIONADA
@@ -235,27 +235,6 @@ function handleUserAuthStateChange(user) {
     UI.toggleAgendamentoLoginPrompt(!user);
 
     if (user && state.empresaId) {
-
-        // 🔥 NOVO BLOCO - CRIA CLIENTE NO PRIMEIRO LOGIN (SEM TELEFONE)
-        (async () => {
-            try {
-                const ref = doc(db, "empresarios", state.empresaId, "clientes", user.uid);
-                const snap = await getDoc(ref);
-
-                if (!snap.exists()) {
-                    await setDoc(ref, {
-                        nome: (user.displayName || "").toLowerCase(),
-                        email: (user.email || "").toUpperCase(),
-                        dataCadastro: serverTimestamp(),
-                        atualizadoEm: serverTimestamp()
-                    }, { merge: true });
-                }
-            } catch (e) {
-                console.warn("Erro ao criar cliente:", e);
-            }
-        })();
-        // 🔥 FIM DO BLOCO NOVO
-
         (async () => {
             try {
                 await marcarServicosInclusosParaUsuario(state.todosOsServicos, state.empresaId);
@@ -289,6 +268,7 @@ function handleUserAuthStateChange(user) {
         }
     }
 
+
     if (user) {
         if (document.getElementById('menu-visualizacao')?.classList.contains('ativo')) { 
             handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') }); 
@@ -299,6 +279,7 @@ function handleUserAuthStateChange(user) {
         }
     }
 }
+
 // --- FUNÇÃO DE CLIQUE NO MENU ---
 function handleMenuClick(e) {
     const menuButton = e.target.closest('[data-menu]');
@@ -686,6 +667,8 @@ window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
 // =====================================================================
 //    BLOCO CIRÚRGICO - EXIGIR TELEFONE NO PRIMEIRO AGENDAMENTO
 // =====================================================================
+
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 async function exigirCelularParaAgendamento(user) {
     if (!user) return true;
