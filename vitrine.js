@@ -235,6 +235,26 @@ function handleUserAuthStateChange(user) {
     UI.toggleAgendamentoLoginPrompt(!user);
 
     if (user && state.empresaId) {
+
+        // 🔥 CRIA OU COMPLETA CLIENTE NO LOGIN (SEM MEXER NO TELEFONE)
+        (async () => {
+            try {
+                const ref = doc(db, "empresarios", state.empresaId, "clientes", user.uid);
+                const snap = await getDoc(ref);
+                const perfil = snap.exists() ? snap.data() : {};
+
+                await setDoc(ref, {
+                    nome: perfil.nome || (user.displayName || "").toLowerCase(),
+                    email: perfil.email || (user.email || "").toUpperCase(),
+                    dataCadastro: perfil.dataCadastro || serverTimestamp(),
+                    atualizadoEm: serverTimestamp()
+                }, { merge: true });
+
+            } catch (e) {
+                console.warn("Erro ao criar/completar cliente:", e);
+            }
+        })();
+
         (async () => {
             try {
                 await marcarServicosInclusosParaUsuario(state.todosOsServicos, state.empresaId);
@@ -268,7 +288,6 @@ function handleUserAuthStateChange(user) {
         }
     }
 
-
     if (user) {
         if (document.getElementById('menu-visualizacao')?.classList.contains('ativo')) { 
             handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') }); 
@@ -279,7 +298,6 @@ function handleUserAuthStateChange(user) {
         }
     }
 }
-
 // --- FUNÇÃO DE CLIQUE NO MENU ---
 function handleMenuClick(e) {
     const menuButton = e.target.closest('[data-menu]');
