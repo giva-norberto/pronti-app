@@ -832,3 +832,49 @@ input[type="date"]:focus {
 .card-assinatura[data-status="VENCIDA"] {
     opacity: 0.5;
 }
+/* CORREÇÃO FINAL - troca correta das abas da vitrine no mobile */
+@media (max-width: 900px) {
+    .vitrine-container {
+        display: block;
+        padding: 0;
+    }
+
+    .sidebar-vitrine {
+        display: none !important;
+    }
+
+    .bottom-nav-vitrine {
+        display: flex !important;
+    }
+
+    .main-content-vitrine {
+        width: 100% !important;
+        max-width: 430px !important;
+        margin: 0 auto !important;
+        padding: 0 8px 90px 8px !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        min-height: 100vh !important;
+    }
+
+    .menu-content {
+        display: none !important;
+        width: 100% !important;
+    }
+
+    .menu-content.ativo {
+        display: block !important;
+    }
+
+    #menu-visualizacao.ativo {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    #menu-agendamento:not(.ativo),
+    #menu-info:not(.ativo),
+    #menu-planos:not(.ativo),
+    #menu-visualizacao:not(.ativo) {
+        display: none !important;
+    }
+}
