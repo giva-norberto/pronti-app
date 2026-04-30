@@ -549,21 +549,7 @@ async function ativarFuncionario(profissionalId) {
         const empresaRef = doc(db, "empresarios", empresaId);
         const empresaSnap = await getDoc(empresaRef);
 
-        const empresaData = empresaSnap.data();
-
-        // FREE / TESTE: não valida limite de funcionários
-        if (empresaData.plano === "free") {
-            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
-
-            await updateDoc(profissionalRef, {
-                status: "ativo"
-            });
-
-            await showAlert("Pronto!", "Funcionário ativado durante o período gratuito.");
-            return;
-        }
-
-        const limite = empresaData.usuariosLicenciados || 1;
+        const limite = empresaSnap.data().usuariosLicenciados || 1;
 
         // 🔥 CONTAR FUNCIONÁRIOS ATIVOS
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
