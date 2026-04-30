@@ -579,3 +579,14 @@ body {
         touch-action: pan-y !important;
     }
 }
+/* CORREÇÃO MOBILE - espaço final para aparecer Cancelar/Salvar */
+@media (max-width: 768px) {
+    #modal-perfil-profissional .modal-content {
+        padding-bottom: 120px !important;
+        margin-bottom: 80px !important;
+    }
+
+    #modal-perfil-profissional .form-actions {
+        margin-bottom: 80px !important;
+    }
+}
