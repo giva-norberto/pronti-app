@@ -211,7 +211,7 @@ body {
     backdrop-filter: blur(2px);
 
     /* Bloquear gestures de scroll fora do modal (evita tocar o body por baixo) */
-    touch-action: none;
+    touch-action: pan-y;
 }
 .modal.show {
     display: flex !important;
@@ -487,7 +487,7 @@ body {
     /* As abas e conteúdos podem rolar; garantimos comportamento estável e sem "escapamento" do scroll */
     #modal-perfil-profissional {
         overscroll-behavior: contain;
-        touch-action: none; /* bloqueia gestos fora do modal */
+        touch-action: auto; /* bloqueia gestos fora do modal */
     }
     #modal-perfil-profissional .tab-content {
         overflow-y: auto;
