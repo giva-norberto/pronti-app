@@ -687,8 +687,6 @@ window.entrarNaFilaDeAgendamento = entrarNaFilaDeAgendamento;
 //    BLOCO CIRÚRGICO - EXIGIR TELEFONE NO PRIMEIRO AGENDAMENTO
 // =====================================================================
 
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-
 async function exigirCelularParaAgendamento(user) {
     if (!user) return true;
 
