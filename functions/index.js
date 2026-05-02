@@ -197,7 +197,6 @@ exports.receberWebhookMercadoPago = onRequest(
 
       try {
         const { id, type, data } = req.body;
-
         const preapprovalId = id || data?.id;
 
         if (type !== "preapproval" || !preapprovalId) {
@@ -264,6 +263,15 @@ exports.receberWebhookMercadoPago = onRequest(
 
             if (novaValidade) {
               updatesEmpresa.assinaturaValidaAte = novaValidade;
+              updatesEmpresa.proximoPagamento = novaValidade;
+              updatesEmpresa.assinaturaAtiva = true;
+              updatesEmpresa.status = "ativo";
+              updatesEmpresa.plano = "pago";
+            }
+
+            if (novoStatus !== "ativa") {
+              updatesEmpresa.assinaturaAtiva = false;
+              updatesEmpresa.status = novoStatus;
             }
 
             await empresaRef.update(updatesEmpresa);
