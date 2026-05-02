@@ -212,14 +212,23 @@ exports.receberWebhookMercadoPago = onRequest(
         const preapproval = new Preapproval(client);
         const subscription = await preapproval.get({ id: preapprovalId });
 
-        const query = db
-          .collectionGroup("assinatura")
-          .where("mercadoPagoAssinaturaId", "==", subscription.id);
+        const empresaId = subscription.external_reference;
 
-        const snapshot = await query.get();
+        if (!empresaId) {
+          logger.warn("Webhook MP sem external_reference", {
+            mercadoPagoAssinaturaId: subscription.id,
+            statusMP: subscription.status,
+          });
 
-        if (snapshot.empty) {
-          logger.warn("Webhook MP: assinatura não encontrada no Firestore", {
+          return res.status(200).send("OK");
+        }
+
+        const empresaRef = db.collection("empresarios").doc(empresaId);
+        const empresaSnap = await empresaRef.get();
+
+        if (!empresaSnap.exists) {
+          logger.warn("Webhook MP: empresa não encontrada", {
+            empresaId,
             mercadoPagoAssinaturaId: subscription.id,
             statusMP: subscription.status,
           });
@@ -245,40 +254,29 @@ exports.receberWebhookMercadoPago = onRequest(
           novaValidade = admin.firestore.Timestamp.fromDate(dataValidade);
         }
 
-        for (const doc of snapshot.docs) {
-          const empresaRef = doc.ref.parent.parent;
+        const updatesEmpresa = {
+          statusAssinatura: novoStatus,
+          mercadoPagoAssinaturaId: subscription.id,
+          ultimaAtualizacaoMP: agora,
+        };
 
-          await doc.ref.update({
-            status: novoStatus,
-            ultimoStatusMP: subscription.status,
-            ultimaAtualizacaoWebhook: agora,
-          });
-
-          if (empresaRef) {
-            const updatesEmpresa = {
-              statusAssinatura: novoStatus,
-              mercadoPagoAssinaturaId: subscription.id,
-              ultimaAtualizacaoMP: agora,
-            };
-
-            if (novaValidade) {
-              updatesEmpresa.assinaturaValidaAte = novaValidade;
-              updatesEmpresa.proximoPagamento = novaValidade;
-              updatesEmpresa.assinaturaAtiva = true;
-              updatesEmpresa.status = "ativo";
-              updatesEmpresa.plano = "pago";
-            }
-
-            if (novoStatus !== "ativa") {
-              updatesEmpresa.assinaturaAtiva = false;
-              updatesEmpresa.status = novoStatus;
-            }
-
-            await empresaRef.update(updatesEmpresa);
-          }
+        if (novaValidade) {
+          updatesEmpresa.assinaturaValidaAte = novaValidade;
+          updatesEmpresa.proximoPagamento = novaValidade;
+          updatesEmpresa.assinaturaAtiva = true;
+          updatesEmpresa.status = "ativo";
+          updatesEmpresa.plano = "pago";
         }
 
+        if (novoStatus !== "ativa") {
+          updatesEmpresa.assinaturaAtiva = false;
+          updatesEmpresa.status = novoStatus;
+        }
+
+        await empresaRef.update(updatesEmpresa);
+
         logger.info("Webhook MP processado com sucesso", {
+          empresaId,
           mercadoPagoAssinaturaId: subscription.id,
           statusMP: subscription.status,
           statusPronti: novoStatus,
