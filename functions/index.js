@@ -194,46 +194,96 @@ exports.receberWebhookMercadoPago = onRequest(
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
-      const { id, type } = req.body;
-      if (type === "preapproval") {
-        try {
-          const client = getMercadoPagoClient();
-          if (!client) {
-            return res.status(500).send("Erro de configuração interna.");
-          }
-          const preapproval = new Preapproval(client);
-          const subscription = await preapproval.get({ id: id });
-          const query = db
-            .collectionGroup("assinatura")
-            .where("mercadoPagoAssinaturaId", "==", subscription.id);
-          const snapshot = await query.get();
-          if (snapshot.empty) {
-            return res.status(200).send("OK");
-          }
-          const statusMap = {
-            authorized: "ativa",
-            cancelled: "cancelada",
-            paused: "pausada",
-          };
-          const novoStatus = statusMap[subscription.status] || "desconhecido";
-          for (const doc of snapshot.docs) {
-            await doc.ref.update({
-              status: novoStatus,
-              ultimoStatusMP: subscription.status,
-              ultimaAtualizacaoWebhook:
-                admin.firestore.FieldValue.serverTimestamp(),
-            });
-          }
-        } catch (error) {
-          logger.error("Erro ao processar webhook:", error);
-          return res.status(500).send("Erro interno");
+
+      try {
+        const { id, type, data } = req.body;
+
+        const preapprovalId = id || data?.id;
+
+        if (type !== "preapproval" || !preapprovalId) {
+          return res.status(200).send("OK");
         }
+
+        const client = getMercadoPagoClient();
+
+        if (!client) {
+          return res.status(500).send("Erro de configuração interna.");
+        }
+
+        const preapproval = new Preapproval(client);
+        const subscription = await preapproval.get({ id: preapprovalId });
+
+        const query = db
+          .collectionGroup("assinatura")
+          .where("mercadoPagoAssinaturaId", "==", subscription.id);
+
+        const snapshot = await query.get();
+
+        if (snapshot.empty) {
+          logger.warn("Webhook MP: assinatura não encontrada no Firestore", {
+            mercadoPagoAssinaturaId: subscription.id,
+            statusMP: subscription.status,
+          });
+
+          return res.status(200).send("OK");
+        }
+
+        const statusMap = {
+          authorized: "ativa",
+          cancelled: "cancelada",
+          canceled: "cancelada",
+          paused: "pausada",
+        };
+
+        const novoStatus = statusMap[subscription.status] || "desconhecido";
+        const agora = admin.firestore.FieldValue.serverTimestamp();
+
+        let novaValidade = null;
+
+        if (novoStatus === "ativa") {
+          const dataValidade = new Date();
+          dataValidade.setDate(dataValidade.getDate() + 30);
+          novaValidade = admin.firestore.Timestamp.fromDate(dataValidade);
+        }
+
+        for (const doc of snapshot.docs) {
+          const empresaRef = doc.ref.parent.parent;
+
+          await doc.ref.update({
+            status: novoStatus,
+            ultimoStatusMP: subscription.status,
+            ultimaAtualizacaoWebhook: agora,
+          });
+
+          if (empresaRef) {
+            const updatesEmpresa = {
+              statusAssinatura: novoStatus,
+              mercadoPagoAssinaturaId: subscription.id,
+              ultimaAtualizacaoMP: agora,
+            };
+
+            if (novaValidade) {
+              updatesEmpresa.assinaturaValidaAte = novaValidade;
+            }
+
+            await empresaRef.update(updatesEmpresa);
+          }
+        }
+
+        logger.info("Webhook MP processado com sucesso", {
+          mercadoPagoAssinaturaId: subscription.id,
+          statusMP: subscription.status,
+          statusPronti: novoStatus,
+        });
+
+        return res.status(200).send("OK");
+      } catch (error) {
+        logger.error("Erro ao processar webhook Mercado Pago:", error);
+        return res.status(200).send("OK");
       }
-      return res.status(200).send("OK");
     });
   }
 );
-
 // ============================================================================
 // FUNÇÕES AUXILIARES
 // ============================================================================
