@@ -1,7 +1,7 @@
 <?php
 // =====================================================
 // Webhook PHP para atualizar status de assinaturas
-// VERSÃO FINAL FUNCIONAL – PRONTI
+// VERSÃO REVISADA – PRONTI
 // =====================================================
 
 require __DIR__ . '/vendor/autoload.php';
@@ -45,7 +45,6 @@ $data = json_decode($rawBody, true);
 
 error_log("📩 Webhook recebido: " . $rawBody);
 
-// valida webhook
 if (
     !isset($data['type']) ||
     $data['type'] !== 'preapproval' ||
@@ -59,34 +58,24 @@ if (
 $preapprovalId = $data['data']['id'];
 
 try {
-
     $client = new PreApprovalClient();
     $preapproval = $client->get($preapprovalId);
 
-    // -------------------------------------------------
-    // IDENTIFICAÇÃO DA EMPRESA
-    // -------------------------------------------------
     $empresaId = $preapproval->external_reference ?? null;
 
     if (!$empresaId) {
         throw new \Exception("external_reference não encontrada na assinatura {$preapprovalId}");
     }
 
-    // -------------------------------------------------
-    // STATUS
-    // -------------------------------------------------
     $statusMP = $preapproval->status;
 
     $novoStatus = match ($statusMP) {
         'authorized' => 'ativo',
-        'paused'     => 'pausado',
-        'cancelled'  => 'cancelado',
-        default      => 'desconhecido',
+        'paused' => 'pausado',
+        'cancelled', 'canceled' => 'cancelado',
+        default => 'desconhecido',
     };
 
-    // -------------------------------------------------
-    // FIRESTORE
-    // -------------------------------------------------
     $empresaRef = $db->collection('empresarios')->document($empresaId);
     $empresaSnap = $empresaRef->snapshot();
 
@@ -103,36 +92,39 @@ try {
 
     $usuarioRef = $db->collection('usuarios')->document($donoId);
 
-    // -------------------------------------------------
-    // 📌 VALIDADE AUTOMÁTICA (30 DIAS)
-    // -------------------------------------------------
-    $novaValidade = (new DateTime())->modify('+30 days');
+    $agora = new \Google\Cloud\Core\Timestamp(new DateTime());
 
-    // -------------------------------------------------
-    // ATUALIZAÇÕES SEGURAS
-    // -------------------------------------------------
     $usuarioRef->update([
         ['path' => 'isPremium', 'value' => ($novoStatus === 'ativo')],
     ]);
 
-    $empresaRef->update([
+    $updatesEmpresa = [
         ['path' => 'statusAssinatura', 'value' => $novoStatus],
         ['path' => 'mercadoPagoAssinaturaId', 'value' => $preapprovalId],
+        ['path' => 'ultimaAtualizacaoMP', 'value' => $agora],
+    ];
 
-        // 🔥 AQUI ESTÁ O IMPORTANTE
-        ['path' => 'assinaturaValidaAte', 'value' => new \Google\Cloud\Core\Timestamp($novaValidade)],
+    if ($novoStatus === 'ativo') {
+        $novaValidadeDate = (new DateTime())->modify('+30 days');
+        $novaValidade = new \Google\Cloud\Core\Timestamp($novaValidadeDate);
 
-        ['path' => 'ultimaAtualizacaoMP', 'value' => new \Google\Cloud\Core\Timestamp(new DateTime())],
-    ]);
+        $updatesEmpresa[] = ['path' => 'assinaturaValidaAte', 'value' => $novaValidade];
+        $updatesEmpresa[] = ['path' => 'proximoPagamento', 'value' => $novaValidade];
+        $updatesEmpresa[] = ['path' => 'assinaturaAtiva', 'value' => true];
+        $updatesEmpresa[] = ['path' => 'status', 'value' => 'ativo'];
+        $updatesEmpresa[] = ['path' => 'plano', 'value' => 'pago'];
+    } else {
+        $updatesEmpresa[] = ['path' => 'assinaturaAtiva', 'value' => false];
+        $updatesEmpresa[] = ['path' => 'status', 'value' => $novoStatus];
+    }
 
-    error_log("✅ Assinatura atualizada | Empresa: {$empresaId} | Status: {$novoStatus}");
+    $empresaRef->update($updatesEmpresa);
+
+    error_log("✅ Assinatura atualizada | Empresa: {$empresaId} | Status MP: {$statusMP} | Status Pronti: {$novoStatus}");
 
 } catch (\Exception $e) {
     error_log("❌ Erro no webhook MP: " . $e->getMessage());
 }
 
-// -----------------------------------------------------
-// RESPOSTA FINAL
-// -----------------------------------------------------
 http_response_code(200);
 echo "OK";
