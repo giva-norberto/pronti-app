@@ -204,8 +204,9 @@ exports.createPreference = onRequest(
           },
         };
 
-        const preapproval = new Preapproval(client);
-        const response = await preapproval.create({ body: subscriptionData });
+        // 🔥 CORREÇÃO AQUI (SDK v2)
+        const preApprovalClient = new PreApproval(client);
+        const response = await preApprovalClient.create({ body: subscriptionData });
 
         await empresaRef.set(
           {
