@@ -125,65 +125,116 @@ exports.createPreference = onRequest(
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
+
       if (req.method !== "POST") {
         return res.status(405).json({ error: "Método não permitido." });
       }
+
       try {
         const client = getMercadoPagoClient();
+
         if (!client) {
-          return res
-            .status(500)
-            .json({ error: "Erro de configuração do servidor." });
+          return res.status(500).json({
+            error: "Erro de configuração do servidor.",
+          });
         }
-        const { userId, planoEscolhido } = req.body;
-        if (!userId || !planoEscolhido) {
-          return res.status(400).json({ error: "Dados inválidos." });
+
+        const { empresaId, planoSelecionado, precoPlanoSelecionado } = req.body;
+
+        if (!empresaId || !planoSelecionado || !precoPlanoSelecionado) {
+          return res.status(400).json({
+            error: "Dados inválidos para criar assinatura.",
+          });
         }
-        const userRecord = await admin.auth().getUser(userId);
-        const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
+
+        const empresaRef = db.collection("empresarios").doc(String(empresaId));
+        const empresaSnap = await empresaRef.get();
+
+        if (!empresaSnap.exists) {
+          return res.status(404).json({
+            error: "Empresa não encontrada.",
+          });
+        }
+
+        const empresaData = empresaSnap.data() || {};
+        const donoId = empresaData.donoId || empresaId;
+
+        let payerEmail = empresaData.emailDeNotificacao || null;
+
+        if (!payerEmail && donoId) {
+          try {
+            const userRecord = await admin.auth().getUser(donoId);
+            payerEmail = userRecord.email || null;
+          } catch (authErr) {
+            logger.warn("Não foi possível buscar email do dono.", {
+              donoId,
+              erro: authErr.message,
+            });
+          }
+        }
+
+        if (!payerEmail) {
+          return res.status(400).json({
+            error: "Empresa sem email para pagamento.",
+          });
+        }
+
+        const valor = Number(precoPlanoSelecionado);
+
+        if (!valor || valor <= 0) {
+          return res.status(400).json({
+            error: "Valor do plano inválido.",
+          });
+        }
+
         const notificationUrl =
           "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago";
+
         const subscriptionData = {
-          reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
+          reason: `Assinatura Pronti - Plano ${planoSelecionado} usuário(s)`,
+          external_reference: String(empresaId),
+          payer_email: payerEmail,
+          notification_url: notificationUrl,
+          back_url: "https://prontiapp.com.br/pagamento-confirmado",
           auto_recurring: {
             frequency: 1,
             frequency_type: "months",
-            transaction_amount: precoFinal,
+            transaction_amount: valor,
             currency_id: "BRL",
           },
-          back_url: "https://prontiapp.com.br/pagamento-confirmado",
-          payer_email: userRecord.email,
-          notification_url: notificationUrl,
         };
+
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
-        await db
-          .collection("empresarios")
-          .doc(userId)
-          .collection("assinatura")
-          .doc("dados")
-          .set(
-            {
-              mercadoPagoAssinaturaId: response.id,
-              status: "pendente",
-              planoContratado: planoEscolhido.totalFuncionarios,
-              valorPago: precoFinal,
-              dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
-        return res.status(200).json({ init_point: response.init_point });
+
+        await empresaRef.set(
+          {
+            mercadoPagoAssinaturaId: response.id,
+            statusAssinatura: "pendente",
+            planoSolicitado: String(planoSelecionado),
+            valorPlanoSolicitado: valor,
+            ultimaCriacaoAssinaturaMP:
+              admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        return res.status(200).json({
+          init_point: response.init_point,
+          sandbox_init_point: response.sandbox_init_point || null,
+          id: response.id,
+        });
       } catch (error) {
         logger.error("Erro em createPreference:", error);
+
         return res.status(500).json({
-          error: "Erro ao criar preferência de pagamento.",
+          error: "Erro ao criar assinatura no Mercado Pago.",
           detalhes: error.message || error.toString(),
         });
       }
     });
   }
 );
-
 // ============================================================================
 // ENDPOINT 3: receberWebhookMercadoPago
 // ============================================================================
