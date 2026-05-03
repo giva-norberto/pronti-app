@@ -218,7 +218,9 @@ exports.createPreference = onRequest(
 
         const response = await mpResponse.json();
 
-        if (!mpResponse.ok) {
+                if (!mpResponse.ok) {
+          // Adicionamos este log para ver o erro detalhado no console do Firebase
+          console.log("RESPOSTA COMPLETA DO MERCADO PAGO:", JSON.stringify(response, null, 2));
           logger.error("Erro Mercado Pago preapproval:", response);
 
           return res.status(500).json({
