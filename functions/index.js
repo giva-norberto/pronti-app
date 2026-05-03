@@ -202,7 +202,10 @@ exports.createPreference = onRequest(
             transaction_amount: valor,
             currency_id: "BRL",
           },
+          status: "pending", // ✅ CORREÇÃO CRÍTICA
         };
+
+        logger.info("DEBUG MP createPreference payload:", subscriptionData);
 
         const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
           method: "POST",
@@ -255,7 +258,6 @@ exports.createPreference = onRequest(
     });
   }
 );
-
 // ============================================================================
 // ENDPOINT 3: receberWebhookMercadoPago
 // ============================================================================
