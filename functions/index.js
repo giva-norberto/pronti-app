@@ -5,7 +5,7 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore"); // AGORA USA getFirestore(nome)
-const { MercadoPagoConfig, Preapproval } = require("mercadopago");
+const { MercadoPagoConfig, PreApproval } = require("mercadopago");
 const cors = require("cors");
 const { processarFila } = require("./processarFila");
 const { avisarClienteRetorno } = require("./avisarClienteRetorno");
@@ -261,10 +261,9 @@ exports.receberWebhookMercadoPago = onRequest(
           return res.status(500).send("Erro de configuração interna.");
         }
 
-        const preapproval = new Preapproval(client);
-        const subscription = await preapproval.get({ id: preapprovalId });
-
-        const empresaId = subscription.external_reference;
+      const preApprovalClient = new PreApproval(client);
+      const subscription = await preApprovalClient.get({ id: preapprovalId });
+      const empresaId = subscription.external_reference;
 
         if (!empresaId) {
           logger.warn("Webhook MP sem external_reference", {
