@@ -204,9 +204,35 @@ exports.createPreference = onRequest(
           },
         };
 
-        // 🔥 CORREÇÃO AQUI (SDK v2)
-        const preApprovalClient = new PreApproval(client);
-        const response = await preApprovalClient.create({ body: subscriptionData });
+        const preApprovalClient = {
+          create: async ({ body }) => {
+            const response = await fetch("https://api.mercadopago.com/preapproval", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${process.env.MERCADOPAGO_TOKEN}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(body),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              logger.error("Erro Mercado Pago preapproval:", data);
+              throw new Error(
+                data?.message ||
+                  data?.error ||
+                  "Erro ao criar assinatura no Mercado Pago."
+              );
+            }
+
+            return data;
+          },
+        };
+
+        const response = await preApprovalClient.create({
+          body: subscriptionData,
+        });
 
         await empresaRef.set(
           {
