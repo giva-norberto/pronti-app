@@ -4,8 +4,8 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
-const { getFirestore } = require("firebase-admin/firestore"); // AGORA USA getFirestore(nome)
-const { MercadoPagoConfig, PreApproval } = require("mercadopago");
+const { getFirestore } = require("firebase-admin/firestore");
+const { MercadoPagoConfig } = require("mercadopago");
 const cors = require("cors");
 const { processarFila } = require("./processarFila");
 const { avisarClienteRetorno } = require("./avisarClienteRetorno");
@@ -131,15 +131,16 @@ exports.createPreference = onRequest(
       }
 
       try {
-        const client = getMercadoPagoClient();
+        const token = process.env.MERCADOPAGO_TOKEN;
 
-        if (!client) {
+        if (!token) {
+          logger.error("MERCADOPAGO_TOKEN não configurado.");
           return res.status(500).json({
             error: "Erro de configuração do servidor.",
           });
         }
 
-        const { empresaId, planoSelecionado, precoPlanoSelecionado } = req.body;
+        const { empresaId, planoSelecionado, precoPlanoSelecionado } = req.body || {};
 
         if (!empresaId || !planoSelecionado || !precoPlanoSelecionado) {
           return res.status(400).json({
@@ -163,7 +164,7 @@ exports.createPreference = onRequest(
 
         if (!payerEmail && donoId) {
           try {
-            const userRecord = await admin.auth().getUser(donoId);
+            const userRecord = await admin.auth().getUser(String(donoId));
             payerEmail = userRecord.email || null;
           } catch (authErr) {
             logger.warn("Não foi possível buscar email do dono.", {
@@ -187,14 +188,12 @@ exports.createPreference = onRequest(
           });
         }
 
-        const notificationUrl =
-          "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago";
-
         const subscriptionData = {
           reason: `Assinatura Pronti - Plano ${planoSelecionado} usuário(s)`,
           external_reference: String(empresaId),
           payer_email: payerEmail,
-          notification_url: notificationUrl,
+          notification_url:
+            "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago",
           back_url: "https://prontiapp.com.br/pagamento-confirmado",
           auto_recurring: {
             frequency: 1,
@@ -204,35 +203,28 @@ exports.createPreference = onRequest(
           },
         };
 
-        const preApprovalClient = {
-          create: async ({ body }) => {
-            const response = await fetch("https://api.mercadopago.com/preapproval", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${process.env.MERCADOPAGO_TOKEN}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(body),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-              logger.error("Erro Mercado Pago preapproval:", data);
-              throw new Error(
-                data?.message ||
-                  data?.error ||
-                  "Erro ao criar assinatura no Mercado Pago."
-              );
-            }
-
-            return data;
+        const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        };
-
-        const response = await preApprovalClient.create({
-          body: subscriptionData,
+          body: JSON.stringify(subscriptionData),
         });
+
+        const response = await mpResponse.json();
+
+        if (!mpResponse.ok) {
+          logger.error("Erro Mercado Pago preapproval:", response);
+
+          return res.status(500).json({
+            error: "Erro ao criar assinatura no Mercado Pago.",
+            detalhes:
+              response?.message ||
+              response?.error ||
+              JSON.stringify(response),
+          });
+        }
 
         await empresaRef.set(
           {
@@ -262,6 +254,7 @@ exports.createPreference = onRequest(
     });
   }
 );
+
 // ============================================================================
 // ENDPOINT 3: receberWebhookMercadoPago
 // ============================================================================
@@ -274,22 +267,53 @@ exports.receberWebhookMercadoPago = onRequest(
       }
 
       try {
-        const { id, type, data } = req.body;
-        const preapprovalId = id || data?.id;
+        const body = req.body || {};
+        const query = req.query || {};
+
+        const type = body.type || query.type || query.topic || null;
+        const preapprovalId =
+          body.id ||
+          body?.data?.id ||
+          query.id ||
+          query["data.id"] ||
+          null;
 
         if (type !== "preapproval" || !preapprovalId) {
           return res.status(200).send("OK");
         }
 
-        const client = getMercadoPagoClient();
+        const token = process.env.MERCADOPAGO_TOKEN;
 
-        if (!client) {
+        if (!token) {
+          logger.error("MERCADOPAGO_TOKEN não configurado no webhook.");
           return res.status(500).send("Erro de configuração interna.");
         }
 
-      const preApprovalClient = new PreApproval(client);
-      const subscription = await preApprovalClient.get({ id: preapprovalId });
-      const empresaId = subscription.external_reference;
+        const mpResponse = await fetch(
+          `https://api.mercadopago.com/preapproval/${encodeURIComponent(
+            String(preapprovalId)
+          )}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const subscription = await mpResponse.json();
+
+        if (!mpResponse.ok) {
+          logger.error("Erro ao consultar preapproval Mercado Pago:", {
+            status: mpResponse.status,
+            resposta: subscription,
+          });
+
+          return res.status(200).send("OK");
+        }
+
+        const empresaId = subscription.external_reference;
 
         if (!empresaId) {
           logger.warn("Webhook MP sem external_reference", {
@@ -300,7 +324,7 @@ exports.receberWebhookMercadoPago = onRequest(
           return res.status(200).send("OK");
         }
 
-        const empresaRef = db.collection("empresarios").doc(empresaId);
+        const empresaRef = db.collection("empresarios").doc(String(empresaId));
         const empresaSnap = await empresaRef.get();
 
         if (!empresaSnap.exists) {
@@ -318,6 +342,7 @@ exports.receberWebhookMercadoPago = onRequest(
           cancelled: "cancelada",
           canceled: "cancelada",
           paused: "pausada",
+          pending: "pendente",
         };
 
         const novoStatus = statusMap[subscription.status] || "desconhecido";
@@ -335,6 +360,7 @@ exports.receberWebhookMercadoPago = onRequest(
           statusAssinatura: novoStatus,
           mercadoPagoAssinaturaId: subscription.id,
           ultimaAtualizacaoMP: agora,
+          ultimaRespostaMercadoPago: subscription.status || null,
         };
 
         if (novaValidade) {
@@ -350,7 +376,7 @@ exports.receberWebhookMercadoPago = onRequest(
           updatesEmpresa.status = novoStatus;
         }
 
-        await empresaRef.update(updatesEmpresa);
+        await empresaRef.set(updatesEmpresa, { merge: true });
 
         logger.info("Webhook MP processado com sucesso", {
           empresaId,
@@ -367,112 +393,6 @@ exports.receberWebhookMercadoPago = onRequest(
     });
   }
 );
-// ============================================================================
-// FUNÇÕES AUXILIARES
-// ============================================================================
-function getMercadoPagoClient() {
-  const mpToken = process.env.MERCADOPAGO_TOKEN;
-  if (!mpToken) {
-    logger.error(
-      "FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!"
-    );
-    return null;
-  }
-  return new MercadoPagoConfig({ accessToken: mpToken });
-}
-
-function calcularPreco(totalFuncionarios) {
-  const configuracaoPrecos = {
-    precoBase: 59.9,
-    funcionariosInclusos: 2,
-    faixasDePrecoExtra: [
-      { de: 3, ate: 10, valor: 29.9 },
-      { de: 11, ate: 50, valor: 24.9 },
-    ],
-  };
-  if (totalFuncionarios <= 0) return 0;
-  if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) {
-    return configuracaoPrecos.precoBase;
-  }
-  let precoTotal = configuracaoPrecos.precoBase;
-  const funcionariosExtras =
-    totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
-  let funcionariosJaPrecificados = 0;
-  for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
-    const funcionariosNaFaixa = faixa.ate - faixa.de + 1;
-    const extrasNestaFaixa = Math.min(
-      funcionariosExtras - funcionariosJaPrecificados,
-      funcionariosNaFaixa
-    );
-    if (extrasNestaFaixa > 0) {
-      precoTotal += extrasNestaFaixa * faixa.valor;
-      funcionariosJaPrecificados += extrasNestaFaixa;
-    }
-    if (funcionariosJaPrecificados >= funcionariosExtras) break;
-  }
-  return Number(precoTotal.toFixed(2));
-}
-
-function normalizarTelefoneBR(telefone) {
-  if (!telefone) return null;
-  let numero = String(telefone).replace(/\D/g, "");
-  if (!numero) return null;
-  if (numero.startsWith("0")) {
-    numero = numero.replace(/^0+/, "");
-  }
-  if (!numero.startsWith("55")) {
-    numero = `55${numero}`;
-  }
-  if (numero.length < 12 || numero.length > 13) {
-    return null;
-  }
-  return numero;
-}
-
-async function enviarWhatsAppEvolution({ telefone, mensagem }) {
-  const apiUrl = process.env.EVOLUTION_API_URL;
-  const apiKey = process.env.EVOLUTION_API_KEY;
-  const instanceName = process.env.EVOLUTION_INSTANCE || "pronti";
-  if (!apiUrl || !apiKey) {
-    logger.warn("Evolution API não configurada. Pulando envio de WhatsApp.");
-    return { enviado: false, motivo: "evolution_nao_configurada" };
-  }
-  const numeroNormalizado = normalizarTelefoneBR(telefone);
-  if (!numeroNormalizado) {
-    logger.warn("Telefone inválido para envio de WhatsApp.", { telefone });
-    return { enviado: false, motivo: "telefone_invalido" };
-  }
-  const baseUrl = apiUrl.replace(/\/$/, "");
-  const endpoint = `${baseUrl}/message/sendText/${instanceName}`;
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: apiKey,
-      },
-      body: JSON.stringify({
-        number: numeroNormalizado,
-        text: mensagem,
-      }),
-    });
-    const responseText = await response.text();
-    if (!response.ok) {
-      throw new Error(
-        `Falha no envio WhatsApp: ${response.status} - ${responseText}`
-      );
-    }
-    return {
-      enviado: true,
-      numero: numeroNormalizado,
-      resposta: responseText,
-    };
-  } catch (err) {
-    logger.error("Erro na requisição Evolution API:", err.message);
-    return { enviado: false, motivo: "erro_requisicao", erro: err.message };
-  }
-}
-
 // ============================================================================
 // ROBÔ DO DONO — PUSH AUTOMÁTICO AO DONO NO MOMENTO DO AGENDAMENTO
 // ============================================================================
