@@ -9,7 +9,8 @@ const { MercadoPagoConfig } = require("mercadopago");
 const cors = require("cors");
 const { processarFila } = require("./processarFila");
 const { avisarClienteRetorno } = require("./avisarClienteRetorno");
-const fetch = require("node-fetch");
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const { rotinaRetornoClientes } = require("./rotinaRetornoClientes");
 // ========================= Inicialização do Firebase ======================
 if (!admin.apps.length) {
