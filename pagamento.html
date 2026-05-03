@@ -362,29 +362,55 @@
         
         // ==================================================
         // ALTERADO: handleMercadoPago MODIFICADO
-        // Não redireciona mais, apenas abre o modal
         // ==================================================
-        function handleMercadoPago() {
+        async function handleMercadoPago() {
             if (!planoSelecionado) return;
 
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get("empresaId");
-            let linkDePagamento = linksDosPlanos[planoSelecionado];
 
-            if (linkDePagamento && empresaId) {
-                // Adiciona a referência da empresa ao link
-                linkDePagamento += `&external_reference=${empresaId}`;
-                
-                // 1. Define o link no botão "Abrir Página" do modal
-                document.getElementById('btn-abrir-link-mp').href = linkDePagamento;
+            if (!empresaId) {
+                avisoSelecao.textContent = "Erro crítico: ID da empresa não encontrado.";
+                return;
+            }
 
-                // 2. Exibe o modal do Mercado Pago
+            try {
+                botoesAcaoContainer.innerHTML = `
+                    <button class="btn-pagar-opcao mercadopago" disabled>
+                        <i class="fa-solid fa-spinner fa-spin"></i> Gerando pagamento...
+                    </button>
+                `;
+
+                const response = await fetch(
+                    "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/createPreference",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            empresaId,
+                            planoSelecionado,
+                            precoPlanoSelecionado,
+                        }),
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.init_point) {
+                    throw new Error(data.error || data.detalhes || "Erro ao gerar link de pagamento.");
+                }
+
+                document.getElementById('btn-abrir-link-mp').href = data.init_point;
                 document.getElementById('mp-modal').style.display = 'flex';
 
-            } else {
-                avisoSelecao.textContent = "Erro ao processar pagamento. Tente novamente.";
-                // Restaura os botões
-                document.querySelector('.card-plano.selecionado')?.click(); 
+                document.querySelector('.card-plano.selecionado')?.click();
+
+            } catch (error) {
+                console.error("Erro ao criar pagamento Mercado Pago:", error);
+                avisoSelecao.textContent = "Erro ao gerar pagamento. Tente novamente.";
+                document.querySelector('.card-plano.selecionado')?.click();
             }
         }
         
