@@ -414,38 +414,33 @@
             }
         });
 
-       // -------------------------
+// -------------------------
 // Listener para atualizar badge de status da assinatura
 // -------------------------
-window.addEventListener('sessionProfileReady', (event) => {
+window.addEventListener('sessionProfileReady', async (event) => {
     try {
         const badge = document.getElementById('statusAssinatura');
-        if (!badge) return;
-        const sess = event?.detail || {};
+        const sess = event && event.detail ? event.detail : {};
         const statusAssinatura = sess.statusAssinatura || sess.status || {};
-        if (statusAssinatura.hasActivePlan) {
+
+        if (badge && statusAssinatura.hasActivePlan) {
             badge.textContent = '✅ Plano ativo';
             badge.style.background = 'linear-gradient(90deg, #10b981, #06a66a)';
             badge.style.display = 'block';
+
             requestAnimationFrame(() => {
                 badge.style.opacity = '1';
                 badge.style.transform = 'translateY(0) scale(var(--badge-scale))';
             });
-            return;
+        } else if (badge) {
+            badge.style.opacity = '0';
+            badge.style.transform = 'translateY(-6px) scale(var(--badge-scale))';
+            setTimeout(() => {
+                badge.style.display = 'none';
+            }, 300);
         }
-        badge.style.opacity = '0';
-        badge.style.transform = 'translateY(-6px) scale(var(--badge-scale))';
-        setTimeout(() => { badge.style.display = 'none'; }, 300);
-    } catch (err) {
-        console.error('Erro ao atualizar badge de assinatura:', err);
-    }
-});
 
-// 🔔 AVISO + BOTÃO RENOVAR (24H antes do vencimento)
-window.addEventListener('sessionProfileReady', async (event) => {
-    try {
-        const sess = event?.detail || {};
-        const empresaId = localStorage.getItem('empresaAtivaId') || sess?.empresaId;
+        const empresaId = localStorage.getItem('empresaAtivaId') || sess.empresaId;
         if (!empresaId) return;
 
         const empresaRef = doc(db, "empresarios", empresaId);
@@ -453,57 +448,75 @@ window.addEventListener('sessionProfileReady', async (event) => {
         if (!snap.exists()) return;
 
         const empresa = snap.data();
-        const validade = empresa.assinaturaValidaAte?.toDate?.();
-        if (!validade) return;
+        if (!empresa.assinaturaValidaAte || typeof empresa.assinaturaValidaAte.toDate !== 'function') return;
 
+        const validade = empresa.assinaturaValidaAte.toDate();
         const diffHoras = (validade - new Date()) / (1000 * 60 * 60);
 
-        if (diffHoras <= 24 && diffHoras > 0) {
+        if (diffHoras > 0 && diffHoras <= 24) {
             if (document.getElementById('banner-renovar-plano')) return;
 
             const banner = document.createElement('div');
             banner.id = 'banner-renovar-plano';
-            banner.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: linear-gradient(135deg, #4f46e5, #6366f1);
-                color: #fff;
-                padding: 14px 20px;
-                border-radius: 12px;
-                box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-family: Poppins, sans-serif;
-                max-width: calc(100% - 32px);
-                flex-wrap: wrap;
-                justify-content: center;
-            `;
 
-            banner.innerHTML = `
-                <span>⚠️ Sua assinatura vence em menos de 24h</span>
-                <button id="btn-renovar-plano" style="background:#22c55e;border:none;color:white;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-family:Poppins, sans-serif;">
-                    Renovar agora
-                </button>
-                <button id="btn-fechar-aviso" style="background:#374151;border:none;color:white;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-family:Poppins, sans-serif;">
-                    OK
-                </button>
-            `;
+            banner.style.position = 'fixed';
+            banner.style.bottom = '20px';
+            banner.style.left = '50%';
+            banner.style.transform = 'translateX(-50%)';
+            banner.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
+            banner.style.color = '#fff';
+            banner.style.padding = '14px 20px';
+            banner.style.borderRadius = '12px';
+            banner.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)';
+            banner.style.zIndex = '9999';
+            banner.style.display = 'flex';
+            banner.style.alignItems = 'center';
+            banner.style.gap = '12px';
+            banner.style.fontFamily = 'Poppins, sans-serif';
+            banner.style.maxWidth = 'calc(100% - 32px)';
+            banner.style.flexWrap = 'wrap';
+            banner.style.justifyContent = 'center';
 
-            document.body.appendChild(banner);
+            const texto = document.createElement('span');
+            texto.textContent = '⚠️ Sua assinatura vence em menos de 24h';
 
-            document.getElementById('btn-renovar-plano').onclick = () => {
-                window.location.href = `pagamento.html?empresaId=${empresaId}`;
+            const btnRenovar = document.createElement('button');
+            btnRenovar.textContent = 'Renovar agora';
+            btnRenovar.style.background = '#22c55e';
+            btnRenovar.style.border = 'none';
+            btnRenovar.style.color = 'white';
+            btnRenovar.style.padding = '8px 14px';
+            btnRenovar.style.borderRadius = '8px';
+            btnRenovar.style.fontWeight = '600';
+            btnRenovar.style.cursor = 'pointer';
+            btnRenovar.style.fontFamily = 'Poppins, sans-serif';
+
+            const btnOk = document.createElement('button');
+            btnOk.textContent = 'OK';
+            btnOk.style.background = '#374151';
+            btnOk.style.border = 'none';
+            btnOk.style.color = 'white';
+            btnOk.style.padding = '8px 14px';
+            btnOk.style.borderRadius = '8px';
+            btnOk.style.fontWeight = '600';
+            btnOk.style.cursor = 'pointer';
+            btnOk.style.fontFamily = 'Poppins, sans-serif';
+
+            btnRenovar.onclick = () => {
+                window.location.href = 'pagamento.html?empresaId=' + empresaId;
             };
 
-            document.getElementById('btn-fechar-aviso').onclick = () => {
+            btnOk.onclick = () => {
                 banner.remove();
             };
+
+            banner.appendChild(texto);
+            banner.appendChild(btnRenovar);
+            banner.appendChild(btnOk);
+            document.body.appendChild(banner);
         }
-    } catch (e) {
-        console.error("Erro aviso vencimento:", e);
+
+    } catch (err) {
+        console.error('Erro ao atualizar status/aviso de assinatura:', err);
     }
 });
