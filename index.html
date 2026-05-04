@@ -487,42 +487,44 @@
                     banner.style.flexWrap = 'wrap';
                     banner.style.justifyContent = 'center';
 
-                    banner.innerHTML = `
-                        <span>⚠️ Sua assinatura vence em menos de 24h</span>
-                        <button id="btn-renovar-plano" style="
-                            background:#22c55e;
-                            border:none;
-                            color:white;
-                            padding:8px 14px;
-                            border-radius:8px;
-                            font-weight:600;
-                            cursor:pointer;
-                            font-family:Poppins, sans-serif;
-                        ">
-                            Renovar agora
-                        </button>
-                    `;
+               banner.innerHTML = `
+  <span>⚠️ Sua assinatura vence em menos de 24h</span>
 
-                    document.body.appendChild(banner);
+  <button id="btn-renovar-plano" style="
+    background:#22c55e;
+    border:none;
+    color:white;
+    padding:8px 14px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:Poppins, sans-serif;
+  ">
+    Renovar agora
+  </button>
 
-                    document.getElementById('btn-renovar-plano').onclick = () => {
-                        window.location.href = `pagamento.html?empresaId=${empresaId}`;
-                    };
-                }
-            } catch (e) {
-                console.error("Erro aviso vencimento:", e);
-            }
-        });
-    </script>
+  <button id="btn-fechar-aviso" style="
+    background:#374151;
+    border:none;
+    color:white;
+    padding:8px 14px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:Poppins, sans-serif;
+  ">
+    OK
+  </button>
+`;
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(() => console.log('✅ Service Worker registrado com sucesso.'))
-                    .catch(err => console.warn('⚠️ Falha ao registrar o Service Worker:', err));
-            });
-        }
-    </script>
-</body>
-</html>
+document.body.appendChild(banner);
+
+// 🔘 botão renovar
+document.getElementById('btn-renovar-plano').onclick = () => {
+    window.location.href = `pagamento.html?empresaId=${empresaId}`;
+};
+
+// 🔘 botão fechar (OK)
+document.getElementById('btn-fechar-aviso').onclick = () => {
+    banner.remove();
+};
