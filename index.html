@@ -414,7 +414,7 @@
             }
         });
 
-        // -------------------------
+                // -------------------------
         // Listener para atualizar badge de status da assinatura
         // Apenas exibe "✅ Plano ativo" quando a sessão indicar hasActivePlan = true.
         // Não altera nenhuma lógica de validação ou redirecionamento.
@@ -435,12 +435,82 @@
                     });
                     return;
                 }
-                // se não houver plano ativo, não mostrar badge
                 badge.style.opacity = '0';
                 badge.style.transform = 'translateY(-6px) scale(var(--badge-scale))';
                 setTimeout(() => { badge.style.display = 'none'; }, 300);
             } catch (err) {
                 console.error('Erro ao atualizar badge de assinatura:', err);
+            }
+        });
+
+        // 🔔 AVISO + BOTÃO RENOVAR (24H antes do vencimento)
+        window.addEventListener('sessionProfileReady', async (event) => {
+            try {
+                const sess = event?.detail || {};
+                const empresaId = localStorage.getItem('empresaAtivaId') || sess?.empresaId;
+
+                if (!empresaId) return;
+
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const snap = await getDoc(empresaRef);
+
+                if (!snap.exists()) return;
+
+                const empresa = snap.data();
+                const validade = empresa.assinaturaValidaAte?.toDate?.();
+
+                if (!validade) return;
+
+                const agora = new Date();
+                const diffHoras = (validade - agora) / (1000 * 60 * 60);
+
+                if (diffHoras <= 24 && diffHoras > 0) {
+                    if (document.getElementById('banner-renovar-plano')) return;
+
+                    const banner = document.createElement('div');
+                    banner.id = 'banner-renovar-plano';
+                    banner.style.position = 'fixed';
+                    banner.style.bottom = '20px';
+                    banner.style.left = '50%';
+                    banner.style.transform = 'translateX(-50%)';
+                    banner.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
+                    banner.style.color = '#fff';
+                    banner.style.padding = '14px 20px';
+                    banner.style.borderRadius = '12px';
+                    banner.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)';
+                    banner.style.zIndex = '9999';
+                    banner.style.display = 'flex';
+                    banner.style.alignItems = 'center';
+                    banner.style.gap = '12px';
+                    banner.style.fontFamily = 'Poppins, sans-serif';
+                    banner.style.maxWidth = 'calc(100% - 32px)';
+                    banner.style.flexWrap = 'wrap';
+                    banner.style.justifyContent = 'center';
+
+                    banner.innerHTML = `
+                        <span>⚠️ Sua assinatura vence em menos de 24h</span>
+                        <button id="btn-renovar-plano" style="
+                            background:#22c55e;
+                            border:none;
+                            color:white;
+                            padding:8px 14px;
+                            border-radius:8px;
+                            font-weight:600;
+                            cursor:pointer;
+                            font-family:Poppins, sans-serif;
+                        ">
+                            Renovar agora
+                        </button>
+                    `;
+
+                    document.body.appendChild(banner);
+
+                    document.getElementById('btn-renovar-plano').onclick = () => {
+                        window.location.href = `pagamento.html?empresaId=${empresaId}`;
+                    };
+                }
+            } catch (e) {
+                console.error("Erro aviso vencimento:", e);
             }
         });
     </script>
