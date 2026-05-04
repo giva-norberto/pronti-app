@@ -203,7 +203,7 @@ exports.createPreference = onRequest(
           notification_url:
             "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago",
           back_urls: {
-            success: "https://prontiapp.com.br/pagamento-confirmado",
+            success: "https://prontiapp.com.br/index.html",
             failure: "https://prontiapp.com.br/pagamento.html",
             pending: "https://prontiapp.com.br/pagamento.html",
           },
