@@ -115,9 +115,8 @@ exports.verificarEmpresa = onRequest(
     });
   }
 );
-
 // ============================================================================
-// ENDPOINT 2: createPreference
+// ENDPOINT 2: createPreference — Checkout Pro normal
 // ============================================================================
 exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -141,11 +140,12 @@ exports.createPreference = onRequest(
           });
         }
 
-        const { empresaId, planoSelecionado, precoPlanoSelecionado } = req.body || {};
+        const { empresaId, planoSelecionado, precoPlanoSelecionado } =
+          req.body || {};
 
         if (!empresaId || !planoSelecionado || !precoPlanoSelecionado) {
           return res.status(400).json({
-            error: "Dados inválidos para criar assinatura.",
+            error: "Dados inválidos para criar pagamento.",
           });
         }
 
@@ -175,12 +175,6 @@ exports.createPreference = onRequest(
           }
         }
 
-        if (!payerEmail) {
-          return res.status(400).json({
-            error: "Empresa sem email para pagamento.",
-          });
-        }
-
         const valor = Number(precoPlanoSelecionado);
 
         if (!valor || valor <= 0) {
@@ -189,42 +183,64 @@ exports.createPreference = onRequest(
           });
         }
 
-        const subscriptionData = {
-          reason: `Assinatura Pronti - Plano ${planoSelecionado} usuário(s)`,
+        const preferenceData = {
+          items: [
+            {
+              id: String(planoSelecionado),
+              title: `Plano Pronti - ${planoSelecionado} usuário(s)`,
+              description: `Pagamento do plano Pronti para empresa ${empresaId}`,
+              quantity: 1,
+              currency_id: "BRL",
+              unit_price: valor,
+            },
+          ],
+          payer: payerEmail
+            ? {
+                email: payerEmail,
+              }
+            : undefined,
           external_reference: String(empresaId),
-          payer_email: payerEmail,
           notification_url:
             "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago",
-          back_url: "https://prontiapp.com.br/pagamento-confirmado",
-          auto_recurring: {
-            frequency: 1,
-            frequency_type: "months",
-            transaction_amount: valor,
-            currency_id: "BRL",
+          back_urls: {
+            success: "https://prontiapp.com.br/pagamento-confirmado",
+            failure: "https://prontiapp.com.br/pagamento.html",
+            pending: "https://prontiapp.com.br/pagamento.html",
           },
-          status: "pending", // ✅ CORREÇÃO CRÍTICA
+          auto_return: "approved",
+          metadata: {
+            empresaId: String(empresaId),
+            planoSelecionado: String(planoSelecionado),
+            valorPlanoSelecionado: valor,
+          },
         };
 
-        logger.info("DEBUG MP createPreference payload:", subscriptionData);
+        logger.info("DEBUG MP Checkout Preference payload:", preferenceData);
 
-        const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(subscriptionData),
-        });
+        const mpResponse = await fetch(
+          "https://api.mercadopago.com/checkout/preferences",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(preferenceData),
+          }
+        );
 
         const response = await mpResponse.json();
 
-                if (!mpResponse.ok) {
-          // Adicionamos este log para ver o erro detalhado no console do Firebase
-          console.log("RESPOSTA COMPLETA DO MERCADO PAGO:", JSON.stringify(response, null, 2));
-          logger.error("Erro Mercado Pago preapproval:", response);
+        if (!mpResponse.ok) {
+          console.log(
+            "RESPOSTA COMPLETA DO MERCADO PAGO:",
+            JSON.stringify(response, null, 2)
+          );
+
+          logger.error("Erro Mercado Pago checkout preference:", response);
 
           return res.status(500).json({
-            error: "Erro ao criar assinatura no Mercado Pago.",
+            error: "Erro ao criar pagamento no Mercado Pago.",
             detalhes:
               response?.message ||
               response?.error ||
@@ -234,26 +250,27 @@ exports.createPreference = onRequest(
 
         await empresaRef.set(
           {
-            mercadoPagoAssinaturaId: response.id,
+            mercadoPagoPreferenceId: response.id,
+            pagamentoPendente: true,
             statusAssinatura: "pendente",
             planoSolicitado: String(planoSelecionado),
             valorPlanoSolicitado: valor,
-            ultimaCriacaoAssinaturaMP:
+            ultimaCriacaoPagamentoMP:
               admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
         );
 
         return res.status(200).json({
+          id: response.id,
           init_point: response.init_point,
           sandbox_init_point: response.sandbox_init_point || null,
-          id: response.id,
         });
       } catch (error) {
         logger.error("Erro em createPreference:", error);
 
         return res.status(500).json({
-          error: "Erro ao criar assinatura no Mercado Pago.",
+          error: "Erro ao criar pagamento no Mercado Pago.",
           detalhes: error.message || error.toString(),
         });
       }
