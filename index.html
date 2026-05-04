@@ -414,47 +414,31 @@
             }
         });
 
-// -------------------------
-// Listener para atualizar badge de status da assinatura
-// -------------------------
+// 🔔 AVISO + BOTÃO RENOVAR + FECHAR (24H antes do vencimento)
 window.addEventListener('sessionProfileReady', async (event) => {
     try {
-        const badge = document.getElementById('statusAssinatura');
-        const sess = event && event.detail ? event.detail : {};
-        const statusAssinatura = sess.statusAssinatura || sess.status || {};
+        const sess = event?.detail || {};
+        const empresaId = localStorage.getItem('empresaAtivaId') || sess?.empresaId;
 
-        if (badge && statusAssinatura.hasActivePlan) {
-            badge.textContent = '✅ Plano ativo';
-            badge.style.background = 'linear-gradient(90deg, #10b981, #06a66a)';
-            badge.style.display = 'block';
-
-            requestAnimationFrame(() => {
-                badge.style.opacity = '1';
-                badge.style.transform = 'translateY(0) scale(var(--badge-scale))';
-            });
-        } else if (badge) {
-            badge.style.opacity = '0';
-            badge.style.transform = 'translateY(-6px) scale(var(--badge-scale))';
-            setTimeout(() => {
-                badge.style.display = 'none';
-            }, 300);
-        }
-
-        const empresaId = localStorage.getItem('empresaAtivaId') || sess.empresaId;
         if (!empresaId) return;
+
+        if (document.getElementById('banner-renovar-plano')) return;
 
         const empresaRef = doc(db, "empresarios", empresaId);
         const snap = await getDoc(empresaRef);
+
         if (!snap.exists()) return;
 
         const empresa = snap.data();
-        if (!empresa.assinaturaValidaAte || typeof empresa.assinaturaValidaAte.toDate !== 'function') return;
+        const validade = empresa.assinaturaValidaAte?.toDate?.();
 
-        const validade = empresa.assinaturaValidaAte.toDate();
-        const diffHoras = (validade - new Date()) / (1000 * 60 * 60);
+        if (!validade) return;
 
-        if (diffHoras > 0 && diffHoras <= 24) {
-            if (document.getElementById('banner-renovar-plano')) return;
+        const agora = new Date();
+        const diffHoras = (validade - agora) / (1000 * 60 * 60);
+
+        if (diffHoras <= 24 && diffHoras > 0) {
+            const horasRestantes = Math.ceil(diffHoras);
 
             const banner = document.createElement('div');
             banner.id = 'banner-renovar-plano';
@@ -465,9 +449,9 @@ window.addEventListener('sessionProfileReady', async (event) => {
             banner.style.transform = 'translateX(-50%)';
             banner.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
             banner.style.color = '#fff';
-            banner.style.padding = '14px 20px';
-            banner.style.borderRadius = '12px';
-            banner.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)';
+            banner.style.padding = '16px 20px';
+            banner.style.borderRadius = '14px';
+            banner.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
             banner.style.zIndex = '9999';
             banner.style.display = 'flex';
             banner.style.alignItems = 'center';
@@ -476,47 +460,51 @@ window.addEventListener('sessionProfileReady', async (event) => {
             banner.style.maxWidth = 'calc(100% - 32px)';
             banner.style.flexWrap = 'wrap';
             banner.style.justifyContent = 'center';
+            banner.style.textAlign = 'center';
 
-            const texto = document.createElement('span');
-            texto.textContent = '⚠️ Sua assinatura vence em menos de 24h';
+            banner.innerHTML = `
+                <span style="font-weight:600;">
+                    ⚠️ Sua assinatura vence em ${horasRestantes}h
+                </span>
 
-            const btnRenovar = document.createElement('button');
-            btnRenovar.textContent = 'Renovar agora';
-            btnRenovar.style.background = '#22c55e';
-            btnRenovar.style.border = 'none';
-            btnRenovar.style.color = 'white';
-            btnRenovar.style.padding = '8px 14px';
-            btnRenovar.style.borderRadius = '8px';
-            btnRenovar.style.fontWeight = '600';
-            btnRenovar.style.cursor = 'pointer';
-            btnRenovar.style.fontFamily = 'Poppins, sans-serif';
+                <button id="btn-renovar-plano" style="
+                    background:#22c55e;
+                    border:none;
+                    color:white;
+                    padding:8px 14px;
+                    border-radius:8px;
+                    font-weight:600;
+                    cursor:pointer;
+                    font-family:Poppins, sans-serif;
+                ">
+                    Ir para pagamento
+                </button>
 
-            const btnOk = document.createElement('button');
-            btnOk.textContent = 'OK';
-            btnOk.style.background = '#374151';
-            btnOk.style.border = 'none';
-            btnOk.style.color = 'white';
-            btnOk.style.padding = '8px 14px';
-            btnOk.style.borderRadius = '8px';
-            btnOk.style.fontWeight = '600';
-            btnOk.style.cursor = 'pointer';
-            btnOk.style.fontFamily = 'Poppins, sans-serif';
+                <button id="btn-fechar-aviso-plano" style="
+                    background:rgba(255,255,255,0.18);
+                    border:1px solid rgba(255,255,255,0.35);
+                    color:white;
+                    padding:8px 12px;
+                    border-radius:8px;
+                    font-weight:600;
+                    cursor:pointer;
+                    font-family:Poppins, sans-serif;
+                ">
+                    Fechar
+                </button>
+            `;
 
-            btnRenovar.onclick = () => {
-                window.location.href = 'pagamento.html?empresaId=' + empresaId;
+            document.body.appendChild(banner);
+
+            document.getElementById('btn-renovar-plano').onclick = () => {
+                window.location.href = `pagamento.html?empresaId=${empresaId}`;
             };
 
-            btnOk.onclick = () => {
+            document.getElementById('btn-fechar-aviso-plano').onclick = () => {
                 banner.remove();
             };
-
-            banner.appendChild(texto);
-            banner.appendChild(btnRenovar);
-            banner.appendChild(btnOk);
-            document.body.appendChild(banner);
         }
-
-    } catch (err) {
-        console.error('Erro ao atualizar status/aviso de assinatura:', err);
+    } catch (e) {
+        console.error("Erro aviso vencimento:", e);
     }
 });
