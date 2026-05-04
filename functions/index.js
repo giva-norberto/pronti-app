@@ -278,7 +278,7 @@ exports.createPreference = onRequest(
   }
 );
 // ============================================================================
-// ENDPOINT 3: receberWebhookMercadoPago
+// ENDPOINT 3: receberWebhookMercadoPago — Checkout Pro normal
 // ============================================================================
 exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -293,14 +293,14 @@ exports.receberWebhookMercadoPago = onRequest(
         const query = req.query || {};
 
         const type = body.type || query.type || query.topic || null;
-        const preapprovalId =
-          body.id ||
+        const paymentId =
           body?.data?.id ||
-          query.id ||
+          body.id ||
           query["data.id"] ||
+          query.id ||
           null;
 
-        if (type !== "preapproval" || !preapprovalId) {
+        if (type !== "payment" || !paymentId) {
           return res.status(200).send("OK");
         }
 
@@ -312,8 +312,8 @@ exports.receberWebhookMercadoPago = onRequest(
         }
 
         const mpResponse = await fetch(
-          `https://api.mercadopago.com/preapproval/${encodeURIComponent(
-            String(preapprovalId)
+          `https://api.mercadopago.com/v1/payments/${encodeURIComponent(
+            String(paymentId)
           )}`,
           {
             method: "GET",
@@ -324,23 +324,27 @@ exports.receberWebhookMercadoPago = onRequest(
           }
         );
 
-        const subscription = await mpResponse.json();
+        const payment = await mpResponse.json();
 
         if (!mpResponse.ok) {
-          logger.error("Erro ao consultar preapproval Mercado Pago:", {
+          logger.error("Erro ao consultar payment Mercado Pago:", {
             status: mpResponse.status,
-            resposta: subscription,
+            resposta: payment,
           });
 
           return res.status(200).send("OK");
         }
 
-        const empresaId = subscription.external_reference;
+        const empresaId =
+          payment.external_reference ||
+          payment.metadata?.empresaId ||
+          payment.metadata?.empresa_id ||
+          null;
 
         if (!empresaId) {
-          logger.warn("Webhook MP sem external_reference", {
-            mercadoPagoAssinaturaId: subscription.id,
-            statusMP: subscription.status,
+          logger.warn("Webhook MP payment sem external_reference", {
+            mercadoPagoPaymentId: payment.id,
+            statusMP: payment.status,
           });
 
           return res.status(200).send("OK");
@@ -352,59 +356,48 @@ exports.receberWebhookMercadoPago = onRequest(
         if (!empresaSnap.exists) {
           logger.warn("Webhook MP: empresa não encontrada", {
             empresaId,
-            mercadoPagoAssinaturaId: subscription.id,
-            statusMP: subscription.status,
+            mercadoPagoPaymentId: payment.id,
+            statusMP: payment.status,
           });
 
           return res.status(200).send("OK");
         }
 
-        const statusMap = {
-          authorized: "ativa",
-          cancelled: "cancelada",
-          canceled: "cancelada",
-          paused: "pausada",
-          pending: "pendente",
-        };
-
-        const novoStatus = statusMap[subscription.status] || "desconhecido";
         const agora = admin.firestore.FieldValue.serverTimestamp();
 
-        let novaValidade = null;
-
-        if (novoStatus === "ativa") {
-          const dataValidade = new Date();
-          dataValidade.setDate(dataValidade.getDate() + 30);
-          novaValidade = admin.firestore.Timestamp.fromDate(dataValidade);
-        }
-
         const updatesEmpresa = {
-          statusAssinatura: novoStatus,
-          mercadoPagoAssinaturaId: subscription.id,
+          mercadoPagoPaymentId: String(payment.id),
+          mercadoPagoStatusPagamento: payment.status || null,
           ultimaAtualizacaoMP: agora,
-          ultimaRespostaMercadoPago: subscription.status || null,
+          ultimaRespostaMercadoPago: payment.status || null,
         };
 
-        if (novaValidade) {
+        if (payment.status === "approved") {
+          const dataValidade = new Date();
+          dataValidade.setDate(dataValidade.getDate() + 30);
+          const novaValidade = admin.firestore.Timestamp.fromDate(dataValidade);
+
+          updatesEmpresa.assinaturaAtiva = true;
           updatesEmpresa.assinaturaValidaAte = novaValidade;
           updatesEmpresa.proximoPagamento = novaValidade;
-          updatesEmpresa.assinaturaAtiva = true;
+          updatesEmpresa.pagamentoPendente = false;
+          updatesEmpresa.statusAssinatura = "ativa";
           updatesEmpresa.status = "ativo";
           updatesEmpresa.plano = "pago";
-        }
-
-        if (novoStatus !== "ativa") {
-          updatesEmpresa.assinaturaAtiva = false;
-          updatesEmpresa.status = novoStatus;
+        } else if (payment.status === "pending" || payment.status === "in_process") {
+          updatesEmpresa.pagamentoPendente = true;
+          updatesEmpresa.statusAssinatura = "pendente";
+        } else {
+          updatesEmpresa.pagamentoPendente = false;
+          updatesEmpresa.statusAssinatura = payment.status || "recusado";
         }
 
         await empresaRef.set(updatesEmpresa, { merge: true });
 
-        logger.info("Webhook MP processado com sucesso", {
+        logger.info("Webhook MP payment processado com sucesso", {
           empresaId,
-          mercadoPagoAssinaturaId: subscription.id,
-          statusMP: subscription.status,
-          statusPronti: novoStatus,
+          mercadoPagoPaymentId: payment.id,
+          statusMP: payment.status,
         });
 
         return res.status(200).send("OK");
