@@ -13,6 +13,7 @@ const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 const { rotinaRetornoClientes } = require("./rotinaRetornoClientes");
 const { rotinaLembreteCliente } = require("./rotinaLembreteCliente");
+const { rotinaResumoAgendamentosDono } = require("./rotinaResumoAgendamentosDono");
 // ========================= Inicialização do Firebase ======================
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -746,3 +747,4 @@ exports.rotinaProcessarFila = onSchedule(
 exports.avisarClienteRetorno = avisarClienteRetorno;
 exports.rotinaRetornoClientes = rotinaRetornoClientes;
 exports.rotinaLembreteCliente = rotinaLembreteCliente;
+exports.rotinaResumoAgendamentosDono = rotinaResumoAgendamentosDono;
