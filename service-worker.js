@@ -96,3 +96,65 @@ self.addEventListener("activate", event => {
   // assume controle imediatamente
   self.clients.claim();
 });
+
+// ======================================================
+// PUSH NOTIFICATION - PRONTI APP
+// ======================================================
+self.addEventListener("push", event => {
+  console.log("[ServiceWorker] Push recebido:", event);
+
+  let payload = {};
+
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (e) {
+    console.warn("[ServiceWorker] Push sem JSON válido:", e);
+  }
+
+  const notification = payload.notification || {};
+  const data = payload.data || {};
+
+  const title = notification.title || data.title || "Pronti";
+
+  const options = {
+    body: notification.body || data.body || "Você tem uma nova notificação.",
+    icon: notification.icon || data.icon || "/icon.png",
+    badge: notification.badge || data.badge || "/icon.png",
+    vibrate: [200, 100, 200],
+    requireInteraction: true,
+    data: {
+      link:
+        data.link ||
+        payload?.webpush?.fcmOptions?.link ||
+        payload?.fcmOptions?.link ||
+        "https://prontiapp.com.br"
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// ======================================================
+// CLIQUE NA NOTIFICAÇÃO
+// ======================================================
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+
+  const link = event.notification?.data?.link || "https://prontiapp.com.br";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url === link && "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(link);
+      }
+    })
+  );
+});
