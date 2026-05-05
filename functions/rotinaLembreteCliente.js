@@ -83,7 +83,7 @@ exports.rotinaLembreteCliente = onSchedule(
               webpush: {
                 notification: {
                   title: "⏰ Seu horário está chegando!",
-                  body: `${lembrete.servicoNome} com ${lembrete.profissionalNome || "profissional"} às ${lembrete.horarioTexto}.\nNão vai conseguir ir? Toque aqui para cancelar.`,
+                  body: `${lembrete.servicoNome} com ${lembrete.profissionalNome || "profissional"} às ${lembrete.horarioTexto}.\n\nVai conseguir ir?\nSe não, toque aqui e cancele para liberar o horário.`,
                   icon: "https://prontiapp.com.br/icon.png",
                   badge: "https://prontiapp.com.br/icon.png",
                   vibrate: [200, 100, 200],
