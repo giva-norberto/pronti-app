@@ -420,6 +420,7 @@ exports.notificarDonoInstantaneo = onDocumentCreated(
     database: "pronti-app",
   },
   async (event) => {
+    return; // 🔴 PAUSADO TEMPORARIAMENTE PARA EVITAR DUPLICIDADE
     const agendamento = event.data?.data();
     const empresaId = event.params?.empresaId;
     const agendamentoId = event.params?.agendamentoId;
