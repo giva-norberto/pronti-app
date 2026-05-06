@@ -9,6 +9,7 @@ const { MercadoPagoConfig } = require("mercadopago");
 const cors = require("cors");
 const {
   processarFila,
+  ofertarVagaParaFila,
   confirmarOfertaFila,
   recusarOfertaFila
 } = require("./processarFila");
@@ -755,3 +756,4 @@ exports.rotinaLembreteCliente = rotinaLembreteCliente;
 exports.rotinaResumoAgendamentosDono = rotinaResumoAgendamentosDono;
 exports.confirmarOfertaFila = confirmarOfertaFila;
 exports.recusarOfertaFila = recusarOfertaFila;
+exports.ofertarVagaParaFila = ofertarVagaParaFila;
