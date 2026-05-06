@@ -385,6 +385,11 @@ async function expirarOfertasPendentes() {
 
         await db.runTransaction(async (transaction) => {
           const ofertaRef = ofertaDoc.ref;
+
+          // =========================================================
+          // PRIMEIRO TODOS OS READS
+          // =========================================================
+
           const ofertaAtualSnap = await transaction.get(ofertaRef);
 
           if (!ofertaAtualSnap.exists) return;
@@ -395,28 +400,37 @@ async function expirarOfertasPendentes() {
             return;
           }
 
+          let filaRef = null;
+          let filaSnap = null;
+
+          if (filaId) {
+            filaRef = db.collection("fila_agendamentos").doc(filaId);
+            filaSnap = await transaction.get(filaRef);
+          }
+
+          // =========================================================
+          // DEPOIS TODOS OS WRITES
+          // =========================================================
+
           transaction.update(ofertaRef, {
             status: STATUS_OFERTA_EXPIRADA,
             expiradaEm: admin.firestore.FieldValue.serverTimestamp(),
             motivoExpiracao: "tempo_esgotado",
           });
 
-          if (filaId) {
-            const filaRef = db.collection("fila_agendamentos").doc(filaId);
-            const filaSnap = await transaction.get(filaRef);
+          if (filaSnap && filaSnap.exists) {
+            const fila = filaSnap.data() || {};
 
-            if (filaSnap.exists) {
-              const fila = filaSnap.data() || {};
-
-              if (fila.status === STATUS_FILA_OFERTA_ENVIADA) {
-                transaction.update(filaRef, {
-                  status: STATUS_FILA_AGUARDANDO,
-                  processando: false,
-                  ofertaId: admin.firestore.FieldValue.delete(),
-                  ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
-                  ultimaOfertaExpiradaEm: admin.firestore.FieldValue.serverTimestamp(),
-                });
-              }
+            if (fila.status === STATUS_FILA_OFERTA_ENVIADA) {
+              transaction.update(filaRef, {
+                status: STATUS_FILA_AGUARDANDO,
+                processando: false,
+                ofertaId: admin.firestore.FieldValue.delete(),
+                ultimaTentativaEm:
+                  admin.firestore.FieldValue.serverTimestamp(),
+                ultimaOfertaExpiradaEm:
+                  admin.firestore.FieldValue.serverTimestamp(),
+              });
             }
           }
         });
@@ -424,13 +438,15 @@ async function expirarOfertasPendentes() {
         totalExpiradas++;
       }
     } catch (error) {
-      console.error(`❌ Erro ao expirar ofertas da empresa ${empresaId}:`, error.message);
+      console.error(
+        `❌ Erro ao expirar ofertas da empresa ${empresaId}:`,
+        error.message
+      );
     }
   }
 
   console.log(`✅ Expiração concluída. Ofertas expiradas: ${totalExpiradas}`);
 }
-
 // ============================================================================
 // CRIAÇÃO DE OFERTA
 // ============================================================================
