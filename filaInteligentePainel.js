@@ -1,6 +1,5 @@
 import {
   ofertarVagaParaFila,
-  processarOfertasExpiradas,
   confirmarOfertaFila,
   recusarOfertaFila,
   ouvirOfertasFila,
@@ -10,7 +9,6 @@ import {
 let empresaIdAtual = null;
 let unsubscribeOfertas = null;
 let unsubscribeFila = null;
-let loopExpiracaoId = null;
 let painelFilaJaInicializado = false;
 
 export function iniciarPainelFilaInteligente(empresaId) {
@@ -19,11 +17,8 @@ export function iniciarPainelFilaInteligente(empresaId) {
   if (unsubscribeOfertas) unsubscribeOfertas();
   if (unsubscribeFila) unsubscribeFila();
 
-  // Listeners apenas para leitura/atualização da UI:
   unsubscribeOfertas = ouvirOfertasFila(empresaId, renderizarOfertas);
   unsubscribeFila = ouvirFilaEspera(empresaId, renderizarFila);
-
-  iniciarLoopDeExpiracao();
 
   if (!painelFilaJaInicializado) {
     bindAcoesPainel();
@@ -36,9 +31,7 @@ function bindAcoesPainel() {
     const btnOferta = e.target.closest("[data-ofertar-vaga]");
     const btnConfirmar = e.target.closest("[data-confirmar-oferta]");
     const btnRecusar = e.target.closest("[data-recusar-oferta]");
-    const btnProcessar = e.target.closest("[data-processar-expiradas]");
 
-    // Ofertar vaga:
     if (btnOferta) {
       const vaga = {
         data: btnOferta.dataset.data,
@@ -50,8 +43,10 @@ function bindAcoesPainel() {
       };
 
       btnOferta.disabled = true;
+
       try {
         const res = await ofertarVagaParaFila(empresaIdAtual, vaga);
+
         if (!res.ok) {
           alert(`Não foi possível ofertar: ${res.motivo}`);
         }
@@ -61,13 +56,15 @@ function bindAcoesPainel() {
       } finally {
         btnOferta.disabled = false;
       }
+
       return;
     }
 
-    // Confirmar oferta:
     if (btnConfirmar) {
       const ofertaId = btnConfirmar.dataset.confirmarOferta;
+
       btnConfirmar.disabled = true;
+
       try {
         const res = await confirmarOfertaFila(empresaIdAtual, ofertaId);
 
@@ -77,7 +74,7 @@ function bindAcoesPainel() {
           alert(
             res.horario && res.clienteNome
               ? `Agendamento confirmado para ${res.clienteNome} às ${res.horario}`
-              : `Agendamento confirmado!`
+              : "Agendamento confirmado!"
           );
         }
       } catch (error) {
@@ -86,13 +83,15 @@ function bindAcoesPainel() {
       } finally {
         btnConfirmar.disabled = false;
       }
+
       return;
     }
 
-    // Recusar oferta:
     if (btnRecusar) {
       const ofertaId = btnRecusar.dataset.recusarOferta;
+
       btnRecusar.disabled = true;
+
       try {
         const res = await recusarOfertaFila(empresaIdAtual, ofertaId);
 
@@ -105,56 +104,61 @@ function bindAcoesPainel() {
       } finally {
         btnRecusar.disabled = false;
       }
+
       return;
     }
-
-    // Processar expiradas:
-    if (btnProcessar) {
-      btnProcessar.disabled = true;
-      try {
-        const res = await processarOfertasExpiradas(empresaIdAtual);
-
-        if (!res.ok) {
-          alert("Erro ao processar ofertas expiradas.");
-        }
-      } catch (error) {
-        console.error("Erro ao processar expiradas:", error);
-        alert("Erro ao processar ofertas expiradas.");
-      } finally {
-        btnProcessar.disabled = false;
-      }
-    }
   });
-}
-
-function iniciarLoopDeExpiracao() {
-  if (loopExpiracaoId) {
-    clearInterval(loopExpiracaoId);
-  }
-
-  loopExpiracaoId = setInterval(async () => {
-    try {
-      if (!empresaIdAtual) return;
-      await processarOfertasExpiradas(empresaIdAtual);
-    } catch (error) {
-      console.error("Erro no loop de expiração da fila:", error);
-    }
-  }, 30000);
 }
 
 function formatarStatus(status) {
   const mapa = {
     aguardando: "Aguardando",
-    ofertado: "Ofertado",
-    atendido: "Atendido",
+    oferta_enviada: "Oferta enviada",
+    confirmado: "Confirmado",
+    recusado: "Recusado",
     cancelado: "Cancelado",
-    cancelada: "Cancelada",
     expirado: "Expirado",
+
     pendente: "Pendente",
-    aceita: "Aceita",
-    recusada: "Recusada"
+    confirmada: "Confirmada",
+    recusada: "Recusada",
+    expirada: "Expirada",
+
+    fila: "Aguardando",
+    ofertado: "Oferta enviada",
+    atendido: "Confirmado",
+    aceita: "Confirmada"
   };
-  return mapa[status] || status;
+
+  return mapa[status] || status || "-";
+}
+
+function obterClasseStatus(status) {
+  const mapa = {
+    fila: "aguardando",
+    aguardando: "aguardando",
+
+    ofertado: "oferta_enviada",
+    oferta_enviada: "oferta_enviada",
+
+    atendido: "confirmado",
+    aceita: "confirmada",
+    confirmado: "confirmado",
+    confirmada: "confirmada",
+
+    recusado: "recusado",
+    recusada: "recusada",
+
+    expirado: "expirado",
+    expirada: "expirada",
+
+    cancelado: "cancelado",
+    cancelada: "cancelado",
+
+    pendente: "pendente"
+  };
+
+  return mapa[status] || "desconhecido";
 }
 
 function renderizarOfertas(lista) {
@@ -167,30 +171,42 @@ function renderizarOfertas(lista) {
   }
 
   el.innerHTML = lista
-    .map(
-      (item) => `
-    <div class="card-fila">
-      <div class="card-fila-topo">
-        <strong>${item.clienteNome || "Cliente"}</strong>
-        <span class="badge-status badge-${item.status}">${formatarStatus(item.status)}</span>
-      </div>
+    .map((item) => {
+      const classeStatus = obterClasseStatus(item.status);
 
-      <div class="card-fila-info">
-        <div><b>Serviço:</b> ${item.servicoNome || "-"}</div>
-        <div><b>Profissional:</b> ${item.profissionalNome || "-"}</div>
-        <div><b>Data:</b> ${item.data || "-"}</div>
-        <div><b>Horário:</b> ${item.horario || "-"}</div>
-      </div>
+      return `
+        <div class="card-fila">
+          <div class="card-fila-topo">
+            <strong>${item.clienteNome || "Cliente"}</strong>
+            <span class="badge-status badge-${classeStatus}">
+              ${formatarStatus(item.status)}
+            </span>
+          </div>
 
-      ${item.status === "pendente" ? `
-        <div class="card-fila-acoes">
-          <button data-confirmar-oferta="${item.id}" class="btn-primario">Confirmar</button>
-          <button data-recusar-oferta="${item.id}" class="btn-secundario">Recusar</button>
+          <div class="card-fila-info">
+            <div><b>Serviço:</b> ${item.servicoNome || "-"}</div>
+            <div><b>Profissional:</b> ${item.profissionalNome || "-"}</div>
+            <div><b>Data:</b> ${item.data || "-"}</div>
+            <div><b>Horário:</b> ${item.horario || "-"}</div>
+          </div>
+
+          ${
+            item.status === "pendente"
+              ? `
+                <div class="card-fila-acoes">
+                  <button data-confirmar-oferta="${item.id}" class="btn-primario">
+                    Confirmar
+                  </button>
+                  <button data-recusar-oferta="${item.id}" class="btn-secundario">
+                    Recusar
+                  </button>
+                </div>
+              `
+              : ""
+          }
         </div>
-      ` : ""}
-    </div>
-  `
-    )
+      `;
+    })
     .join("");
 }
 
@@ -204,22 +220,32 @@ function renderizarFila(lista) {
   }
 
   el.innerHTML = lista
-    .map(
-      (item) => `
-    <div class="card-fila">
-      <div class="card-fila-topo">
-        <strong>${item.clienteNome || "Cliente"}</strong>
-        <span class="badge-status badge-${item.status}">${formatarStatus(item.status)}</span>
-      </div>
+    .map((item) => {
+      const classeStatus = obterClasseStatus(item.status);
 
-      <div class="card-fila-info">
-        <div><b>Serviço:</b> ${item.servicoNome || "-"}</div>
-        <div><b>Profissional:</b> ${item.profissionalNome || "Qualquer um"}</div>
-        <div><b>Data desejada:</b> ${item.dataDesejada || "-"}</div>
-        <div><b>Horários:</b> ${(item.horariosAceitos || []).join(", ") || "-"}</div>
-      </div>
-    </div>
-  `
-    )
+      return `
+        <div class="card-fila">
+          <div class="card-fila-topo">
+            <strong>${item.clienteNome || "Cliente"}</strong>
+            <span class="badge-status badge-${classeStatus}">
+              ${formatarStatus(item.status)}
+            </span>
+          </div>
+
+          <div class="card-fila-info">
+            <div><b>Serviço:</b> ${item.servicoNome || "-"}</div>
+            <div><b>Profissional:</b> ${
+              item.profissionalNome || "Qualquer um"
+            }</div>
+            <div><b>Data desejada:</b> ${
+              item.dataDesejada || item.dataFila || "-"
+            }</div>
+            <div><b>Horários:</b> ${
+              (item.horariosAceitos || []).join(", ") || "-"
+            }</div>
+          </div>
+        </div>
+      `;
+    })
     .join("");
 }
