@@ -1,4 +1,4 @@
-const functions = require("firebase-functions");
+const { onCall } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
 
@@ -119,7 +119,6 @@ function obterDiaConfig(horariosConfig, dataISO) {
     return horariosConfig[nomeDia];
   }
 
-  // Compatibilidade caso exista algum profissional antigo salvo por índice numérico
   const mapaIndice = {
     domingo: 0,
     segunda: 1,
@@ -579,10 +578,11 @@ async function processarFila() {
 // OFERTAR VAGA IMEDIATAMENTE APÓS CANCELAMENTO
 // ============================================================================
 
-const ofertarVagaParaFila = functions
-  .region(REGIAO)
-  .https.onCall(async (data, context) => {
-    const { empresaId, vaga } = data || {};
+const ofertarVagaParaFila = onCall(
+  { region: REGIAO },
+  async (request) => {
+    const data = request.data || {};
+    const { empresaId, vaga } = data;
 
     if (!empresaId || !vaga?.data || !vaga?.horario || !vaga?.profissionalId) {
       return {
@@ -656,16 +656,18 @@ const ofertarVagaParaFila = functions
         erro: error.message || error.toString(),
       };
     }
-  });
+  }
+);
 
 // ============================================================================
 // CONFIRMAR OFERTA
 // ============================================================================
 
-const confirmarOfertaFila = functions
-  .region(REGIAO)
-  .https.onCall(async (data, context) => {
-    const { empresaId, ofertaId } = data || {};
+const confirmarOfertaFila = onCall(
+  { region: REGIAO },
+  async (request) => {
+    const data = request.data || {};
+    const { empresaId, ofertaId } = data;
 
     if (!empresaId || !ofertaId) {
       return {
@@ -838,16 +840,18 @@ const confirmarOfertaFila = functions
         erro: e.message || e.toString(),
       };
     }
-  });
+  }
+);
 
 // ============================================================================
 // RECUSAR OFERTA
 // ============================================================================
 
-const recusarOfertaFila = functions
-  .region(REGIAO)
-  .https.onCall(async (data, context) => {
-    const { empresaId, ofertaId } = data || {};
+const recusarOfertaFila = onCall(
+  { region: REGIAO },
+  async (request) => {
+    const data = request.data || {};
+    const { empresaId, ofertaId } = data;
 
     if (!empresaId || !ofertaId) {
       return {
@@ -921,7 +925,8 @@ const recusarOfertaFila = functions
         erro: e.message || e.toString(),
       };
     }
-  });
+  }
+);
 
 module.exports = {
   processarFila,
