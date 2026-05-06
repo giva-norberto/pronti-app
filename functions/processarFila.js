@@ -7,17 +7,20 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// IMPORTANTE: usar o banco nomeado oficial do Pronti
+// Banco nomeado oficial do Pronti
 const db = getFirestore("pronti-app");
 const fcm = admin.messaging();
+
+// Região oficial das callable functions
+const REGIAO = "southamerica-east1";
 
 // Status oficiais da fila
 const STATUS_FILA_AGUARDANDO = "aguardando";
 const STATUS_FILA_OFERTA_ENVIADA = "oferta_enviada";
 const STATUS_FILA_CONFIRMADO = "confirmado";
 const STATUS_FILA_RECUSADO = "recusado";
-const STATUS_FILA_EXPIRADO = "expirado";
 
+// Status oficiais da oferta
 const STATUS_OFERTA_PENDENTE = "pendente";
 const STATUS_OFERTA_CONFIRMADA = "confirmada";
 const STATUS_OFERTA_RECUSADA = "recusada";
@@ -26,15 +29,28 @@ const STATUS_OFERTA_EXPIRADA = "expirada";
 // Compatibilidade com registros antigos
 const STATUS_ANTIGO_FILA = "fila";
 
-// Utilitários
-function getDiaSemanaId(dataISO) {
-  const [ano, mes, dia] = String(dataISO).split("-").map(Number);
-  const data = new Date(ano, mes - 1, dia);
-  return data.getDay();
+// ============================================================================
+// UTILITÁRIOS DE TEMPO — MESMA BASE DA VITRINE
+// ============================================================================
+
+function getNomeDiaSemana(dataISO) {
+  const dias = [
+    "domingo",
+    "segunda",
+    "terca",
+    "quarta",
+    "quinta",
+    "sexta",
+    "sabado",
+  ];
+
+  const data = new Date(`${dataISO}T12:00:00Z`);
+  return dias[data.getUTCDay()];
 }
 
 function horaParaMinutos(hora) {
   if (!hora || !String(hora).includes(":")) return 0;
+
   const [h, m] = String(hora).split(":").map(Number);
   return h * 60 + m;
 }
@@ -42,7 +58,38 @@ function horaParaMinutos(hora) {
 function minutosParaHora(minutos) {
   const h = Math.floor(minutos / 60);
   const m = minutos % 60;
+
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function getDataLocalBR() {
+  const agora = new Date();
+
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(agora);
+}
+
+function getMinutosAgoraBR() {
+  const agora = new Date();
+
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const partes = formatter.formatToParts(agora);
+  const hora = partes.find((p) => p.type === "hour")?.value || "00";
+  const minuto = partes.find((p) => p.type === "minute")?.value || "00";
+
+  return horaParaMinutos(`${hora}:${minuto}`);
 }
 
 function intervaloSobrepoe(inicioA, fimA, inicioB, fimB) {
@@ -50,8 +97,8 @@ function intervaloSobrepoe(inicioA, fimA, inicioB, fimB) {
 }
 
 function obterDuracaoAgendamento(ag) {
-  if (ag?.duracaoTotal) return Number(ag.duracaoTotal) || 0;
   if (ag?.servicoDuracao) return Number(ag.servicoDuracao) || 0;
+  if (ag?.duracaoTotal) return Number(ag.duracaoTotal) || 0;
   if (ag?.duracao) return Number(ag.duracao) || 0;
 
   if (Array.isArray(ag?.servicos)) {
@@ -63,11 +110,33 @@ function obterDuracaoAgendamento(ag) {
   return 30;
 }
 
+function obterDiaConfig(horariosConfig, dataISO) {
+  if (!horariosConfig) return null;
+
+  const nomeDia = getNomeDiaSemana(dataISO);
+
+  if (horariosConfig[nomeDia]) {
+    return horariosConfig[nomeDia];
+  }
+
+  // Compatibilidade caso exista algum profissional antigo salvo por índice numérico
+  const mapaIndice = {
+    domingo: 0,
+    segunda: 1,
+    terca: 2,
+    quarta: 3,
+    quinta: 4,
+    sexta: 5,
+    sabado: 6,
+  };
+
+  return horariosConfig[mapaIndice[nomeDia]] || null;
+}
+
 function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTotal) {
   if (!horariosConfig) return [];
 
-  const diaId = getDiaSemanaId(dataISO);
-  const diaConfig = horariosConfig[diaId];
+  const diaConfig = obterDiaConfig(horariosConfig, dataISO);
 
   if (
     !diaConfig ||
@@ -78,14 +147,16 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
     return [];
   }
 
-  const intervalo = Number(horariosConfig.intervalo) || 30;
+  const intervalo = Number(horariosConfig.intervalo) || 0;
   const slots = [];
 
-  for (const bloco of diaConfig.blocos) {
-    const inicioBloco = horaParaMinutos(bloco.inicio);
-    const fimBloco = horaParaMinutos(bloco.fim);
+  const hojeBR = getDataLocalBR();
+  const ehHoje = hojeBR === dataISO;
+  const minutosAgora = getMinutosAgoraBR();
 
-    let cursor = inicioBloco;
+  for (const bloco of diaConfig.blocos) {
+    let cursor = horaParaMinutos(bloco.inicio);
+    const fimBloco = horaParaMinutos(bloco.fim);
 
     while (cursor + duracaoTotal <= fimBloco) {
       const inicioSlot = cursor;
@@ -99,16 +170,20 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
         return intervaloSobrepoe(inicioSlot, fimSlot, inicioAg, fimAg);
       });
 
-      if (!conflitou) {
+      if (!conflitou && (!ehHoje || inicioSlot > minutosAgora)) {
         slots.push(minutosParaHora(inicioSlot));
       }
 
-      cursor += intervalo;
+      cursor += intervalo || duracaoTotal;
     }
   }
 
   return slots;
 }
+
+// ============================================================================
+// PUSH
+// ============================================================================
 
 async function buscarTokenDoCliente(item) {
   if (item?.fcmToken) return item.fcmToken;
@@ -215,6 +290,147 @@ async function enviarPushOferta(item, filaId, dataOferta, horarioOferta) {
   }
 }
 
+// ============================================================================
+// CONSULTAS
+// ============================================================================
+
+async function buscarAgendamentosAtivosDoDia(empresaId, profissionalId, data) {
+  const agendamentosRef = db
+    .collection("empresarios")
+    .doc(empresaId)
+    .collection("agendamentos");
+
+  const snap = await agendamentosRef
+    .where("data", "==", data)
+    .where("profissionalId", "==", profissionalId)
+    .where("status", "==", "ativo")
+    .get();
+
+  return snap.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+  }));
+}
+
+async function horarioAindaDisponivel({ empresaId, profissionalId, data, horario }) {
+  const agendamentosRef = db
+    .collection("empresarios")
+    .doc(empresaId)
+    .collection("agendamentos");
+
+  const snap = await agendamentosRef
+    .where("data", "==", data)
+    .where("horario", "==", horario)
+    .where("profissionalId", "==", profissionalId)
+    .where("status", "==", "ativo")
+    .limit(1)
+    .get();
+
+  return snap.empty;
+}
+
+async function buscarHorariosProfissional(empresaId, profissionalId) {
+  const horariosRef = db
+    .collection("empresarios")
+    .doc(empresaId)
+    .collection("profissionais")
+    .doc(profissionalId)
+    .collection("configuracoes")
+    .doc("horarios");
+
+  const snap = await horariosRef.get();
+
+  if (!snap.exists) return null;
+
+  return snap.data();
+}
+
+// ============================================================================
+// CRIAÇÃO DE OFERTA
+// ============================================================================
+
+function obterPrimeiroServico(item) {
+  if (Array.isArray(item?.servicos) && item.servicos.length > 0) {
+    return item.servicos[0];
+  }
+
+  return null;
+}
+
+async function criarOfertaParaFila({ docFila, item, dataOferta, horarioOferta }) {
+  const filaId = docFila.id;
+  const empresaId = item.empresaId;
+  const profissionalId = item.profissionalId;
+
+  const expiraEm = admin.firestore.Timestamp.fromDate(
+    new Date(Date.now() + 5 * 60 * 1000)
+  );
+
+  const linkConfirmacao = construirLinkConfirmacao(filaId, empresaId);
+  const pushEnviado = await enviarPushOferta(item, filaId, dataOferta, horarioOferta);
+
+  const primeiroServico = obterPrimeiroServico(item);
+
+  const ofertaRef = await db
+    .collection("empresarios")
+    .doc(empresaId)
+    .collection("ofertas_fila")
+    .add({
+      status: STATUS_OFERTA_PENDENTE,
+
+      clienteId: item.clienteId,
+      clienteNome: item.clienteNome || "Cliente",
+      clienteEmail: item.clienteEmail || null,
+
+      empresaId,
+      filaId,
+
+      data: dataOferta,
+      horario: horarioOferta,
+
+      servicos: item.servicos || [],
+      servicoId: primeiroServico?.id || null,
+      servicoNome: primeiroServico?.nome || "",
+      servicoDuracao: primeiroServico?.duracao || item.duracaoTotal || 0,
+
+      duracaoTotal: item.duracaoTotal || primeiroServico?.duracao || 0,
+
+      profissionalId,
+      profissionalNome: item.profissionalNome || "",
+
+      linkConfirmacao,
+      expiraEm,
+
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      pushOfertaEnviado: pushEnviado,
+    });
+
+  await docFila.ref.update({
+    status: STATUS_FILA_OFERTA_ENVIADA,
+    processando: false,
+
+    ofertaId: ofertaRef.id,
+    dataOferta,
+    horarioOferta,
+    ofertaExpiraEm: expiraEm,
+    linkConfirmacao,
+    pushOfertaEnviado: pushEnviado,
+
+    ofertaEnviadaEm: admin.firestore.FieldValue.serverTimestamp(),
+    ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  console.log(
+    `✅ Oferta criada para fila ${filaId} em ${horarioOferta}. Oferta: ${ofertaRef.id}`
+  );
+
+  return ofertaRef.id;
+}
+
+// ============================================================================
+// PROCESSAMENTO DA FILA AUTOMÁTICA
+// ============================================================================
+
 async function reservarFilaParaProcessamento(docFila) {
   try {
     await db.runTransaction(async (transaction) => {
@@ -222,7 +438,8 @@ async function reservarFilaParaProcessamento(docFila) {
       const dados = freshSnap.data();
 
       const statusValido =
-        dados?.status === STATUS_FILA_AGUARDANDO || dados?.status === STATUS_ANTIGO_FILA;
+        dados?.status === STATUS_FILA_AGUARDANDO ||
+        dados?.status === STATUS_ANTIGO_FILA;
 
       if (!dados || !statusValido || dados.processando === true) {
         throw new Error("Fila já processada ou em processamento.");
@@ -277,22 +494,9 @@ async function processarItemFila(docFila) {
     return;
   }
 
-  const horariosRef = db
-    .collection("empresarios")
-    .doc(empresaId)
-    .collection("profissionais")
-    .doc(profissionalId)
-    .collection("configuracoes")
-    .doc("horarios");
+  const horariosConfig = await buscarHorariosProfissional(empresaId, profissionalId);
 
-  const agendamentosRef = db
-    .collection("empresarios")
-    .doc(empresaId)
-    .collection("agendamentos");
-
-  const horariosSnap = await horariosRef.get();
-
-  if (!horariosSnap.exists) {
+  if (!horariosConfig) {
     console.log(`⚠️ Horários não encontrados para profissional ${profissionalId}`);
 
     await docFila.ref.update({
@@ -304,15 +508,11 @@ async function processarItemFila(docFila) {
     return;
   }
 
-  const horariosConfig = horariosSnap.data();
-
-  const agendamentosSnap = await agendamentosRef
-    .where("data", "==", dataFila)
-    .where("profissionalId", "==", profissionalId)
-    .where("status", "in", ["ativo", "confirmado", "agendado"])
-    .get();
-
-  const agendamentosDoDia = agendamentosSnap.docs.map((d) => d.data());
+  const agendamentosDoDia = await buscarAgendamentosAtivosDoDia(
+    empresaId,
+    profissionalId,
+    dataFila
+  );
 
   const slotsDisponiveis = gerarSlotsDisponiveis(
     horariosConfig,
@@ -328,65 +528,13 @@ async function processarItemFila(docFila) {
   }
 
   const horarioEscolhido = slotsDisponiveis[0];
-  const dataOferta = dataFila;
 
-  const expiraEm = admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() + 5 * 60 * 1000)
-  );
-
-  const linkConfirmacao = construirLinkConfirmacao(filaId, empresaId);
-  const pushEnviado = await enviarPushOferta(item, filaId, dataOferta, horarioEscolhido);
-
-  const ofertaRef = await db
-    .collection("empresarios")
-    .doc(empresaId)
-    .collection("ofertas_fila")
-    .add({
-      status: STATUS_OFERTA_PENDENTE,
-
-      clienteId: item.clienteId,
-      clienteNome: item.clienteNome || "Cliente",
-      clienteEmail: item.clienteEmail || null,
-
-      empresaId,
-      filaId,
-
-      data: dataOferta,
-      horario: horarioEscolhido,
-
-      servicos: item.servicos || [],
-      servicoNome: item.servicos && item.servicos[0]?.nome ? item.servicos[0].nome : "",
-
-      duracaoTotal,
-
-      profissionalId,
-      profissionalNome: item.profissionalNome || "",
-
-      linkConfirmacao,
-      expiraEm,
-
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      pushOfertaEnviado: pushEnviado,
-    });
-
-  await docFila.ref.update({
-    status: STATUS_FILA_OFERTA_ENVIADA,
-    processando: false,
-
-    ofertaId: ofertaRef.id,
-    dataOferta,
+  await criarOfertaParaFila({
+    docFila,
+    item,
+    dataOferta: dataFila,
     horarioOferta: horarioEscolhido,
-    ofertaExpiraEm: expiraEm,
-    linkConfirmacao,
-    pushOfertaEnviado: pushEnviado,
-
-    ofertaEnviadaEm: admin.firestore.FieldValue.serverTimestamp(),
-    ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
   });
-
-  console.log(
-    `✅ Oferta criada para fila ${filaId} em ${horarioEscolhido}. Oferta: ${ofertaRef.id}`
-  );
 }
 
 async function processarFila() {
@@ -427,271 +575,357 @@ async function processarFila() {
   console.log("🏁 Fim do processamento da fila");
 }
 
-async function horarioAindaDisponivel({ empresaId, profissionalId, data, horario }) {
-  const agendamentosRef = db
-    .collection("empresarios")
-    .doc(empresaId)
-    .collection("agendamentos");
+// ============================================================================
+// OFERTAR VAGA IMEDIATAMENTE APÓS CANCELAMENTO
+// ============================================================================
 
-  const snap = await agendamentosRef
-    .where("data", "==", data)
-    .where("horario", "==", horario)
-    .where("profissionalId", "==", profissionalId)
-    .where("status", "in", ["ativo", "confirmado", "agendado"])
-    .limit(1)
-    .get();
+const ofertarVagaParaFila = functions
+  .region(REGIAO)
+  .https.onCall(async (data, context) => {
+    const { empresaId, vaga } = data || {};
 
-  return snap.empty;
-}
-
-// ========= CONFIRMAR OFERTA =============
-const confirmarOfertaFila = functions.https.onCall(async (data, context) => {
-  const { empresaId, ofertaId } = data || {};
-
-  if (!empresaId || !ofertaId) {
-    return {
-      ok: false,
-      motivo: "dados_incompletos",
-    };
-  }
-
-  try {
-    const ofertaRef = db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("ofertas_fila")
-      .doc(ofertaId);
-
-    const ofertaSnap = await ofertaRef.get();
-
-    if (!ofertaSnap.exists) {
+    if (!empresaId || !vaga?.data || !vaga?.horario || !vaga?.profissionalId) {
       return {
         ok: false,
-        motivo: "oferta_nao_encontrada",
+        motivo: "dados_incompletos",
       };
     }
 
-    const oferta = ofertaSnap.data();
-
-    if (oferta.status !== STATUS_OFERTA_PENDENTE) {
-      return {
-        ok: false,
-        motivo: "oferta_indisponivel",
-      };
-    }
-
-    if (oferta.expiraEm && oferta.expiraEm.toMillis() < Date.now()) {
-      await ofertaRef.update({
-        status: STATUS_OFERTA_EXPIRADA,
-        expiradaEm: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      if (oferta.filaId) {
-        await db.collection("fila_agendamentos").doc(oferta.filaId).update({
-          status: STATUS_FILA_AGUARDANDO,
-          processando: false,
-          ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
-
-      return {
-        ok: false,
-        motivo: "oferta_expirada",
-      };
-    }
-
-    const disponivel = await horarioAindaDisponivel({
-      empresaId,
-      profissionalId: oferta.profissionalId,
-      data: oferta.data,
-      horario: oferta.horario,
-    });
-
-    if (!disponivel) {
-      await ofertaRef.update({
-        status: STATUS_OFERTA_EXPIRADA,
-        motivoExpiracao: "horario_ocupado",
-        expiradaEm: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      if (oferta.filaId) {
-        await db.collection("fila_agendamentos").doc(oferta.filaId).update({
-          status: STATUS_FILA_AGUARDANDO,
-          processando: false,
-          ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
-
-      return {
-        ok: false,
-        motivo: "horario_indisponivel",
-      };
-    }
-
-    const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
-    const agendamentoRef = db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("agendamentos")
-      .doc();
-
-    await db.runTransaction(async (transaction) => {
-      const ofertaAtualSnap = await transaction.get(ofertaRef);
-      const filaSnap = await transaction.get(filaRef);
-
-      if (!ofertaAtualSnap.exists) {
-        throw new Error("oferta_nao_encontrada");
-      }
-
-      const ofertaAtual = ofertaAtualSnap.data();
-
-      if (ofertaAtual.status !== STATUS_OFERTA_PENDENTE) {
-        throw new Error("oferta_indisponivel");
-      }
-
-      if (!filaSnap.exists) {
-        throw new Error("fila_nao_encontrada");
-      }
-
-      const fila = filaSnap.data();
-
-      transaction.set(agendamentoRef, {
-        clienteId: oferta.clienteId,
-        clienteNome: oferta.clienteNome || fila.clienteNome || "Cliente",
-        clienteEmail: oferta.clienteEmail || fila.clienteEmail || null,
-
+    try {
+      const disponivel = await horarioAindaDisponivel({
         empresaId,
+        profissionalId: vaga.profissionalId,
+        data: vaga.data,
+        horario: vaga.horario,
+      });
 
+      if (!disponivel) {
+        return {
+          ok: false,
+          motivo: "horario_indisponivel",
+        };
+      }
+
+      const filaSnap = await db
+        .collection("fila_agendamentos")
+        .where("empresaId", "==", empresaId)
+        .where("profissionalId", "==", vaga.profissionalId)
+        .where("dataFila", "==", vaga.data)
+        .where("status", "in", [STATUS_FILA_AGUARDANDO, STATUS_ANTIGO_FILA])
+        .limit(1)
+        .get();
+
+      if (filaSnap.empty) {
+        return {
+          ok: false,
+          motivo: "sem_cliente_na_fila",
+        };
+      }
+
+      const docFila = filaSnap.docs[0];
+
+      const reservou = await reservarFilaParaProcessamento(docFila);
+
+      if (!reservou) {
+        return {
+          ok: false,
+          motivo: "fila_em_processamento",
+        };
+      }
+
+      const itemSnap = await docFila.ref.get();
+      const item = itemSnap.data();
+
+      await criarOfertaParaFila({
+        docFila,
+        item,
+        dataOferta: vaga.data,
+        horarioOferta: vaga.horario,
+      });
+
+      return {
+        ok: true,
+        motivo: "oferta_criada",
+      };
+    } catch (error) {
+      console.error("❌ Erro em ofertarVagaParaFila:", error);
+
+      return {
+        ok: false,
+        motivo: "erro_backend",
+        erro: error.message || error.toString(),
+      };
+    }
+  });
+
+// ============================================================================
+// CONFIRMAR OFERTA
+// ============================================================================
+
+const confirmarOfertaFila = functions
+  .region(REGIAO)
+  .https.onCall(async (data, context) => {
+    const { empresaId, ofertaId } = data || {};
+
+    if (!empresaId || !ofertaId) {
+      return {
+        ok: false,
+        motivo: "dados_incompletos",
+      };
+    }
+
+    try {
+      const ofertaRef = db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("ofertas_fila")
+        .doc(ofertaId);
+
+      const ofertaSnap = await ofertaRef.get();
+
+      if (!ofertaSnap.exists) {
+        return {
+          ok: false,
+          motivo: "oferta_nao_encontrada",
+        };
+      }
+
+      const oferta = ofertaSnap.data();
+
+      if (oferta.status !== STATUS_OFERTA_PENDENTE) {
+        return {
+          ok: false,
+          motivo: "oferta_indisponivel",
+        };
+      }
+
+      if (oferta.expiraEm && oferta.expiraEm.toMillis() < Date.now()) {
+        await ofertaRef.update({
+          status: STATUS_OFERTA_EXPIRADA,
+          expiradaEm: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        if (oferta.filaId) {
+          await db.collection("fila_agendamentos").doc(oferta.filaId).update({
+            status: STATUS_FILA_AGUARDANDO,
+            processando: false,
+            ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+
+        return {
+          ok: false,
+          motivo: "oferta_expirada",
+        };
+      }
+
+      const disponivel = await horarioAindaDisponivel({
+        empresaId,
         profissionalId: oferta.profissionalId,
-        profissionalNome: oferta.profissionalNome || fila.profissionalNome || "",
-
         data: oferta.data,
         horario: oferta.horario,
-
-        status: "ativo",
-
-        servicos: fila.servicos || oferta.servicos || [],
-        duracaoTotal: fila.duracaoTotal || oferta.duracaoTotal || null,
-
-        origem: "fila_inteligente",
-        filaId: oferta.filaId,
-        ofertaId,
-
-        criadoEm: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      transaction.update(ofertaRef, {
-        status: STATUS_OFERTA_CONFIRMADA,
-        confirmadaEm: admin.firestore.FieldValue.serverTimestamp(),
+      if (!disponivel) {
+        await ofertaRef.update({
+          status: STATUS_OFERTA_EXPIRADA,
+          motivoExpiracao: "horario_ocupado",
+          expiradaEm: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        if (oferta.filaId) {
+          await db.collection("fila_agendamentos").doc(oferta.filaId).update({
+            status: STATUS_FILA_AGUARDANDO,
+            processando: false,
+            ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+
+        return {
+          ok: false,
+          motivo: "horario_indisponivel",
+        };
+      }
+
+      const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
+      const agendamentoRef = db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("agendamentos")
+        .doc();
+
+      await db.runTransaction(async (transaction) => {
+        const ofertaAtualSnap = await transaction.get(ofertaRef);
+        const filaSnap = await transaction.get(filaRef);
+
+        if (!ofertaAtualSnap.exists) {
+          throw new Error("oferta_nao_encontrada");
+        }
+
+        const ofertaAtual = ofertaAtualSnap.data();
+
+        if (ofertaAtual.status !== STATUS_OFERTA_PENDENTE) {
+          throw new Error("oferta_indisponivel");
+        }
+
+        if (!filaSnap.exists) {
+          throw new Error("fila_nao_encontrada");
+        }
+
+        const fila = filaSnap.data();
+        const primeiroServico = obterPrimeiroServico(fila) || {};
+
+        transaction.set(agendamentoRef, {
+          empresaId,
+
+          clienteId: oferta.clienteId,
+          clienteNome: oferta.clienteNome || fila.clienteNome || "Cliente",
+          clienteEmail: oferta.clienteEmail || fila.clienteEmail || null,
+
+          profissionalId: oferta.profissionalId,
+          profissionalNome: oferta.profissionalNome || fila.profissionalNome || "",
+
+          servicoId: primeiroServico.id || oferta.servicoId || null,
+          servicoNome: primeiroServico.nome || oferta.servicoNome || "",
+          servicoDuracao:
+            Number(primeiroServico.duracao) ||
+            Number(oferta.servicoDuracao) ||
+            Number(fila.duracaoTotal) ||
+            null,
+
+          servicos: fila.servicos || oferta.servicos || [],
+          duracaoTotal: fila.duracaoTotal || oferta.duracaoTotal || null,
+
+          data: oferta.data,
+          horario: oferta.horario,
+
+          status: "ativo",
+
+          origem: "fila_inteligente",
+          filaId: oferta.filaId,
+          ofertaId,
+
+          criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        transaction.update(ofertaRef, {
+          status: STATUS_OFERTA_CONFIRMADA,
+          confirmadaEm: admin.firestore.FieldValue.serverTimestamp(),
+          agendamentoId: agendamentoRef.id,
+        });
+
+        transaction.update(filaRef, {
+          status: STATUS_FILA_CONFIRMADO,
+          confirmadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          agendamentoId: agendamentoRef.id,
+          ofertaId,
+          processando: false,
+        });
+      });
+
+      return {
+        ok: true,
         agendamentoId: agendamentoRef.id,
-      });
+        horario: oferta.horario,
+        clienteNome: oferta.clienteNome || "Cliente",
+      };
+    } catch (e) {
+      console.error("❌ Erro em confirmarOfertaFila:", e);
 
-      transaction.update(filaRef, {
-        status: STATUS_FILA_CONFIRMADO,
-        confirmadoEm: admin.firestore.FieldValue.serverTimestamp(),
-        agendamentoId: agendamentoRef.id,
-        ofertaId,
-        processando: false,
-      });
-    });
-
-    return {
-      ok: true,
-      agendamentoId: agendamentoRef.id,
-      horario: oferta.horario,
-      clienteNome: oferta.clienteNome || "Cliente",
-    };
-  } catch (e) {
-    console.error("❌ Erro em confirmarOfertaFila:", e);
-
-    return {
-      ok: false,
-      motivo: "erro_backend",
-      erro: e.message || e.toString(),
-    };
-  }
-});
-
-// ========= RECUSAR OFERTA =============
-const recusarOfertaFila = functions.https.onCall(async (data, context) => {
-  const { empresaId, ofertaId } = data || {};
-
-  if (!empresaId || !ofertaId) {
-    return {
-      ok: false,
-      motivo: "dados_incompletos",
-    };
-  }
-
-  try {
-    const ofertaRef = db
-      .collection("empresarios")
-      .doc(empresaId)
-      .collection("ofertas_fila")
-      .doc(ofertaId);
-
-    const snap = await ofertaRef.get();
-
-    if (!snap.exists) {
       return {
         ok: false,
-        motivo: "oferta_nao_encontrada",
+        motivo: "erro_backend",
+        erro: e.message || e.toString(),
+      };
+    }
+  });
+
+// ============================================================================
+// RECUSAR OFERTA
+// ============================================================================
+
+const recusarOfertaFila = functions
+  .region(REGIAO)
+  .https.onCall(async (data, context) => {
+    const { empresaId, ofertaId } = data || {};
+
+    if (!empresaId || !ofertaId) {
+      return {
+        ok: false,
+        motivo: "dados_incompletos",
       };
     }
 
-    const oferta = snap.data();
+    try {
+      const ofertaRef = db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("ofertas_fila")
+        .doc(ofertaId);
 
-    if (oferta.status !== STATUS_OFERTA_PENDENTE) {
+      const snap = await ofertaRef.get();
+
+      if (!snap.exists) {
+        return {
+          ok: false,
+          motivo: "oferta_nao_encontrada",
+        };
+      }
+
+      const oferta = snap.data();
+
+      if (oferta.status !== STATUS_OFERTA_PENDENTE) {
+        return {
+          ok: false,
+          motivo: "oferta_ja_resolvida",
+        };
+      }
+
+      const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
+
+      await db.runTransaction(async (transaction) => {
+        const ofertaAtualSnap = await transaction.get(ofertaRef);
+
+        if (!ofertaAtualSnap.exists) {
+          throw new Error("oferta_nao_encontrada");
+        }
+
+        const ofertaAtual = ofertaAtualSnap.data();
+
+        if (ofertaAtual.status !== STATUS_OFERTA_PENDENTE) {
+          throw new Error("oferta_ja_resolvida");
+        }
+
+        transaction.update(ofertaRef, {
+          status: STATUS_OFERTA_RECUSADA,
+          recusadaEm: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        transaction.update(filaRef, {
+          status: STATUS_FILA_RECUSADO,
+          processando: false,
+          recusadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+
+      return {
+        ok: true,
+      };
+    } catch (e) {
+      console.error("❌ Erro em recusarOfertaFila:", e);
+
       return {
         ok: false,
-        motivo: "oferta_ja_resolvida",
+        motivo: "erro_backend",
+        erro: e.message || e.toString(),
       };
     }
-
-    const filaRef = db.collection("fila_agendamentos").doc(oferta.filaId);
-
-    await db.runTransaction(async (transaction) => {
-      const ofertaAtualSnap = await transaction.get(ofertaRef);
-
-      if (!ofertaAtualSnap.exists) {
-        throw new Error("oferta_nao_encontrada");
-      }
-
-      const ofertaAtual = ofertaAtualSnap.data();
-
-      if (ofertaAtual.status !== STATUS_OFERTA_PENDENTE) {
-        throw new Error("oferta_ja_resolvida");
-      }
-
-      transaction.update(ofertaRef, {
-        status: STATUS_OFERTA_RECUSADA,
-        recusadaEm: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      transaction.update(filaRef, {
-        status: STATUS_FILA_RECUSADO,
-        processando: false,
-        recusadoEm: admin.firestore.FieldValue.serverTimestamp(),
-        ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    });
-
-    return {
-      ok: true,
-    };
-  } catch (e) {
-    console.error("❌ Erro em recusarOfertaFila:", e);
-
-    return {
-      ok: false,
-      motivo: "erro_backend",
-      erro: e.message || e.toString(),
-    };
-  }
-});
+  });
 
 module.exports = {
   processarFila,
+  ofertarVagaParaFila,
   confirmarOfertaFila,
   recusarOfertaFila,
 };
