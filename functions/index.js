@@ -7,7 +7,11 @@ const admin = require("firebase-admin");
 const { getFirestore } = require("firebase-admin/firestore");
 const { MercadoPagoConfig } = require("mercadopago");
 const cors = require("cors");
-const { processarFila } = require("./processarFila");
+const {
+  processarFila,
+  confirmarOfertaFila,
+  recusarOfertaFila
+} = require("./processarFila");
 const { avisarClienteRetorno } = require("./avisarClienteRetorno");
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
@@ -749,3 +753,5 @@ exports.avisarClienteRetorno = avisarClienteRetorno;
 exports.rotinaRetornoClientes = rotinaRetornoClientes;
 exports.rotinaLembreteCliente = rotinaLembreteCliente;
 exports.rotinaResumoAgendamentosDono = rotinaResumoAgendamentosDono;
+exports.confirmarOfertaFila = confirmarOfertaFila;
+exports.recusarOfertaFila = recusarOfertaFila;
