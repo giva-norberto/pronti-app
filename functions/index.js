@@ -1,4 +1,4 @@
-// ============================ Imports principais =============================
+// ============================ Imports principais ============================
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
