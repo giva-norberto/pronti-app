@@ -345,6 +345,93 @@ async function buscarHorariosProfissional(empresaId, profissionalId) {
 }
 
 // ============================================================================
+// EXPIRAÇÃO AUTOMÁTICA DE OFERTAS
+// ============================================================================
+
+async function expirarOfertasPendentes() {
+  console.log("⏱️ Verificando ofertas pendentes expiradas...");
+
+  const agora = admin.firestore.Timestamp.now();
+
+  const empresasSnap = await db.collection("empresarios").limit(300).get();
+
+  if (empresasSnap.empty) {
+    console.log("✅ Nenhuma empresa encontrada para verificar ofertas.");
+    return;
+  }
+
+  let totalExpiradas = 0;
+
+  for (const empresaDoc of empresasSnap.docs) {
+    const empresaId = empresaDoc.id;
+
+    try {
+      const ofertasSnap = await db
+        .collection("empresarios")
+        .doc(empresaId)
+        .collection("ofertas_fila")
+        .where("status", "==", STATUS_OFERTA_PENDENTE)
+        .where("expiraEm", "<=", agora)
+        .limit(50)
+        .get();
+
+      if (ofertasSnap.empty) {
+        continue;
+      }
+
+      for (const ofertaDoc of ofertasSnap.docs) {
+        const oferta = ofertaDoc.data() || {};
+        const filaId = oferta.filaId || null;
+
+        await db.runTransaction(async (transaction) => {
+          const ofertaRef = ofertaDoc.ref;
+          const ofertaAtualSnap = await transaction.get(ofertaRef);
+
+          if (!ofertaAtualSnap.exists) return;
+
+          const ofertaAtual = ofertaAtualSnap.data() || {};
+
+          if (ofertaAtual.status !== STATUS_OFERTA_PENDENTE) {
+            return;
+          }
+
+          transaction.update(ofertaRef, {
+            status: STATUS_OFERTA_EXPIRADA,
+            expiradaEm: admin.firestore.FieldValue.serverTimestamp(),
+            motivoExpiracao: "tempo_esgotado",
+          });
+
+          if (filaId) {
+            const filaRef = db.collection("fila_agendamentos").doc(filaId);
+            const filaSnap = await transaction.get(filaRef);
+
+            if (filaSnap.exists) {
+              const fila = filaSnap.data() || {};
+
+              if (fila.status === STATUS_FILA_OFERTA_ENVIADA) {
+                transaction.update(filaRef, {
+                  status: STATUS_FILA_AGUARDANDO,
+                  processando: false,
+                  ofertaId: admin.firestore.FieldValue.delete(),
+                  ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+                  ultimaOfertaExpiradaEm: admin.firestore.FieldValue.serverTimestamp(),
+                });
+              }
+            }
+          }
+        });
+
+        totalExpiradas++;
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao expirar ofertas da empresa ${empresaId}:`, error.message);
+    }
+  }
+
+  console.log(`✅ Expiração concluída. Ofertas expiradas: ${totalExpiradas}`);
+}
+
+// ============================================================================
 // CRIAÇÃO DE OFERTA
 // ============================================================================
 
@@ -360,6 +447,32 @@ async function criarOfertaParaFila({ docFila, item, dataOferta, horarioOferta })
   const filaId = docFila.id;
   const empresaId = item.empresaId;
   const profissionalId = item.profissionalId;
+
+  const ofertaExistenteSnap = await db
+    .collection("empresarios")
+    .doc(empresaId)
+    .collection("ofertas_fila")
+    .where("filaId", "==", filaId)
+    .where("status", "==", STATUS_OFERTA_PENDENTE)
+    .limit(1)
+    .get();
+
+  if (!ofertaExistenteSnap.empty) {
+    const ofertaExistente = ofertaExistenteSnap.docs[0];
+
+    console.log(
+      `ℹ️ Já existe oferta pendente para fila ${filaId}. Oferta: ${ofertaExistente.id}`
+    );
+
+    await docFila.ref.update({
+      status: STATUS_FILA_OFERTA_ENVIADA,
+      processando: false,
+      ofertaId: ofertaExistente.id,
+      ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return ofertaExistente.id;
+  }
 
   const expiraEm = admin.firestore.Timestamp.fromDate(
     new Date(Date.now() + 5 * 60 * 1000)
@@ -539,6 +652,8 @@ async function processarItemFila(docFila) {
 async function processarFila() {
   console.log("⏳ Iniciando processamento da fila...");
 
+  await expirarOfertasPendentes();
+
   const snapshot = await db
     .collection("fila_agendamentos")
     .where("status", "in", [STATUS_FILA_AGUARDANDO, STATUS_ANTIGO_FILA])
@@ -592,6 +707,8 @@ const ofertarVagaParaFila = onCall(
     }
 
     try {
+      await expirarOfertasPendentes();
+
       const disponivel = await horarioAindaDisponivel({
         empresaId,
         profissionalId: vaga.profissionalId,
