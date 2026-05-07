@@ -33,6 +33,8 @@ const STATUS_ANTIGO_FILA = "fila";
 // UTILITÁRIOS DE TEMPO — MESMA BASE DA VITRINE
 // ============================================================================
 
+const ANTECEDENCIA_MINIMA_OFERTA_MINUTOS = 30;
+
 function getNomeDiaSemana(dataISO) {
   const dias = [
     "domingo",
@@ -152,6 +154,7 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
   const hojeBR = getDataLocalBR();
   const ehHoje = hojeBR === dataISO;
   const minutosAgora = getMinutosAgoraBR();
+  const limiteMinimoHoje = minutosAgora + ANTECEDENCIA_MINIMA_OFERTA_MINUTOS;
 
   for (const bloco of diaConfig.blocos) {
     let cursor = horaParaMinutos(bloco.inicio);
@@ -169,7 +172,7 @@ function gerarSlotsDisponiveis(horariosConfig, agendamentos, dataISO, duracaoTot
         return intervaloSobrepoe(inicioSlot, fimSlot, inicioAg, fimAg);
       });
 
-      if (!conflitou && (!ehHoje || inicioSlot > minutosAgora)) {
+      if (!conflitou && (!ehHoje || inicioSlot >= limiteMinimoHoje)) {
         slots.push(minutosParaHora(inicioSlot));
       }
 
@@ -608,6 +611,27 @@ async function processarItemFila(docFila) {
   const empresaId = item?.empresaId;
   const profissionalId = item?.profissionalId;
   const dataFila = item?.dataFila || item?.dataDesejada;
+
+  // =========================================================
+  // BLOQUEIA FILAS DE DIAS PASSADOS
+  // =========================================================
+
+  const hojeBR = getDataLocalBR();
+
+  if (dataFila < hojeBR) {
+    console.log(`⏳ Fila ${filaId} expirada por data passada: ${dataFila}`);
+
+    await docFila.ref.update({
+      status: "expirado",
+      processando: false,
+      expiradoEm: admin.firestore.FieldValue.serverTimestamp(),
+      motivoExpiracao: "data_passada",
+      ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return;
+  }
+
   const duracaoTotal = Number(item?.duracaoTotal) || 0;
 
   if (!empresaId || !profissionalId || !dataFila || duracaoTotal <= 0) {
@@ -622,10 +646,15 @@ async function processarItemFila(docFila) {
     return;
   }
 
-  const horariosConfig = await buscarHorariosProfissional(empresaId, profissionalId);
+  const horariosConfig = await buscarHorariosProfissional(
+    empresaId,
+    profissionalId
+  );
 
   if (!horariosConfig) {
-    console.log(`⚠️ Horários não encontrados para profissional ${profissionalId}`);
+    console.log(
+      `⚠️ Horários não encontrados para profissional ${profissionalId}`
+    );
 
     await docFila.ref.update({
       processando: false,
@@ -651,7 +680,9 @@ async function processarItemFila(docFila) {
 
   if (!slotsDisponiveis.length) {
     console.log(`❌ Nenhum slot disponível para a fila ${filaId}`);
+
     await liberarFilaSemOferta(docFila);
+
     return;
   }
 
@@ -672,7 +703,10 @@ async function processarFila() {
 
   const snapshot = await db
     .collection("fila_agendamentos")
-    .where("status", "in", [STATUS_FILA_AGUARDANDO, STATUS_ANTIGO_FILA])
+    .where("status", "in", [
+      STATUS_FILA_AGUARDANDO,
+      STATUS_ANTIGO_FILA,
+    ])
     .limit(20)
     .get();
 
@@ -685,13 +719,17 @@ async function processarFila() {
     try {
       await processarItemFila(docFila);
     } catch (error) {
-      console.error(`❌ Erro ao processar fila ${docFila.id}:`, error.message);
+      console.error(
+        `❌ Erro ao processar fila ${docFila.id}:`,
+        error.message
+      );
 
       try {
         await docFila.ref.update({
           processando: false,
           ultimoErro: error.message || "erro_desconhecido",
-          ultimaTentativaEm: admin.firestore.FieldValue.serverTimestamp(),
+          ultimaTentativaEm:
+            admin.firestore.FieldValue.serverTimestamp(),
         });
       } catch (erroUpdate) {
         console.error(
