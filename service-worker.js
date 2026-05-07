@@ -2,7 +2,7 @@
 // CACHE OFFLINE - PRONTI APP
 // ======================================================
 
-const CACHE_NAME = "pronti-painel-v3"; // Atualizado para v3 para forçar a limpeza do cache antigo
+const CACHE_NAME = "pronti-painel-v4";
 
 const FILES_TO_CACHE = [
   "/",
@@ -20,23 +20,23 @@ const FILES_TO_CACHE = [
 // -------------------------------
 self.addEventListener("install", event => {
   console.log("[ServiceWorker] Install");
+
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log("[ServiceWorker] Caching app shell");
       return cache.addAll(FILES_TO_CACHE);
     })
   );
-  // ativa imediatamente
+
   self.skipWaiting();
 });
 
 // -------------------------------
-// FETCH (Estratégia Network-First para evitar repetição de notificações)
+// FETCH
 // -------------------------------
 self.addEventListener("fetch", event => {
   const url = event.request.url;
 
-  // NÃO interferir com Firebase / APIs externas
   if (
     url.includes("firebase") ||
     url.includes("googleapis") ||
@@ -47,10 +47,8 @@ self.addEventListener("fetch", event => {
   }
 
   event.respondWith(
-    // Tenta buscar na rede primeiro
     fetch(event.request)
       .then(fetchResponse => {
-        // Se a rede responder e for um GET válido, atualiza o cache
         if (
           event.request.method === "GET" &&
           fetchResponse &&
@@ -58,19 +56,18 @@ self.addEventListener("fetch", event => {
           fetchResponse.type === "basic"
         ) {
           const responseClone = fetchResponse.clone();
+
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseClone);
           });
         }
+
         return fetchResponse;
       })
       .catch(() => {
-        // Se falhar a rede (offline), busca no cache
         return caches.match(event.request).then(response => {
-          if (response) {
-            return response;
-          }
-          // Fallback se estiver offline e não houver cache
+          if (response) return response;
+
           if (event.request.destination === "document") {
             return caches.match("/index.html");
           }
@@ -84,6 +81,7 @@ self.addEventListener("fetch", event => {
 // -------------------------------
 self.addEventListener("activate", event => {
   console.log("[ServiceWorker] Activate");
+
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
@@ -93,7 +91,7 @@ self.addEventListener("activate", event => {
       )
     )
   );
-  // assume controle imediatamente
+
   self.clients.claim();
 });
 
@@ -116,18 +114,40 @@ self.addEventListener("push", event => {
 
   const title = notification.title || data.title || "Pronti";
 
+  const link =
+    data.link ||
+    payload?.webpush?.fcmOptions?.link ||
+    payload?.fcmOptions?.link ||
+    "https://prontiapp.com.br";
+
+  const tagNotificacao =
+    data.tipo === "fila_oferta" && data.filaId
+      ? `fila-oferta-${data.filaId}`
+      : data.tipo && data.clienteId
+        ? `${data.tipo}-${data.clienteId}`
+        : data.tipo
+          ? `pronti-${data.tipo}`
+          : "pronti-geral";
+
   const options = {
     body: notification.body || data.body || "Você tem uma nova notificação.",
     icon: notification.icon || data.icon || "/icon.png",
     badge: notification.badge || data.badge || "/icon.png",
     vibrate: [200, 100, 200],
     requireInteraction: true,
+
+    // Evita empilhar notificações iguais da mesma fila
+    tag: tagNotificacao,
+    renotify: true,
+
     data: {
-      link:
-        data.link ||
-        payload?.webpush?.fcmOptions?.link ||
-        payload?.fcmOptions?.link ||
-        "https://prontiapp.com.br"
+      tipo: data.tipo || null,
+      filaId: data.filaId || null,
+      empresaId: data.empresaId || null,
+      profissionalId: data.profissionalId || null,
+      dataOferta: data.dataOferta || null,
+      horarioOferta: data.horarioOferta || null,
+      link
     }
   };
 
