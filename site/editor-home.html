@@ -9,7 +9,6 @@
     :root {
       --azul: #2563eb;
       --roxo: #7c3aed;
-      --fundo: #f4f7fb;
       --texto: #172033;
       --cinza: #6b7280;
       --branco: #ffffff;
@@ -113,14 +112,14 @@
       width: 100%;
     }
 
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .btn-primary {
       background: linear-gradient(135deg, var(--azul), var(--roxo));
       color: white;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px rgba(37,99,235,0.25);
     }
 
     .btn-danger {
@@ -140,6 +139,22 @@
       font-size: 14px;
       color: var(--cinza);
       line-height: 1.4;
+      padding: 12px;
+      border-radius: 14px;
+      background: #f9fafb;
+      border: 1px solid var(--borda);
+    }
+
+    .status.ok {
+      color: #166534;
+      background: #dcfce7;
+      border-color: #bbf7d0;
+    }
+
+    .status.erro {
+      color: #991b1b;
+      background: #fee2e2;
+      border-color: #fecaca;
     }
 
     .lista {
@@ -184,6 +199,7 @@
       font-size: 12px;
       font-weight: 700;
       margin-right: 6px;
+      margin-bottom: 6px;
       background: #eef2ff;
       color: #4338ca;
     }
@@ -234,7 +250,7 @@
     <div class="topo">
       <h1>Editor da Home do Pronti</h1>
       <p>
-        Cadastre fotos, vídeos, prints, banners e conteúdos para aparecerem no site público do Pronti sem mexer no código.
+        Cadastre fotos, vídeos, banners, prints e depoimentos para aparecerem no site público do Pronti sem mexer no código.
       </p>
     </div>
 
@@ -274,26 +290,26 @@
         <label for="arquivo">Arquivo</label>
         <input id="arquivo" type="file" accept="image/*,video/*" />
 
-        <button class="btn btn-primary" id="btnSalvar">
+        <button class="btn btn-primary" id="btnSalvar" type="button" disabled>
           Salvar conteúdo
         </button>
 
         <div class="status" id="status">
-          Aguardando envio.
+          Inicializando editor...
         </div>
       </div>
 
       <div class="card">
         <h2 style="margin-bottom: 18px;">Conteúdos cadastrados</h2>
         <div id="listaConteudos" class="lista">
-          <div class="vazio">Carregando conteúdos...</div>
+          <div class="vazio">Aguardando login do administrador...</div>
         </div>
       </div>
     </div>
   </div>
 
   <script type="module">
-    import { db, storage, auth } from "./firebase-config.js";
+    import { db, storage, auth } from "../firebase-config.js";
 
     import {
       collection,
@@ -332,32 +348,75 @@
 
     let usuarioAtual = null;
 
+    function mostrarStatus(mensagem, tipoStatus = "") {
+      statusEl.className = "status";
+
+      if (tipoStatus === "ok") {
+        statusEl.classList.add("ok");
+      }
+
+      if (tipoStatus === "erro") {
+        statusEl.classList.add("erro");
+      }
+
+      statusEl.innerHTML = mensagem;
+    }
+
+    function bloquearFormulario(bloquear) {
+      btnSalvar.disabled = bloquear;
+    }
+
     onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        statusEl.innerHTML = "Você precisa estar logado para editar a Home.";
-        btnSalvar.disabled = true;
-        return;
+      try {
+        if (!user) {
+          usuarioAtual = null;
+          bloquearFormulario(true);
+
+          mostrarStatus(
+            `Você precisa estar logado como administrador para editar a Home.<br><br>
+            Primeiro acesse: <strong>https://prontiapp.com.br/login.html</strong><br>
+            Depois volte para esta tela.`,
+            "erro"
+          );
+
+          listaConteudos.innerHTML = `<div class="vazio">Aguardando login do administrador.</div>`;
+          return;
+        }
+
+        usuarioAtual = user;
+
+        if (user.uid !== ADMIN_UID) {
+          bloquearFormulario(true);
+
+          mostrarStatus(
+            `Seu usuário está logado, mas não tem permissão para editar a Home.<br><br>
+            UID atual: <strong>${user.uid}</strong>`,
+            "erro"
+          );
+
+          listaConteudos.innerHTML = `<div class="vazio">Usuário sem permissão de administrador.</div>`;
+          return;
+        }
+
+        bloquearFormulario(false);
+        mostrarStatus("Editor liberado para o administrador.", "ok");
+
+        await carregarConteudos();
+
+      } catch (error) {
+        console.error("Erro na autenticação do editor:", error);
+        mostrarStatus("Erro ao validar login do administrador. Veja o console.", "erro");
       }
-
-      usuarioAtual = user;
-
-      if (user.uid !== ADMIN_UID) {
-        statusEl.innerHTML = "Seu usuário não tem permissão para editar a Home.";
-        btnSalvar.disabled = true;
-        return;
-      }
-
-      statusEl.innerHTML = "Editor liberado para o administrador.";
-      btnSalvar.disabled = false;
-      carregarConteudos();
     });
 
     btnSalvar.addEventListener("click", salvarConteudo);
 
     async function salvarConteudo() {
       try {
+        console.log("Clique em salvar recebido.");
+
         if (!usuarioAtual || usuarioAtual.uid !== ADMIN_UID) {
-          alert("Acesso não autorizado.");
+          alert("Acesso não autorizado. Faça login com o usuário administrador.");
           return;
         }
 
@@ -365,18 +424,20 @@
 
         if (!titulo.value.trim()) {
           alert("Informe o título.");
+          titulo.focus();
           return;
         }
 
         if (!arquivoSelecionado) {
           alert("Selecione uma foto ou vídeo.");
+          arquivo.focus();
           return;
         }
 
-        btnSalvar.disabled = true;
-        statusEl.innerHTML = "Enviando arquivo...";
+        bloquearFormulario(true);
+        mostrarStatus("Enviando arquivo para o Firebase Storage...");
 
-        const extensao = arquivoSelecionado.name.split(".").pop();
+        const extensao = arquivoSelecionado.name.split(".").pop() || "arquivo";
         const nomeSeguro = `${Date.now()}-${Math.random().toString(36).substring(2)}.${extensao}`;
         const caminhoStorage = `site_home_midias/${tipo.value}/${nomeSeguro}`;
 
@@ -386,7 +447,7 @@
 
         const url = await getDownloadURL(arquivoRef);
 
-        statusEl.innerHTML = "Salvando informações...";
+        mostrarStatus("Arquivo enviado. Salvando dados no Firestore...");
 
         await addDoc(collection(db, "site_home_midias"), {
           tipo: tipo.value,
@@ -403,15 +464,33 @@
 
         limparFormulario();
 
-        statusEl.innerHTML = "Conteúdo salvo com sucesso.";
+        mostrarStatus("Conteúdo salvo com sucesso.", "ok");
+
         await carregarConteudos();
 
       } catch (error) {
         console.error("Erro ao salvar conteúdo:", error);
-        statusEl.innerHTML = "Erro ao salvar conteúdo. Veja o console.";
-        alert("Erro ao salvar conteúdo.");
+
+        let mensagem = "Erro ao salvar conteúdo.";
+
+        if (error.code === "permission-denied") {
+          mensagem = "Erro de permissão no Firestore. Confira as regras da coleção site_home_midias.";
+        }
+
+        if (
+          error.code === "storage/unauthorized" ||
+          error.message?.includes("permission")
+        ) {
+          mensagem = "Erro de permissão no Storage. Confira as regras da pasta site_home_midias.";
+        }
+
+        mostrarStatus(`${mensagem}<br><br>Detalhe: ${error.message || error}`, "erro");
+        alert(mensagem);
+
       } finally {
-        btnSalvar.disabled = false;
+        if (usuarioAtual && usuarioAtual.uid === ADMIN_UID) {
+          bloquearFormulario(false);
+        }
       }
     }
 
@@ -471,11 +550,11 @@
               </span>
 
               <div class="acoes">
-                <button class="btn btn-small btn-primary" onclick="alternarAtivo('${id}', ${item.ativo ? "false" : "true"})">
+                <button class="btn btn-small btn-primary" type="button" onclick="alternarAtivo('${id}', ${item.ativo ? "false" : "true"})">
                   ${item.ativo ? "Ocultar" : "Ativar"}
                 </button>
 
-                <button class="btn btn-small btn-danger" onclick="excluirConteudo('${id}', '${item.caminhoStorage || ""}')">
+                <button class="btn btn-small btn-danger" type="button" onclick="excluirConteudo('${id}', '${item.caminhoStorage || ""}')">
                   Excluir
                 </button>
               </div>
@@ -487,12 +566,25 @@
 
       } catch (error) {
         console.error("Erro ao carregar conteúdos:", error);
-        listaConteudos.innerHTML = `<div class="vazio">Erro ao carregar conteúdos.</div>`;
+
+        let mensagem = "Erro ao carregar conteúdos.";
+
+        if (error.code === "permission-denied") {
+          mensagem = "Erro de permissão ao ler a coleção site_home_midias.";
+        }
+
+        listaConteudos.innerHTML = `<div class="vazio">${mensagem}</div>`;
+        mostrarStatus(`${mensagem}<br><br>Detalhe: ${error.message || error}`, "erro");
       }
     }
 
     window.alternarAtivo = async function(id, novoStatus) {
       try {
+        if (!usuarioAtual || usuarioAtual.uid !== ADMIN_UID) {
+          alert("Acesso não autorizado.");
+          return;
+        }
+
         await updateDoc(doc(db, "site_home_midias", id), {
           ativo: novoStatus
         });
@@ -507,6 +599,11 @@
 
     window.excluirConteudo = async function(id, caminhoStorage) {
       try {
+        if (!usuarioAtual || usuarioAtual.uid !== ADMIN_UID) {
+          alert("Acesso não autorizado.");
+          return;
+        }
+
         const confirmar = confirm("Tem certeza que deseja excluir este conteúdo?");
         if (!confirmar) return;
 
