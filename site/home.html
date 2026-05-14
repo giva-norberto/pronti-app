@@ -8,7 +8,7 @@
     <meta name="description" content="Pronti é um sistema de agenda online para salões, estética, barbearias e negócios de atendimento. Organize agenda, equipe, clientes, serviços, vitrine, lembretes, fila inteligente e pagamentos.">
 
     <meta property="og:title" content="Pronti — Sistema para salões, estética e atendimento" />
-    <meta property="og:description" content="Agenda<script type="module"> online, vitrine por link, equipe, clientes, lembretes automáticos, fila inteligente, pagamentos e manual de uso." />
+    <meta property="og:description" content="Agenda online, vitrine por link, equipe, clientes, lembretes automáticos, fila inteligente, pagamentos e manual de uso." />
     <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://prontiapp.com.br/site/home.html" />
@@ -1758,6 +1758,18 @@
                 fecharModalCard();
             }
         });
+        function abrirModalManualPublico(id) {
+    const item = window.manualPublicoCache?.[id];
+
+    if (!item) return;
+
+    abrirModalCard({
+        titulo: item.titulo,
+        icone: item.icone || "fa-circle-info",
+        descricao: item.descricao || item.resumo || "",
+        beneficios: item.beneficios || []
+    });
+}
     </script>
 
   <script type="module">
