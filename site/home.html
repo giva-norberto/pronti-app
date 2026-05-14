@@ -1808,156 +1808,223 @@
         });
     </script>
 
-    <script type="module">
-        import { db } from "../firebase-config.js";
+<script>
+window.abrirModalManualPublico = function(id) {
 
-        import {
-            collection,
-            getDocs
-        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    const item = window.manualPublicoCache?.[id];
 
-        async function carregarManualPublico() {
-            try {
-                const lista = document.getElementById("listaManualPublico");
+    if (!item) return;
 
-                if (!lista) return;
+    let beneficios = [];
 
-                const snap = await getDocs(collection(db, "manual_publico"));
+    if (Array.isArray(item.beneficios)) {
 
-                if (snap.empty) {
-                    console.log("Nenhum conteúdo público encontrado. Mantendo botões fixos.");
-                    return;
-                }
+        beneficios = item.beneficios;
 
-                const itens = [];
-                window.manualPublicoCache = {};
+    } else if (typeof item.beneficios === "string") {
 
-                snap.forEach(docSnap => {
-                    const item = docSnap.data();
+        beneficios = item.beneficios
+            .split("\n")
+            .map(b => b.trim())
+            .filter(Boolean);
 
-                    if (item.ativo !== true) return;
+    }
 
-                    itens.push({
-                        id: docSnap.id,
-                        ...item
-                    });
+    abrirModalCard({
+        titulo: item.titulo,
+        icone: item.icone || item.iconePublico || "fa-circle-info",
+        descricao: item.descricao || item.resumo || item.conteudo || "",
+        beneficios: beneficios
+    });
+
+};
+</script>
+
+<script type="module">
+    import { db } from "../firebase-config.js";
+
+    import {
+        collection,
+        getDocs
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    async function carregarManualPublico() {
+
+        try {
+
+            const lista = document.getElementById("listaManualPublico");
+
+            if (!lista) return;
+
+            const snap = await getDocs(
+                collection(db, "manual_publico")
+            );
+
+            if (snap.empty) {
+                console.log("Nenhum conteúdo público encontrado.");
+                return;
+            }
+
+            const itens = [];
+
+            window.manualPublicoCache = {};
+
+            snap.forEach(docSnap => {
+
+                const item = docSnap.data();
+
+                if (item.ativo !== true) return;
+
+                itens.push({
+                    id: docSnap.id,
+                    ...item
                 });
 
-                itens.sort((a, b) => (Number(a.ordem || 999) - Number(b.ordem || 999)));
+            });
 
-                if (itens.length === 0) {
-                    console.log("Nenhum conteúdo público ativo encontrado. Mantendo botões fixos.");
-                    return;
+            itens.sort((a, b) =>
+                Number(a.ordem || 999) - Number(b.ordem || 999)
+            );
+
+            if (itens.length === 0) return;
+
+            let html = "";
+
+            itens.forEach(item => {
+
+                window.manualPublicoCache[item.id] = item;
+
+                html += `
+                    <button
+                        type="button"
+                        class="manual-link"
+                        data-manual-id="${item.id}"
+                    >
+                        <i class="fa-solid ${item.icone || item.iconePublico || 'fa-circle-info'}"></i>
+                        ${item.titulo || item.nome || ''}
+                    </button>
+                `;
+
+            });
+
+            lista.innerHTML = html;
+
+            lista.querySelectorAll("[data-manual-id]").forEach(botao => {
+
+                botao.addEventListener("click", () => {
+
+                    window.abrirModalManualPublico(
+                        botao.dataset.manualId
+                    );
+
+                });
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao carregar manual público:",
+                error
+            );
+
+        }
+    }
+
+    async function carregarMidiasHome() {
+
+        try {
+
+            const snap = await getDocs(
+                collection(db, "site_home_midias")
+            );
+
+            if (snap.empty) {
+                console.log("Nenhuma mídia da home cadastrada.");
+                return;
+            }
+
+            const hero = document.querySelector(".hero-panel");
+
+            if (!hero) return;
+
+            const itens = [];
+
+            snap.forEach(docSnap => {
+
+                const item = docSnap.data();
+
+                if (item.ativo === true) {
+                    itens.push(item);
                 }
 
-                let html = "";
+            });
 
-                itens.forEach(item => {
-                    window.manualPublicoCache[item.id] = item;
+            itens.sort((a, b) =>
+                Number(a.ordem || 999) - Number(b.ordem || 999)
+            );
+
+            let html = "";
+
+            itens.forEach(item => {
+
+                if (!item.url) return;
+
+                if (item.tipo === "video") {
 
                     html += `
-                        <button
-                            type="button"
-                            class="manual-link"
-                            data-manual-id="${item.id}"
-                        >
-                            <i class="fa-solid ${item.icone || item.iconePublico || 'fa-circle-info'}"></i>
-                            ${item.titulo || item.nome || ''}
-                        </button>
+                        <div style="margin-top:20px;">
+                            <video
+                                controls
+                                autoplay
+                                muted
+                                loop
+                                playsinline
+                                style="
+                                    width:100%;
+                                    border-radius:24px;
+                                    box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                "
+                            >
+                                <source src="${item.url}">
+                            </video>
+                        </div>
                     `;
-                });
 
-                lista.innerHTML = html;
+                } else {
 
-                lista.querySelectorAll("[data-manual-id]").forEach(botao => {
-                    botao.addEventListener("click", () => {
-                        window.abrirModalManualPublico(botao.dataset.manualId);
-                    });
-                });
+                    html += `
+                        <div style="margin-top:20px;">
+                            <img
+                                src="${item.url}"
+                                alt="${item.titulo || 'Pronti'}"
+                                style="
+                                    width:100%;
+                                    border-radius:24px;
+                                    box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                "
+                            >
+                        </div>
+                    `;
 
-            } catch (error) {
-                console.error("Erro ao carregar manual público:", error);
-            }
-        }
-
-        async function carregarMidiasHome() {
-            try {
-                const snap = await getDocs(collection(db, "site_home_midias"));
-
-                if (snap.empty) {
-                    console.log("Nenhuma mídia da home cadastrada.");
-                    return;
                 }
 
-                const hero = document.querySelector(".hero-panel");
+            });
 
-                if (!hero) return;
-
-                const itens = [];
-
-                snap.forEach(docSnap => {
-                    const item = docSnap.data();
-
-                    if (item.ativo === true) {
-                        itens.push(item);
-                    }
-                });
-
-                itens.sort((a, b) => (Number(a.ordem || 999) - Number(b.ordem || 999)));
-
-                let html = "";
-
-                itens.forEach(item => {
-                    if (!item.url) return;
-
-                    if (item.tipo === "video") {
-                        html += `
-                            <div style="margin-top:20px;">
-                                <video
-                                    controls
-                                    autoplay
-                                    muted
-                                    loop
-                                    playsinline
-                                    style="
-                                        width:100%;
-                                        border-radius:24px;
-                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
-                                    "
-                                >
-                                    <source src="${item.url}">
-                                </video>
-                            </div>
-                        `;
-                    } else {
-                        html += `
-                            <div style="margin-top:20px;">
-                                <img
-                                    src="${item.url}"
-                                    alt="${item.titulo || 'Pronti'}"
-                                    style="
-                                        width:100%;
-                                        border-radius:24px;
-                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
-                                    "
-                                >
-                            </div>
-                        `;
-                    }
-                });
-
-                if (html) {
-                    hero.insertAdjacentHTML("beforeend", html);
-                }
-
-            } catch (error) {
-                console.error("Erro ao carregar mídias da home:", error);
+            if (html) {
+                hero.insertAdjacentHTML("beforeend", html);
             }
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao carregar mídias da home:",
+                error
+            );
+
         }
+    }
 
-        carregarManualPublico();
-        carregarMidiasHome();
-    </script>
-
-</body>
-</html>
+    carregarManualPublico();
+    carregarMidiasHome();
+</script>
