@@ -8,7 +8,7 @@
     <meta name="description" content="Pronti é um sistema de agenda online para salões, estética, barbearias e negócios de atendimento. Organize agenda, equipe, clientes, serviços, vitrine, lembretes, fila inteligente e pagamentos.">
 
     <meta property="og:title" content="Pronti — Sistema para salões, estética e atendimento" />
-    <meta property="og:description" content="Agenda online, vitrine por link, equipe, clientes, lembretes automáticos, fila inteligente, pagamentos e manual de uso." />
+    <meta property="og:description" content="Agenda<script type="module"> online, vitrine por link, equipe, clientes, lembretes automáticos, fila inteligente, pagamentos e manual de uso." />
     <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://prontiapp.com.br/site/home.html" />
@@ -1760,7 +1760,7 @@
         });
     </script>
 
-   <script type="module">
+  <script type="module">
     import { db } from "../firebase-config.js";
 
     import {
@@ -1771,18 +1771,14 @@
         getDocs
     } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    // ======================================================
-    // CARREGAR PASSOS DINÂMICOS DA HOME
-    // Coleção futura: site_home_passos
-    // ======================================================
-    async function carregarPassosHome() {
+    async function carregarManualPublico() {
         try {
-            const lista = document.getElementById("listaPassosHome");
+            const lista = document.getElementById("listaManualPublico");
 
             if (!lista) return;
 
             const q = query(
-                collection(db, "site_home_passos"),
+                collection(db, "manual_publico"),
                 where("ativo", "==", true),
                 orderBy("ordem", "asc")
             );
@@ -1790,35 +1786,37 @@
             const snap = await getDocs(q);
 
             if (snap.empty) {
-                console.log("Nenhum passo dinâmico cadastrado. Mantendo conteúdo fixo.");
+                console.log("Nenhum conteúdo público encontrado. Mantendo botões fixos.");
                 return;
             }
 
             let html = "";
+            window.manualPublicoCache = {};
 
             snap.forEach(docSnap => {
                 const item = docSnap.data();
 
+                window.manualPublicoCache[docSnap.id] = item;
+
                 html += `
-                    <div class="step-card" data-step="${docSnap.id}">
-                        <div class="step-number">${item.numero || item.ordem || ""}</div>
-                        <h3>${item.titulo || ""}</h3>
-                        <p>${item.descricao || ""}</p>
-                    </div>
+                    <button
+                        type="button"
+                        class="manual-link"
+                        onclick="abrirModalManualPublico('${docSnap.id}')"
+                    >
+                        <i class="fa-solid ${item.icone || 'fa-circle-info'}"></i>
+                        ${item.titulo || ''}
+                    </button>
                 `;
             });
 
             lista.innerHTML = html;
 
         } catch (error) {
-            console.error("Erro ao carregar passos da home:", error);
+            console.error("Erro ao carregar manual público:", error);
         }
     }
 
-    // ======================================================
-    // CARREGAR MÍDIAS DINÂMICAS DA HOME
-    // Coleção atual: site_home_midias
-    // ======================================================
     async function carregarMidiasHome() {
         try {
             const q = query(
@@ -1848,18 +1846,7 @@
                 if (item.tipo === "video") {
                     html += `
                         <div style="margin-top:20px;">
-                            <video
-                                controls
-                                autoplay
-                                muted
-                                loop
-                                playsinline
-                                style="
-                                    width:100%;
-                                    border-radius:24px;
-                                    box-shadow:0 20px 40px rgba(0,0,0,0.25);
-                                "
-                            >
+                            <video controls autoplay muted loop playsinline style="width:100%; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
                                 <source src="${item.url}">
                             </video>
                         </div>
@@ -1867,15 +1854,7 @@
                 } else {
                     html += `
                         <div style="margin-top:20px;">
-                            <img
-                                src="${item.url}"
-                                alt="${item.titulo || 'Pronti'}"
-                                style="
-                                    width:100%;
-                                    border-radius:24px;
-                                    box-shadow:0 20px 40px rgba(0,0,0,0.25);
-                                "
-                            >
+                            <img src="${item.url}" alt="${item.titulo || 'Pronti'}" style="width:100%; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
                         </div>
                     `;
                 }
@@ -1888,7 +1867,7 @@
         }
     }
 
-    carregarPassosHome();
+    carregarManualPublico();
     carregarMidiasHome();
 </script>
 
