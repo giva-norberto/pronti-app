@@ -1686,6 +1686,8 @@
             }
         };
 
+        window.cardsHome = cardsHome;
+
         document.querySelectorAll(".feature-card").forEach(card => {
             card.addEventListener("click", () => {
                 const key = card.dataset.card;
@@ -1694,13 +1696,42 @@
             });
         });
 
+        document.querySelectorAll("#listaManualPublico .manual-link").forEach((botao, index) => {
+            const chavesFallback = ["agenda", "equipe", "servicos", "vitrine"];
+            const chave = chavesFallback[index];
+
+            botao.addEventListener("click", () => {
+                if (chave && cardsHome[chave]) {
+                    abrirModalCard(cardsHome[chave]);
+                }
+            });
+        });
+
+        function normalizarBeneficios(beneficios) {
+            if (Array.isArray(beneficios)) {
+                return beneficios.filter(Boolean);
+            }
+
+            if (typeof beneficios === "string") {
+                return beneficios
+                    .split("
+")
+                    .map(item => item.trim())
+                    .filter(Boolean);
+            }
+
+            return [];
+        }
+
         function abrirModalCard(item) {
             const modal = document.getElementById("modalCard");
             const body = document.getElementById("modalCardBody");
 
-            if (!modal || !body) return;
+            if (!modal || !body || !item) return;
 
-            const beneficiosHtml = (item.beneficios || []).map(beneficio => `
+            const beneficios = normalizarBeneficios(item.beneficios);
+
+            const beneficiosHtml = beneficios.map(beneficio => `
                 <div class="modal-benefit">
                     <i class="fa-solid fa-check"></i>
                     <span>${beneficio}</span>
@@ -1713,16 +1744,16 @@
                         <i class="fa-solid ${item.icone || 'fa-circle-info'}"></i>
                     </div>
 
-                    <h2>${item.titulo}</h2>
+                    <h2>${item.titulo || "Pronti"}</h2>
 
-                    <p>${item.descricao}</p>
+                    <p>${item.descricao || item.resumo || item.conteudo || ""}</p>
 
                     <div class="modal-benefits">
                         ${beneficiosHtml}
                     </div>
 
                     <div class="modal-actions">
-                        <a class="modal-btn whatsapp" href="https://wa.me/5531982967250" target="_blank">
+                        <a class="modal-btn whatsapp" href="https://wa.me/5531982967250?text=Ol%C3%A1%2C%20quero%20conhecer%20o%20Pronti" target="_blank">
                             <i class="fa-brands fa-whatsapp"></i>
                             Falar no WhatsApp
                         </a>
@@ -1747,6 +1778,23 @@
             modal.setAttribute("aria-hidden", "true");
         }
 
+        function abrirModalManualPublico(id) {
+            const item = window.manualPublicoCache?.[id];
+
+            if (!item) return;
+
+            abrirModalCard({
+                titulo: item.titulo || item.nome || "Pronti",
+                icone: item.icone || item.iconePublico || "fa-circle-info",
+                descricao: item.descricao || item.resumo || item.resumoPublico || item.conteudo || "",
+                beneficios: item.beneficios || item.beneficiosPublicos || []
+            });
+        }
+
+        window.abrirModalCard = abrirModalCard;
+        window.fecharModalCard = fecharModalCard;
+        window.abrirModalManualPublico = abrirModalManualPublico;
+
         document.getElementById("modalCard")?.addEventListener("click", (event) => {
             if (event.target.id === "modalCard") {
                 fecharModalCard();
@@ -1758,130 +1806,158 @@
                 fecharModalCard();
             }
         });
-        function abrirModalManualPublico(id) {
-    const item = window.manualPublicoCache?.[id];
-
-    if (!item) return;
-
-    abrirModalCard({
-        titulo: item.titulo,
-        icone: item.icone || "fa-circle-info",
-        descricao: item.descricao || item.resumo || "",
-        beneficios: item.beneficios || []
-    });
-}
     </script>
 
-  <script type="module">
-    import { db } from "./firebase-config.js";
+    <script type="module">
+        import { db } from "./firebase-config.js";
 
-    import {
-        collection,
-        query,
-        where,
-        orderBy,
-        getDocs
-    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import {
+            collection,
+            getDocs
+        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    async function carregarManualPublico() {
-        try {
-            const lista = document.getElementById("listaManualPublico");
+        async function carregarManualPublico() {
+            try {
+                const lista = document.getElementById("listaManualPublico");
 
-            if (!lista) return;
+                if (!lista) return;
 
-            const q = query(
-                collection(db, "manual_publico"),
-                where("ativo", "==", true),
-                orderBy("ordem", "asc")
-            );
+                const snap = await getDocs(collection(db, "manual_publico"));
 
-            const snap = await getDocs(q);
-
-            if (snap.empty) {
-                console.log("Nenhum conteúdo público encontrado. Mantendo botões fixos.");
-                return;
-            }
-
-            let html = "";
-            window.manualPublicoCache = {};
-
-            snap.forEach(docSnap => {
-                const item = docSnap.data();
-
-                window.manualPublicoCache[docSnap.id] = item;
-
-                html += `
-                    <button
-                        type="button"
-                        class="manual-link"
-                        onclick="abrirModalManualPublico('${docSnap.id}')"
-                    >
-                        <i class="fa-solid ${item.icone || 'fa-circle-info'}"></i>
-                        ${item.titulo || ''}
-                    </button>
-                `;
-            });
-
-            lista.innerHTML = html;
-
-        } catch (error) {
-            console.error("Erro ao carregar manual público:", error);
-        }
-    }
-
-    async function carregarMidiasHome() {
-        try {
-            const q = query(
-                collection(db, "site_home_midias"),
-                where("ativo", "==", true),
-                orderBy("ordem", "asc")
-            );
-
-            const snap = await getDocs(q);
-
-            if (snap.empty) {
-                console.log("Nenhuma mídia da home cadastrada.");
-                return;
-            }
-
-            const hero = document.querySelector(".hero-panel");
-
-            if (!hero) return;
-
-            let html = "";
-
-            snap.forEach(docSnap => {
-                const item = docSnap.data();
-
-                if (!item.url) return;
-
-                if (item.tipo === "video") {
-                    html += `
-                        <div style="margin-top:20px;">
-                            <video controls autoplay muted loop playsinline style="width:100%; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
-                                <source src="${item.url}">
-                            </video>
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <div style="margin-top:20px;">
-                            <img src="${item.url}" alt="${item.titulo || 'Pronti'}" style="width:100%; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
-                        </div>
-                    `;
+                if (snap.empty) {
+                    console.log("Nenhum conteúdo público encontrado. Mantendo botões fixos.");
+                    return;
                 }
-            });
 
-            hero.insertAdjacentHTML("beforeend", html);
+                const itens = [];
+                window.manualPublicoCache = {};
 
-        } catch (error) {
-            console.error("Erro ao carregar mídias da home:", error);
+                snap.forEach(docSnap => {
+                    const item = docSnap.data();
+
+                    if (item.ativo !== true) return;
+
+                    itens.push({
+                        id: docSnap.id,
+                        ...item
+                    });
+                });
+
+                itens.sort((a, b) => (Number(a.ordem || 999) - Number(b.ordem || 999)));
+
+                if (itens.length === 0) {
+                    console.log("Nenhum conteúdo público ativo encontrado. Mantendo botões fixos.");
+                    return;
+                }
+
+                let html = "";
+
+                itens.forEach(item => {
+                    window.manualPublicoCache[item.id] = item;
+
+                    html += `
+                        <button
+                            type="button"
+                            class="manual-link"
+                            data-manual-id="${item.id}"
+                        >
+                            <i class="fa-solid ${item.icone || item.iconePublico || 'fa-circle-info'}"></i>
+                            ${item.titulo || item.nome || ''}
+                        </button>
+                    `;
+                });
+
+                lista.innerHTML = html;
+
+                lista.querySelectorAll("[data-manual-id]").forEach(botao => {
+                    botao.addEventListener("click", () => {
+                        window.abrirModalManualPublico(botao.dataset.manualId);
+                    });
+                });
+
+            } catch (error) {
+                console.error("Erro ao carregar manual público:", error);
+            }
         }
-    }
 
-    carregarManualPublico();
-    carregarMidiasHome();
-</script>
+        async function carregarMidiasHome() {
+            try {
+                const snap = await getDocs(collection(db, "site_home_midias"));
+
+                if (snap.empty) {
+                    console.log("Nenhuma mídia da home cadastrada.");
+                    return;
+                }
+
+                const hero = document.querySelector(".hero-panel");
+
+                if (!hero) return;
+
+                const itens = [];
+
+                snap.forEach(docSnap => {
+                    const item = docSnap.data();
+
+                    if (item.ativo === true) {
+                        itens.push(item);
+                    }
+                });
+
+                itens.sort((a, b) => (Number(a.ordem || 999) - Number(b.ordem || 999)));
+
+                let html = "";
+
+                itens.forEach(item => {
+                    if (!item.url) return;
+
+                    if (item.tipo === "video") {
+                        html += `
+                            <div style="margin-top:20px;">
+                                <video
+                                    controls
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                    style="
+                                        width:100%;
+                                        border-radius:24px;
+                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                    "
+                                >
+                                    <source src="${item.url}">
+                                </video>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div style="margin-top:20px;">
+                                <img
+                                    src="${item.url}"
+                                    alt="${item.titulo || 'Pronti'}"
+                                    style="
+                                        width:100%;
+                                        border-radius:24px;
+                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                    "
+                                >
+                            </div>
+                        `;
+                    }
+                });
+
+                if (html) {
+                    hero.insertAdjacentHTML("beforeend", html);
+                }
+
+            } catch (error) {
+                console.error("Erro ao carregar mídias da home:", error);
+            }
+        }
+
+        carregarManualPublico();
+        carregarMidiasHome();
+    </script>
 
 </body>
 </html>
