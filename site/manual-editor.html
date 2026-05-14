@@ -247,6 +247,61 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
 
+
+    .public-box {
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      border-radius: 22px;
+      padding: 22px;
+      margin-top: 10px;
+    }
+
+    .public-box-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 18px;
+      color: var(--text-main);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .check-row input {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      accent-color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .helper-text {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .public-grid {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .public-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -354,7 +409,7 @@
         <button data-section="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</button>
         <button data-section="agenda"><i class="fa-solid fa-calendar"></i> Agenda</button>
         <button data-section="equipe"><i class="fa-solid fa-users"></i> Equipe</button>
-        <button data-section="servicos"><i class="fa-solid fa-scissors"></i> Serviços</button>
+        <button data-section="servicos"><i class="fa-solid fa-gear"></i> Serviços</button>
         <button data-section="promocoes"><i class="fa-solid fa-tag"></i> Promoções</button>
         <button data-section="clientes"><i class="fa-solid fa-user"></i> Clientes</button>
         <button data-section="clientes-retorno"><i class="fa-solid fa-heart"></i> Retorno</button>
@@ -373,7 +428,7 @@
       <div class="topbar">
         <div class="topbar-info">
           <h1>Editor do Manual Global</h1>
-          <p>As alterações feitas aqui serão visíveis para todos os clientes do Pronti.</p>
+          <p>As alterações feitas aqui alimentam o manual interno e, se marcado, também aparecem no site público.</p>
         </div>
         <a href="manual-pronti.html" target="_blank" class="btn btn-secondary">
           <i class="fa-solid fa-eye"></i> Ver como Cliente
@@ -391,6 +446,50 @@
         <div class="form-group">
           <label for="conteudo">Conteúdo Explicativo (Texto do Manual)</label>
           <textarea id="conteudo" placeholder="Descreva o passo a passo de forma clara para o seu cliente..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="public-box">
+            <div class="public-box-title">
+              <i class="fa-solid fa-globe"></i>
+              Conteúdo público para o site
+            </div>
+
+            <label class="check-row" for="exibirPublico">
+              <input type="checkbox" id="exibirPublico">
+              <span>
+                Exibir este tópico no site público do Pronti
+                <div class="helper-text">
+                  Quando marcado, este assunto aparece automaticamente no bloco "Como funciona" da home, sem o visitante precisar fazer login.
+                </div>
+              </span>
+            </label>
+
+            <div class="form-group">
+              <label for="resumoPublico">Resumo público do botão/modal</label>
+              <textarea id="resumoPublico" placeholder="Resumo curto para aparecer no site público. Se deixar vazio, o sistema usa o início do texto do manual." style="min-height: 110px;"></textarea>
+            </div>
+
+            <div class="public-grid">
+              <div class="form-group">
+                <label for="iconePublico">Ícone público Font Awesome</label>
+                <input type="text" id="iconePublico" placeholder="Ex: fa-calendar-check" />
+                <div class="helper-text">
+                  Use somente o nome do ícone. Exemplo: fa-calendar-check, fa-users, fa-gear, fa-store.
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="ordemPublico">Ordem no site</label>
+                <input type="text" id="ordemPublico" placeholder="Ex: 1" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="beneficiosPublico">Benefícios públicos (um por linha)</label>
+              <textarea id="beneficiosPublico" placeholder="Ex:\nAjuda a organizar os horários.\nFacilita o atendimento ao cliente.\nDeixa o processo mais profissional." style="min-height: 130px;"></textarea>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -435,6 +534,7 @@
 
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
     const COLECAO_MANUAL = "manual_global";
+    const COLECAO_MANUAL_PUBLICO = "manual_publico";
 
     const secoes = {
       inicio: "Início",
@@ -457,6 +557,48 @@
       duvidas: "Dúvidas frequentes"
     };
 
+    const iconesPadrao = {
+      inicio: "fa-house",
+      login: "fa-lock",
+      empresa: "fa-building",
+      dashboard: "fa-chart-pie",
+      agenda: "fa-calendar-check",
+      equipe: "fa-users",
+      servicos: "fa-gear",
+      promocoes: "fa-tag",
+      clientes: "fa-user-group",
+      "clientes-retorno": "fa-clock-rotate-left",
+      "fila-inteligente": "fa-list-check",
+      vitrine: "fa-store",
+      pagamentos: "fa-credit-card",
+      planos: "fa-file-invoice-dollar",
+      relatorios: "fa-chart-line",
+      permissoes: "fa-sliders",
+      notificacoes: "fa-bell",
+      duvidas: "fa-circle-question"
+    };
+
+    const ordemPadrao = {
+      inicio: 1,
+      login: 2,
+      empresa: 3,
+      dashboard: 4,
+      agenda: 5,
+      equipe: 6,
+      servicos: 7,
+      promocoes: 8,
+      clientes: 9,
+      "clientes-retorno": 10,
+      "fila-inteligente": 11,
+      vitrine: 12,
+      pagamentos: 13,
+      planos: 14,
+      relatorios: 15,
+      permissoes: 16,
+      notificacoes: 17,
+      duvidas: 18
+    };
+
     let secaoAtual = "inicio";
     let imagemUrlExistente = "";
     let arquivoParaUpload = null;
@@ -469,6 +611,11 @@
     const sectionName = document.getElementById("sectionName");
     const statusMsg = document.getElementById("statusMsg");
     const btnSalvar = document.getElementById("btnSalvar");
+    const exibirPublicoInput = document.getElementById("exibirPublico");
+    const resumoPublicoInput = document.getElementById("resumoPublico");
+    const iconePublicoInput = document.getElementById("iconePublico");
+    const ordemPublicoInput = document.getElementById("ordemPublico");
+    const beneficiosPublicoInput = document.getElementById("beneficiosPublico");
 
     onAuthStateChanged(auth, (user) => {
       if (user && user.uid === ADMIN_UID) {
@@ -506,6 +653,12 @@
       arquivoParaUpload = null;
       imagemInput.value = "";
 
+      exibirPublicoInput.checked = false;
+      resumoPublicoInput.value = "";
+      iconePublicoInput.value = iconesPadrao[secao] || "fa-circle-info";
+      ordemPublicoInput.value = ordemPadrao[secao] || "";
+      beneficiosPublicoInput.value = "";
+
       try {
         const docRef = doc(db, COLECAO_MANUAL, secao);
         const snap = await getDoc(docRef);
@@ -521,6 +674,24 @@
           imagemUrlExistente = "";
         }
 
+        const docPublicoRef = doc(db, COLECAO_MANUAL_PUBLICO, secao);
+        const snapPublico = await getDoc(docPublicoRef);
+
+        if (snapPublico.exists()) {
+          const p = snapPublico.data();
+
+          exibirPublicoInput.checked = p.ativo === true;
+          resumoPublicoInput.value = p.resumo || "";
+          iconePublicoInput.value = p.icone || iconesPadrao[secao] || "fa-circle-info";
+          ordemPublicoInput.value = p.ordem || ordemPadrao[secao] || "";
+
+          if (Array.isArray(p.beneficios)) {
+            beneficiosPublicoInput.value = p.beneficios.join("\n");
+          } else {
+            beneficiosPublicoInput.value = "";
+          }
+        }
+
         if (imagemUrlExistente) {
           previewImg.src = imagemUrlExistente;
           previewBox.style.display = "block";
@@ -529,6 +700,7 @@
         }
       } catch (err) {
         console.error(err);
+        mostrarStatus("Erro ao carregar dados: " + err.message, "error");
       }
     }
 
@@ -550,18 +722,47 @@
           urlFinal = await getDownloadURL(uploadTask.ref);
         }
 
+        const tituloFinal = tituloInput.value.trim();
+        const conteudoFinal = conteudoInput.value.trim();
+
         await setDoc(doc(db, COLECAO_MANUAL, secaoAtual), {
           id: secaoAtual,
           nome: secoes[secaoAtual],
-          titulo: tituloInput.value.trim(),
-          conteudo: conteudoInput.value.trim(),
+          titulo: tituloFinal,
+          conteudo: conteudoFinal,
           imagem: urlFinal,
           dataAtualizacao: new Date()
         });
 
+        if (exibirPublicoInput.checked) {
+          const resumoFinal = resumoPublicoInput.value.trim() || gerarResumo(conteudoFinal);
+          const iconeFinal = limparIcone(iconePublicoInput.value.trim() || iconesPadrao[secaoAtual] || "fa-circle-info");
+          const ordemFinal = Number(ordemPublicoInput.value) || ordemPadrao[secaoAtual] || 999;
+          const beneficiosFinal = beneficiosPublicoInput.value
+            .split("\n")
+            .map(item => item.trim())
+            .filter(Boolean);
+
+          await setDoc(doc(db, COLECAO_MANUAL_PUBLICO, secaoAtual), {
+            id: secaoAtual,
+            origem: "manual-editor",
+            titulo: tituloFinal || secoes[secaoAtual],
+            resumo: resumoFinal,
+            descricao: conteudoFinal || resumoFinal,
+            icone: iconeFinal,
+            ordem: ordemFinal,
+            beneficios: beneficiosFinal,
+            imagem: urlFinal,
+            ativo: true,
+            dataAtualizacao: new Date()
+          });
+        } else {
+          await deleteDoc(doc(db, COLECAO_MANUAL_PUBLICO, secaoAtual));
+        }
+
         imagemUrlExistente = urlFinal;
         arquivoParaUpload = null;
-        mostrarStatus("Seção salva com sucesso no Firebase!", "success");
+        mostrarStatus("Seção salva com sucesso no Firebase e sincronizada com o site público!", "success");
       } catch (err) {
         console.error(err);
         mostrarStatus("Erro ao salvar: " + err.message, "error");
@@ -569,6 +770,21 @@
         btnSalvar.disabled = false;
         btnSalvar.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar no Firebase';
       }
+    }
+
+    function gerarResumo(texto) {
+      if (!texto) return "";
+      const limpo = texto.replace(/\s+/g, " ").trim();
+      if (limpo.length <= 220) return limpo;
+      return limpo.substring(0, 220).trim() + "...";
+    }
+
+    function limparIcone(valor) {
+      return valor
+        .replace("fa-solid", "")
+        .replace("fa-regular", "")
+        .replace("fa-brands", "")
+        .trim();
     }
 
     function mostrarStatus(msg, tipo) {
@@ -588,8 +804,9 @@
     document.getElementById("btnLimparSecao").onclick = async () => {
       if (confirm("Deseja apagar esta seção do Firebase permanentemente?")) {
         await deleteDoc(doc(db, COLECAO_MANUAL, secaoAtual));
+        await deleteDoc(doc(db, COLECAO_MANUAL_PUBLICO, secaoAtual));
         carregarDados(secaoAtual);
-        mostrarStatus("Seção resetada.", "success");
+        mostrarStatus("Seção resetada no manual e removida do site público.", "success");
       }
     };
 
