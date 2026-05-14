@@ -1206,42 +1206,44 @@
         </div>
     </div>
 
-    <section class="section" id="como-funciona">
-        <div class="section-header">
-            <span class="badge">Como funciona</span>
-            <h2 class="section-title">Do cadastro ao atendimento, tudo em poucos passos</h2>
-            <p class="section-subtitle">
-                O Pronti foi pensado para simplificar a rotina de quem precisa organizar agenda,
-                profissionais, clientes e serviços em um só lugar.
-            </p>
+   <section class="section" id="como-funciona">
+    <div class="section-header">
+        <span class="badge">Como funciona</span>
+        <h2 class="section-title" id="tituloComoFunciona">
+            Como o Pronti funciona na prática
+        </h2>
+        <p class="section-subtitle" id="subtituloComoFunciona">
+            Antes de testar, veja o caminho simples: você cria sua empresa,
+            configura equipe e serviços, compartilha seu link e acompanha tudo pelo painel.
+        </p>
+    </div>
+
+    <div class="steps" id="listaPassosHome">
+        <div class="step-card" data-step="empresa">
+            <div class="step-number">1</div>
+            <h3>Crie sua empresa</h3>
+            <p>Cadastre as informações básicas do seu negócio.</p>
         </div>
 
-        <div class="steps">
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <h3>Cadastre sua empresa</h3>
-                <p>Crie o perfil do negócio e configure as informações principais do atendimento.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <h3>Monte sua equipe</h3>
-                <p>Cadastre profissionais, horários individuais e serviços realizados por cada pessoa.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <h3>Compartilhe sua vitrine</h3>
-                <p>Envie o link para o cliente escolher serviço, profissional, dia e horário.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <h3>Acompanhe pelo painel</h3>
-                <p>Veja agenda, clientes, retorno, pagamentos, relatórios, permissões e notificações.</p>
-            </div>
+        <div class="step-card" data-step="configuracao">
+            <div class="step-number">2</div>
+            <h3>Configure equipe e serviços</h3>
+            <p>Adicione profissionais, horários e serviços disponíveis.</p>
         </div>
-    </section>
+
+        <div class="step-card" data-step="vitrine">
+            <div class="step-number">3</div>
+            <h3>Compartilhe o link de agendamento</h3>
+            <p>O cliente acessa sua vitrine e escolhe o melhor horário.</p>
+        </div>
+
+        <div class="step-card" data-step="painel">
+            <div class="step-number">4</div>
+            <h3>Acompanhe tudo pelo painel</h3>
+            <p>Veja agenda, clientes, notificações, pagamentos e retorno.</p>
+        </div>
+    </div>
+</section>
 
     <section class="blue-section" id="recursos">
         <div class="blue-inner">
@@ -1746,88 +1748,137 @@
         });
     </script>
 
-    <script type="module">
-        import { db } from "./firebase-config.js";
+   <script type="module">
+    import { db } from "./firebase-config.js";
 
-        import {
-            collection,
-            query,
-            where,
-            orderBy,
-            getDocs
-        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import {
+        collection,
+        query,
+        where,
+        orderBy,
+        getDocs
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        async function carregarMidiasHome() {
-            try {
-                const q = query(
-                    collection(db, "site_home_midias"),
-                    where("ativo", "==", true),
-                    orderBy("ordem", "asc")
-                );
+    // ======================================================
+    // CARREGAR PASSOS DINÂMICOS DA HOME
+    // Coleção futura: site_home_passos
+    // ======================================================
+    async function carregarPassosHome() {
+        try {
+            const lista = document.getElementById("listaPassosHome");
 
-                const snap = await getDocs(q);
+            if (!lista) return;
 
-                if (snap.empty) {
-                    console.log("Nenhuma mídia da home cadastrada.");
-                    return;
-                }
+            const q = query(
+                collection(db, "site_home_passos"),
+                where("ativo", "==", true),
+                orderBy("ordem", "asc")
+            );
 
-                const hero = document.querySelector(".hero-panel");
+            const snap = await getDocs(q);
 
-                if (!hero) return;
-
-                let html = "";
-
-                snap.forEach(docSnap => {
-                    const item = docSnap.data();
-
-                    if (!item.url) return;
-
-                    if (item.tipo === "video") {
-                        html += `
-                            <div style="margin-top:20px;">
-                                <video
-                                    controls
-                                    autoplay
-                                    muted
-                                    loop
-                                    playsinline
-                                    style="
-                                        width:100%;
-                                        border-radius:24px;
-                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
-                                    "
-                                >
-                                    <source src="${item.url}">
-                                </video>
-                            </div>
-                        `;
-                    } else {
-                        html += `
-                            <div style="margin-top:20px;">
-                                <img
-                                    src="${item.url}"
-                                    alt="${item.titulo || 'Pronti'}"
-                                    style="
-                                        width:100%;
-                                        border-radius:24px;
-                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
-                                    "
-                                >
-                            </div>
-                        `;
-                    }
-                });
-
-                hero.insertAdjacentHTML("beforeend", html);
-
-            } catch (error) {
-                console.error("Erro ao carregar mídias da home:", error);
+            if (snap.empty) {
+                console.log("Nenhum passo dinâmico cadastrado. Mantendo conteúdo fixo.");
+                return;
             }
-        }
 
-        carregarMidiasHome();
-    </script>
+            let html = "";
+
+            snap.forEach(docSnap => {
+                const item = docSnap.data();
+
+                html += `
+                    <div class="step-card" data-step="${docSnap.id}">
+                        <div class="step-number">${item.numero || item.ordem || ""}</div>
+                        <h3>${item.titulo || ""}</h3>
+                        <p>${item.descricao || ""}</p>
+                    </div>
+                `;
+            });
+
+            lista.innerHTML = html;
+
+        } catch (error) {
+            console.error("Erro ao carregar passos da home:", error);
+        }
+    }
+
+    // ======================================================
+    // CARREGAR MÍDIAS DINÂMICAS DA HOME
+    // Coleção atual: site_home_midias
+    // ======================================================
+    async function carregarMidiasHome() {
+        try {
+            const q = query(
+                collection(db, "site_home_midias"),
+                where("ativo", "==", true),
+                orderBy("ordem", "asc")
+            );
+
+            const snap = await getDocs(q);
+
+            if (snap.empty) {
+                console.log("Nenhuma mídia da home cadastrada.");
+                return;
+            }
+
+            const hero = document.querySelector(".hero-panel");
+
+            if (!hero) return;
+
+            let html = "";
+
+            snap.forEach(docSnap => {
+                const item = docSnap.data();
+
+                if (!item.url) return;
+
+                if (item.tipo === "video") {
+                    html += `
+                        <div style="margin-top:20px;">
+                            <video
+                                controls
+                                autoplay
+                                muted
+                                loop
+                                playsinline
+                                style="
+                                    width:100%;
+                                    border-radius:24px;
+                                    box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                "
+                            >
+                                <source src="${item.url}">
+                            </video>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div style="margin-top:20px;">
+                            <img
+                                src="${item.url}"
+                                alt="${item.titulo || 'Pronti'}"
+                                style="
+                                    width:100%;
+                                    border-radius:24px;
+                                    box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                "
+                            >
+                        </div>
+                    `;
+                }
+            });
+
+            hero.insertAdjacentHTML("beforeend", html);
+
+        } catch (error) {
+            console.error("Erro ao carregar mídias da home:", error);
+        }
+    }
+
+    carregarPassosHome();
+    carregarMidiasHome();
+</script>
 
 </body>
 </html>
