@@ -11,9 +11,9 @@
     <meta property="og:description" content="Agenda online, vitrine por link, equipe, clientes, lembretes automáticos, fila inteligente, pagamentos e manual de uso." />
     <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://prontiapp.com.br/login.html" />
+    <meta property="og:url" content="https://prontiapp.com.br/site/home.html" />
 
-    <link rel="manifest" href="../manifest.json">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:400,500,600,700,800&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
@@ -542,11 +542,32 @@
             padding: 28px;
             backdrop-filter: blur(12px);
             transition: 0.25s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::after {
+            content: "Saiba mais";
+            position: absolute;
+            right: 18px;
+            bottom: 14px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.85);
+            opacity: 0;
+            transform: translateY(6px);
+            transition: 0.25s;
         }
 
         .feature-card:hover {
             transform: translateY(-7px);
             background: rgba(255, 255, 255, 0.17);
+        }
+
+        .feature-card:hover::after {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .feature-icon {
@@ -823,6 +844,149 @@
             margin: 0 auto 24px;
         }
 
+        .modal-card-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.76);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .modal-card-overlay.active {
+            display: flex;
+        }
+
+        .modal-card-content {
+            width: 100%;
+            max-width: 760px;
+            background: white;
+            border-radius: 28px;
+            padding: 34px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+            animation: modalShow 0.24s ease;
+        }
+
+        @keyframes modalShow {
+            from {
+                opacity: 0;
+                transform: translateY(18px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 50%;
+            background: #eef2ff;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--primary);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .modal-card-body .modal-icon {
+            width: 62px;
+            height: 62px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            margin-bottom: 18px;
+        }
+
+        .modal-card-body h2 {
+            font-size: clamp(1.8rem, 4vw, 2.4rem);
+            line-height: 1.15;
+            color: var(--text-main);
+            margin-bottom: 14px;
+            letter-spacing: -0.04em;
+            padding-right: 42px;
+        }
+
+        .modal-card-body p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.75;
+            margin-bottom: 16px;
+        }
+
+        .modal-benefits {
+            display: grid;
+            gap: 10px;
+            margin: 22px 0;
+        }
+
+        .modal-benefit {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .modal-benefit i {
+            color: var(--success);
+            margin-top: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 26px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            min-width: 210px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px 18px;
+            border-radius: 16px;
+            font-weight: 800;
+            text-decoration: none;
+            transition: 0.22s;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .modal-btn.whatsapp {
+            background: #25d366;
+            color: white;
+        }
+
+        .modal-btn.teste {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
         footer {
             background: white;
             border-top: 1px solid var(--border);
@@ -901,6 +1065,9 @@
             .section { padding: 60px 20px; }
             .demo-box { padding: 30px 20px; }
             .manual-section { padding: 30px 20px; }
+            .modal-card-content { padding: 28px 22px; }
+            .modal-actions { flex-direction: column; }
+            .modal-btn { min-width: 100%; }
         }
     </style>
 </head>
@@ -908,7 +1075,7 @@
 
     <header class="header" id="header">
         <div class="header-content">
-            <a href="https://prontiapp.com.br/login.html" class="logo">
+            <a href="https://prontiapp.com.br/site/home.html" class="logo">
                 <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164" alt="Logo Pronti">
                 <span class="logo-text">Pronti</span>
             </a>
@@ -916,7 +1083,7 @@
             <nav class="nav">
                 <a href="#como-funciona">Como funciona</a>
                 <a href="#recursos">Recursos</a>
-                <a href="https://prontiapp.com.br/login.html">Manual</a>
+                <a href="#videos">Demonstração</a>
                 <a href="#precos">Teste grátis</a>
             </nav>
 
@@ -1082,7 +1249,7 @@
                 <span class="badge">Recursos reais do Pronti</span>
                 <h2 class="section-title">Mais do que uma agenda simples</h2>
                 <p class="section-subtitle">
-                    Recursos criados para a rotina real de salões, estética, barbearias e negócios de atendimento.
+                    Clique em cada recurso para entender como ele pode ajudar na rotina do seu negócio.
                 </p>
             </div>
 
@@ -1181,14 +1348,14 @@
 
             <div class="white-card">
                 <div class="white-icon"><i class="fa-solid fa-images"></i></div>
-                <h3>Espaço para prints reais</h3>
-                <p>Depois podemos trocar os blocos visuais por imagens reais da agenda, vitrine, dashboard e fila inteligente.</p>
+                <h3>Demonstrações visuais</h3>
+                <p>A estrutura já está preparada para receber imagens reais da agenda, vitrine, dashboard e fila inteligente.</p>
             </div>
 
             <div class="white-card">
                 <div class="white-icon"><i class="fa-solid fa-video"></i></div>
-                <h3>Espaço para vídeos</h3>
-                <p>A página já possui área para vídeo demonstrando o Pronti funcionando na prática.</p>
+                <h3>Vídeos do sistema</h3>
+                <p>Você poderá mostrar vídeos curtos do Pronti funcionando para aumentar a confiança dos visitantes.</p>
             </div>
         </div>
     </section>
@@ -1230,53 +1397,33 @@
     <section class="section" id="manual">
         <div class="manual-section">
             <div class="section-header" style="margin-bottom: 20px;">
-                <span class="badge">Manual e ajuda</span>
-                <h2 class="section-title">Veja os recursos do Pronti por dentro</h2>
+                <span class="badge">Explore antes de cadastrar</span>
+                <h2 class="section-title">Entenda os principais recursos sem precisar fazer login</h2>
                 <p class="section-subtitle">
-                    O manual pode funcionar como uma central de aprendizado, mostrando cada tela,
-                    cada recurso e cada etapa para o cliente entender o sistema antes mesmo de testar.
+                    A home funciona como uma vitrine pública do Pronti. Clique nos cards de recursos,
+                    veja as explicações e, quando fizer sentido, fale no WhatsApp ou teste grátis.
                 </p>
             </div>
 
             <div class="manual-grid">
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-book-open"></i>
-                    Manual do Pronti
-                </a>
-
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
+                <a class="manual-link" href="#recursos">
                     <i class="fa-solid fa-calendar-check"></i>
-                    Agenda
+                    Ver recursos
                 </a>
 
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-users"></i>
-                    Equipe
+                <a class="manual-link" href="#videos">
+                    <i class="fa-solid fa-circle-play"></i>
+                    Ver demonstração
                 </a>
 
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-scissors"></i>
-                    Serviços
+                <a class="manual-link" href="#precos">
+                    <i class="fa-solid fa-gift"></i>
+                    Teste grátis
                 </a>
 
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-user-group"></i>
-                    Clientes
-                </a>
-
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-list-check"></i>
-                    Fila inteligente
-                </a>
-
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    Clientes para retorno
-                </a>
-
-                <a class="manual-link" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-credit-card"></i>
-                    Pagamentos
+                <a class="manual-link" href="https://wa.me/5531982967250" target="_blank">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    Falar no WhatsApp
                 </a>
             </div>
         </div>
@@ -1287,8 +1434,8 @@
             <span class="badge">Teste grátis</span>
             <h2 class="section-title">Comece sem cartão e conheça o sistema</h2>
             <p class="section-subtitle">
-                O Pronti pode ser testado grátis por 14 dias. Se precisar de ajuda,
-                o atendimento pode ser feito pelo WhatsApp.
+                O Pronti pode ser testado grátis por 14 dias. Se gostar do app,
+                podemos liberar mais 14 dias para continuar testando.
             </p>
         </div>
 
@@ -1306,7 +1453,7 @@
                     <li><i class="fa-solid fa-check"></i> Cadastro da empresa</li>
                     <li><i class="fa-solid fa-check"></i> Agenda e vitrine por link</li>
                     <li><i class="fa-solid fa-check"></i> Equipe, serviços e clientes</li>
-                    <li><i class="fa-solid fa-check"></i> Recursos para testar na prática</li>
+                    <li><i class="fa-solid fa-check"></i> Possibilidade de mais 14 dias se gostar do app</li>
                 </ul>
 
                 <a class="btn-blue" href="https://prontiapp.com.br/login.html">
@@ -1316,22 +1463,22 @@
             </div>
 
             <div class="price-card">
-                <h3>Planos do Pronti</h3>
-                <div class="price-value">Por equipe</div>
+                <h3>Fale antes de testar</h3>
+                <div class="price-value">WhatsApp</div>
                 <p style="color: var(--text-muted); font-weight: 600;">
-                    O valor pode variar conforme a quantidade de profissionais.
+                    Tire dúvidas antes de cadastrar sua empresa.
                 </p>
 
                 <ul class="price-list">
-                    <li><i class="fa-solid fa-check"></i> Planos por número de funcionários</li>
-                    <li><i class="fa-solid fa-check"></i> Controle de assinatura</li>
-                    <li><i class="fa-solid fa-check"></i> Pagamento integrado</li>
-                    <li><i class="fa-solid fa-check"></i> Bloqueio automático de plano quando necessário</li>
+                    <li><i class="fa-solid fa-check"></i> Apresentação simples do sistema</li>
+                    <li><i class="fa-solid fa-check"></i> Ajuda para entender se serve para seu negócio</li>
+                    <li><i class="fa-solid fa-check"></i> Orientação para começar o teste</li>
+                    <li><i class="fa-solid fa-check"></i> Suporte humano para tirar dúvidas</li>
                 </ul>
 
-                <a class="btn-blue" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    Já tenho conta
+                <a class="btn-blue" href="https://wa.me/5531982967250" target="_blank">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    Falar no WhatsApp
                 </a>
             </div>
         </div>
@@ -1351,9 +1498,9 @@
                     Criar empresa grátis
                 </a>
 
-                <a class="btn-secondary" href="https://prontiapp.com.br/login.html">
-                    <i class="fa-solid fa-book-open"></i>
-                    Ver manual
+                <a class="btn-secondary" href="https://wa.me/5531982967250" target="_blank">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    Falar no WhatsApp
                 </a>
             </div>
 
@@ -1372,18 +1519,27 @@
         <p>© 2026 Pronti — Sistema para salões, estética e atendimento.</p>
 
         <div class="footer-links">
-            <a href="https://prontiapp.com.br/login.html">Início</a>
+            <a href="https://prontiapp.com.br/site/home.html">Início</a>
+            <a href="#recursos">Recursos</a>
+            <a href="#videos">Demonstração</a>
             <a href="https://prontiapp.com.br/login.html">Entrar</a>
-            <a href="https://prontiapp.com.br/login.html">Criar empresa</a>
-            <a href="https://prontiapp.com.br/login.html">Manual</a>
-            <a href="https://prontiapp.com.br/login.html">Contato</a>
+            <a href="https://wa.me/5531982967250" target="_blank">Contato</a>
         </div>
 
         <div class="social-icons">
-            <a href="https://prontiapp.com.br/login.html" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-            <a href="https://prontiapp.com.br/login.html" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+            <a href="https://prontiapp.com.br/site/home.html" aria-label="Site do Pronti"><i class="fa-solid fa-globe"></i></a>
+            <a href="https://wa.me/5531982967250" target="_blank" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
     </footer>
+
+    <div id="modalCard" class="modal-card-overlay" aria-hidden="true">
+        <div class="modal-card-content">
+            <button class="modal-close" type="button" onclick="fecharModalCard()" aria-label="Fechar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modalCardBody"></div>
+        </div>
+    </div>
 
     <script>
         window.addEventListener('scroll', () => {
@@ -1392,91 +1548,286 @@
                 header.classList.toggle('scrolled', window.scrollY > 50);
             }
         });
+
+        const cardsHome = {
+            agenda: {
+                titulo: "Agenda online",
+                icone: "fa-calendar-days",
+                descricao: "Organize horários, serviços, profissionais e agendamentos em uma tela simples para o dia a dia do seu negócio.",
+                beneficios: [
+                    "Ajuda a reduzir confusão de horários.",
+                    "Facilita a organização dos atendimentos.",
+                    "Centraliza agenda, serviços e profissionais."
+                ]
+            },
+            vitrine: {
+                titulo: "Vitrine por link",
+                icone: "fa-store",
+                descricao: "Cada empresa pode ter um link próprio para o cliente acessar, escolher serviço, profissional, dia e horário.",
+                beneficios: [
+                    "O cliente consegue conhecer seus serviços pelo link.",
+                    "Ajuda a reduzir mensagens repetidas no WhatsApp.",
+                    "Facilita a divulgação do negócio."
+                ]
+            },
+            equipe: {
+                titulo: "Equipe e profissionais",
+                icone: "fa-users",
+                descricao: "Cadastre profissionais, horários individuais e serviços realizados por cada pessoa da equipe.",
+                beneficios: [
+                    "Cada profissional pode ter sua própria agenda.",
+                    "Facilita a organização de equipes maiores.",
+                    "Ajuda a evitar conflito de horários."
+                ]
+            },
+            servicos: {
+                titulo: "Serviços",
+                icone: "fa-scissors",
+                descricao: "Configure serviços, duração, valores e organize sua operação para deixar o agendamento mais claro.",
+                beneficios: [
+                    "Mostra ao cliente o que pode ser agendado.",
+                    "Ajuda a calcular horários disponíveis.",
+                    "Deixa a vitrine mais profissional."
+                ]
+            },
+            clientes: {
+                titulo: "Clientes",
+                icone: "fa-user-group",
+                descricao: "Mantenha a base de clientes organizada para acompanhar atendimentos e histórico.",
+                beneficios: [
+                    "Facilita o acompanhamento de cada cliente.",
+                    "Ajuda a organizar informações importantes.",
+                    "Melhora o relacionamento e o retorno."
+                ]
+            },
+            lembretes: {
+                titulo: "Lembrete automático",
+                icone: "fa-bell",
+                descricao: "O sistema pode enviar lembretes automáticos antes do horário agendado para ajudar a reduzir esquecimentos.",
+                beneficios: [
+                    "Ajuda o cliente a lembrar do horário.",
+                    "Pode reduzir faltas e atrasos.",
+                    "Traz mais profissionalismo para o atendimento."
+                ]
+            },
+            retorno: {
+                titulo: "Clientes para retorno",
+                icone: "fa-clock-rotate-left",
+                descricao: "Ajuda a identificar clientes que podem estar no momento ideal para retornar com base no histórico de atendimentos.",
+                beneficios: [
+                    "Ajuda a recuperar clientes antigos.",
+                    "Cria oportunidade de novo atendimento.",
+                    "Apoia ações de fidelização."
+                ]
+            },
+            fila: {
+                titulo: "Fila inteligente",
+                icone: "fa-list-check",
+                descricao: "Quando surge uma vaga, o Pronti pode ajudar a ofertar horários para clientes que estão aguardando.",
+                beneficios: [
+                    "Ajuda a preencher horários vagos.",
+                    "Organiza clientes interessados em antecipar.",
+                    "Torna a agenda mais eficiente."
+                ]
+            },
+            dashboard: {
+                titulo: "Dashboard",
+                icone: "fa-chart-line",
+                descricao: "Visualize informações importantes da agenda, faturamento e acompanhamento geral do negócio.",
+                beneficios: [
+                    "Ajuda a acompanhar resultados.",
+                    "Mostra uma visão geral do negócio.",
+                    "Facilita decisões do dia a dia."
+                ]
+            },
+            promocoes: {
+                titulo: "Promoções",
+                icone: "fa-percent",
+                descricao: "Crie promoções para movimentar horários, divulgar serviços e aumentar oportunidades de atendimento.",
+                beneficios: [
+                    "Ajuda a divulgar serviços.",
+                    "Pode movimentar horários mais fracos.",
+                    "Facilita ações comerciais."
+                ]
+            },
+            pagamentos: {
+                titulo: "Pagamentos",
+                icone: "fa-credit-card",
+                descricao: "Estrutura preparada para planos, assinaturas e integração com Mercado Pago.",
+                beneficios: [
+                    "Ajuda a organizar cobranças do sistema.",
+                    "Facilita controle de planos.",
+                    "Integração preparada com Mercado Pago."
+                ]
+            },
+            permissoes: {
+                titulo: "Permissões",
+                icone: "fa-lock",
+                descricao: "Controle acessos e permissões para proteger áreas importantes do sistema.",
+                beneficios: [
+                    "Ajuda a proteger informações sensíveis.",
+                    "Permite organizar acessos por função.",
+                    "Mais segurança para o dono do negócio."
+                ]
+            }
+        };
+
+        document.querySelectorAll(".feature-card").forEach(card => {
+            card.addEventListener("click", () => {
+                const key = card.dataset.card;
+                if (!key || !cardsHome[key]) return;
+                abrirModalCard(cardsHome[key]);
+            });
+        });
+
+        function abrirModalCard(item) {
+            const modal = document.getElementById("modalCard");
+            const body = document.getElementById("modalCardBody");
+
+            if (!modal || !body) return;
+
+            const beneficiosHtml = (item.beneficios || []).map(beneficio => `
+                <div class="modal-benefit">
+                    <i class="fa-solid fa-check"></i>
+                    <span>${beneficio}</span>
+                </div>
+            `).join("");
+
+            body.innerHTML = `
+                <div class="modal-card-body">
+                    <div class="modal-icon">
+                        <i class="fa-solid ${item.icone || 'fa-circle-info'}"></i>
+                    </div>
+
+                    <h2>${item.titulo}</h2>
+
+                    <p>${item.descricao}</p>
+
+                    <div class="modal-benefits">
+                        ${beneficiosHtml}
+                    </div>
+
+                    <div class="modal-actions">
+                        <a class="modal-btn whatsapp" href="https://wa.me/5531982967250" target="_blank">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            Falar no WhatsApp
+                        </a>
+
+                        <a class="modal-btn teste" href="https://prontiapp.com.br/login.html">
+                            <i class="fa-solid fa-rocket"></i>
+                            Testar grátis
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add("active");
+            modal.setAttribute("aria-hidden", "false");
+        }
+
+        function fecharModalCard() {
+            const modal = document.getElementById("modalCard");
+            if (!modal) return;
+
+            modal.classList.remove("active");
+            modal.setAttribute("aria-hidden", "true");
+        }
+
+        document.getElementById("modalCard")?.addEventListener("click", (event) => {
+            if (event.target.id === "modalCard") {
+                fecharModalCard();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                fecharModalCard();
+            }
+        });
     </script>
-<script type="module">
-import { db } from "../firebase-config.js";
 
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    <script type="module">
+        import { db } from "./firebase-config.js";
 
-// ======================================================
-// CARREGAR MIDIAS DINÂMICAS DA HOME
-// ======================================================
+        import {
+            collection,
+            query,
+            where,
+            orderBy,
+            getDocs
+        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-async function carregarMidiasHome() {
-  try {
+        async function carregarMidiasHome() {
+            try {
+                const q = query(
+                    collection(db, "site_home_midias"),
+                    where("ativo", "==", true),
+                    orderBy("ordem", "asc")
+                );
 
-    const q = query(
-      collection(db, "site_home_midias"),
-      where("ativo", "==", true),
-      orderBy("ordem", "asc")
-    );
+                const snap = await getDocs(q);
 
-    const snap = await getDocs(q);
+                if (snap.empty) {
+                    console.log("Nenhuma mídia da home cadastrada.");
+                    return;
+                }
 
-    if (snap.empty) {
-      console.log("Nenhuma mídia da home cadastrada.");
-      return;
-    }
+                const hero = document.querySelector(".hero-panel");
 
-    const hero = document.querySelector(".hero-panel");
+                if (!hero) return;
 
-    if (!hero) return;
+                let html = "";
 
-    let html = "";
+                snap.forEach(docSnap => {
+                    const item = docSnap.data();
 
-    snap.forEach(docSnap => {
-      const item = docSnap.data();
+                    if (!item.url) return;
 
-      if (item.tipo === "video") {
-        html += `
-          <div style="margin-top:20px;">
-            <video
-              controls
-              autoplay
-              muted
-              loop
-              style="
-                width:100%;
-                border-radius:24px;
-                box-shadow:0 20px 40px rgba(0,0,0,0.25);
-              "
-            >
-              <source src="${item.url}">
-            </video>
-          </div>
-        `;
-      } else {
+                    if (item.tipo === "video") {
+                        html += `
+                            <div style="margin-top:20px;">
+                                <video
+                                    controls
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                    style="
+                                        width:100%;
+                                        border-radius:24px;
+                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                    "
+                                >
+                                    <source src="${item.url}">
+                                </video>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div style="margin-top:20px;">
+                                <img
+                                    src="${item.url}"
+                                    alt="${item.titulo || 'Pronti'}"
+                                    style="
+                                        width:100%;
+                                        border-radius:24px;
+                                        box-shadow:0 20px 40px rgba(0,0,0,0.25);
+                                    "
+                                >
+                            </div>
+                        `;
+                    }
+                });
 
-        html += `
-          <div style="margin-top:20px;">
-            <img
-              src="${item.url}"
-              alt="${item.titulo || 'Pronti'}"
-              style="
-                width:100%;
-                border-radius:24px;
-                box-shadow:0 20px 40px rgba(0,0,0,0.25);
-              "
-            >
-          </div>
-        `;
-      }
-    });
+                hero.insertAdjacentHTML("beforeend", html);
 
-    hero.insertAdjacentHTML("beforeend", html);
+            } catch (error) {
+                console.error("Erro ao carregar mídias da home:", error);
+            }
+        }
 
-  } catch (error) {
-    console.error("Erro ao carregar mídias da home:", error);
-  }
-}
+        carregarMidiasHome();
+    </script>
 
-carregarMidiasHome();
-</script>
 </body>
 </html>
