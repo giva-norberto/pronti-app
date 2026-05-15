@@ -1714,10 +1714,9 @@
 
             if (typeof beneficios === "string") {
                 return beneficios
-                    .split("
-")
-                    .map(item => item.trim())
-                    .filter(Boolean);
+                   .split("\n")
+                   .map(item => item.trim())
+                   .filter(Boolean);
             }
 
             return [];
@@ -1809,6 +1808,7 @@
     </script>
 
 <script>
+<script>
 window.abrirModalManualPublico = function(id) {
 
     const item = window.manualPublicoCache?.[id];
@@ -1839,7 +1839,6 @@ window.abrirModalManualPublico = function(id) {
 
 };
 </script>
-
 <script type="module">
     import { db } from "../firebase-config.js";
 
